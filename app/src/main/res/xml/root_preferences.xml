@@ -1,0 +1,47 @@
+<PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto">
+    <PreferenceCategory app:title="Personalisation">
+
+        <EditTextPreference
+            app:defaultValue="User@YMPlayer"
+            app:key="user_name"
+            app:title="Your name"
+            app:useSimpleSummaryProvider="true" />
+
+
+    </PreferenceCategory>
+
+
+    <PreferenceCategory app:title="@string/messages_header">
+
+        <ListPreference
+            app:defaultValue="blue"
+            app:entries="@array/theme_entries"
+            app:entryValues="@array/theme_values"
+            app:key="theme"
+            app:title="@string/theme"
+            app:useSimpleSummaryProvider="true" />
+
+        <ListPreference
+            android:entries="@array/background_entries"
+            android:entryValues="@array/background_values"
+            app:defaultValue="light"
+            app:key="background"
+            app:title="Background"
+            app:useSimpleSummaryProvider="true" />
+
+    </PreferenceCategory>
+
+    <PreferenceCategory app:title="Playback">
+
+        <SwitchPreferenceCompat
+            android:summaryOff="Disabled"
+            android:summaryOn="Enabled"
+            app:defaultValue="true"
+            app:key="albumart_enabled"
+            app:title="Album art on lock screen" />
+
+
+    </PreferenceCategory>
+
+</PreferenceScreen>

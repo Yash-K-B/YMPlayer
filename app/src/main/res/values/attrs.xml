@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <attr name="listTitleTextColor" type="color|reference"/>
+    <attr name="listSubTitleTextColor" type="color|reference"/>
+    <attr name="layoutBackground" format="color"/>
+</resources>

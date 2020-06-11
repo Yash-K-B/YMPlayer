@@ -1,0 +1,126 @@
+<resources>
+
+    <!-- Base application theme. -->
+    <style name="AppTheme" parent="Theme.AppCompat.Light.DarkActionBar">
+        <!-- Customize your theme here. -->
+        <item name="colorPrimary">@color/colorPrimary</item>
+        <item name="colorPrimaryDark">@color/colorPrimaryDark</item>
+        <item name="colorAccent">@color/colorAccent</item>
+    </style>
+
+    <style name="AppTheme.AppBarOverlay" parent="ThemeOverlay.AppCompat.Dark.ActionBar" />
+
+    <style name="AppTheme.PopupOverlay" parent="ThemeOverlay.AppCompat.Light" />
+
+    <style name="AppTheme.NoActionBar" parent="AppTheme">
+        <item name="windowActionBar">false</item>
+        <item name="windowNoTitle">true</item>
+        <item name="android:windowActionBarOverlay">true</item>
+    </style>
+    <!--    <style name="splashScreenAnimationTransition">-->
+    <!--        <item name="android:windowExitAnimation">@android:anim/slide_out_right</item>-->
+    <!--    </style>-->
+
+    <!--    SplashScreen-->
+    <style name="SplashScreen" parent="Theme.AppCompat.Light.NoActionBar">
+        <item name="colorPrimary">@color/colorPrimary</item>
+        <item name="colorPrimaryDark">#B900CA</item>
+        <item name="colorAccent">@color/colorAccent</item>
+        <item name="android:windowBackground">@drawable/music_bg</item>
+    </style>
+
+    <style name="windowAnimationTransition">
+        <item name="android:windowEnterAnimation">@android:anim/fade_in</item>
+        <item name="android:windowExitAnimation">@android:anim/fade_out</item>
+    </style>
+
+    <!--Light Themes-->
+    <!--    Light Base Theme-->
+    <style name="YTheme.Light" parent="Theme.AppCompat.Light.DarkActionBar">
+        <item name="windowActionBar">false</item>
+        <item name="windowNoTitle">true</item>
+        <item name="android:windowActionBarOverlay">true</item>
+        <item name="listTitleTextColor">#000000</item>
+        <item name="layoutBackground">@android:color/background_light</item>
+    </style>
+
+    <!--    Light Child Themes-->
+    <style name="YTheme.Light.Red.NoActionBar" parent="YTheme.Light">
+        <item name="colorPrimary">#8F0000</item>
+        <item name="colorPrimaryDark">#680000</item>
+        <item name="colorAccent">#D50000</item>
+    </style>
+
+    <style name="YTheme.Light.Blue.NoActionBar" parent="YTheme.Light">
+        <item name="colorPrimary">#000080</item>
+        <item name="colorPrimaryDark">#000049</item>
+        <item name="colorAccent">@color/colorAccent</item>
+    </style>
+
+    <style name="YTheme.Light.Green.NoActionBar" parent="YTheme.Light">
+        <item name="colorPrimary">#017732</item>
+        <item name="colorPrimaryDark">#1E4C00</item>
+        <item name="colorAccent">#00BFA5</item>
+    </style>
+
+    <!--   Dark Themes -->
+
+    <!--    Dark Base Theme-->
+    <style name="YTheme.Dark" parent="Theme.AppCompat">
+        <item name="listTitleTextColor">@android:color/white</item>
+        <item name="windowActionBar">false</item>
+        <item name="windowNoTitle">true</item>
+        <item name="android:windowActionBarOverlay">true</item>
+        <item name="layoutBackground">#272727</item>
+    </style>
+
+    <!--    Dark Child Themes-->
+    <style name="YTheme.Dark.Red.NoActionBar" parent="YTheme.Dark">
+        <item name="colorPrimary">#8F0000</item>
+        <item name="colorPrimaryDark">#680000</item>
+        <item name="colorAccent">#D50000</item>
+    </style>
+
+    <style name="YTheme.Dark.Blue.NoActionBar" parent="YTheme.Dark">
+        <item name="colorPrimary">#000080</item>
+        <item name="colorPrimaryDark">#000049</item>
+        <item name="colorAccent">@color/colorAccent</item>
+    </style>
+
+    <style name="YTheme.Dark.Green.NoActionBar" parent="YTheme.Dark">
+        <item name="colorPrimary">#017732</item>
+        <item name="colorPrimaryDark">#1E4C00</item>
+        <item name="colorAccent">#00BFA5</item>
+    </style>
+
+    <!--    AMOLED Base Theme-->
+    <style name="YTheme.AMOLED" parent="Theme.AppCompat">
+        <item name="listTitleTextColor">#ffffff</item>
+        <item name="windowActionBar">false</item>
+        <item name="windowNoTitle">true</item>
+        <item name="android:windowActionBarOverlay">true</item>
+        <item name="android:windowBackground">@drawable/black_background</item>
+        <item name="layoutBackground">@android:color/black</item>
+<!--        <item name="android:background">#000000</item>-->
+    </style>
+    <!--    AMOLED Themes-->
+    <style name="YTheme.AMOLED.Red.NoActionBar" parent="YTheme.AMOLED">
+        <item name="colorPrimary">#8F0000</item>
+        <item name="colorPrimaryDark">#680000</item>
+        <item name="colorAccent">#D50000</item>
+    </style>
+
+    <style name="YTheme.AMOLED.Blue.NoActionBar" parent="YTheme.AMOLED">
+        <item name="colorPrimary">#000080</item>
+        <item name="colorPrimaryDark">#000049</item>
+        <item name="colorAccent">@color/colorAccent</item>
+    </style>
+
+    <style name="YTheme.AMOLED.Green.NoActionBar" parent="YTheme.AMOLED">
+        <item name="colorPrimary">#017732</item>
+        <item name="colorPrimaryDark">#1E4C00</item>
+        <item name="colorAccent">#00BFA5</item>
+    </style>
+
+
+</resources>

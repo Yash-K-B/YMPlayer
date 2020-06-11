@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:android="http://schemas.android.com/apk/res/android">
+    <group android:checkableBehavior="single">
+        <item
+            android:id="@+id/localSongs"
+            android:icon="@drawable/ic_audiotrack_black_24dp"
+            android:title="@string/local_songs" />
+        <item
+            android:id="@+id/settings"
+            android:icon="@drawable/icon_settings"
+            android:title="@string/settings"/>
+        <item
+            android:id="@+id/about"
+            android:icon="@android:drawable/ic_dialog_info"
+            android:title="@string/about" />
+    </group>
+    <item android:title="@string/communication">
+        <menu>
+            <item android:id="@+id/share"
+                android:icon="@drawable/ic_share_black_24dp"
+                android:title="@string/share"/>
+        </menu>
+    </item>
+</menu>
