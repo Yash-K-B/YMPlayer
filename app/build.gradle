@@ -46,7 +46,8 @@ dependencies {
     androidTestImplementation 'androidx.test.ext:junit:1.1.1'
     androidTestImplementation 'androidx.test.espresso:espresso-core:3.2.0'
     //Exoplayer
-    implementation 'com.google.android.exoplayer:exoplayer:2.11.4'
+    implementation 'com.google.android.exoplayer:exoplayer:2.11.5'
+    implementation 'com.google.android.exoplayer:extension-mediasession:2.10.0'
     //Glide
     implementation 'com.github.bumptech.glide:glide:4.11.0'
     annotationProcessor 'com.github.bumptech.glide:compiler:4.11.0'
@@ -56,8 +57,10 @@ dependencies {
     //Room
     implementation "androidx.room:room-runtime:2.2.5"
     annotationProcessor "androidx.room:room-compiler:2.2.5"
-    //FFmpegMetadataRetriver
-    implementation 'com.github.wseemann:FFmpegMediaMetadataRetriever-core:1.0.15'
-    implementation 'com.github.wseemann:FFmpegMediaMetadataRetriever-native:1.0.15'
+    //Spotify auth
+    implementation "com.spotify.android:auth:1.2.3"
+
+    implementation "com.google.code.gson:gson:2.8.5"
+    implementation 'com.android.volley:volley:1.1.1'
 
 }

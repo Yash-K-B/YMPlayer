@@ -4,7 +4,9 @@ import android.content.ComponentName;
 import android.content.Intent;
 import android.os.Bundle;
 
+import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.appcompat.widget.SearchView;
 import androidx.fragment.app.Fragment;
 import androidx.lifecycle.Observer;
 import androidx.lifecycle.ViewModelProvider;
@@ -19,6 +21,9 @@ import android.support.v4.media.MediaMetadataCompat;
 import android.support.v4.media.session.MediaControllerCompat;
 import android.support.v4.media.session.PlaybackStateCompat;
 import android.view.LayoutInflater;
+import android.view.Menu;
+import android.view.MenuInflater;
+import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
 
@@ -28,6 +33,7 @@ import com.yash.ymplayer.PlayerService;
 import com.yash.ymplayer.R;
 import com.yash.ymplayer.databinding.FragmentArtistsBinding;
 import com.yash.ymplayer.util.SongListAdapter;
+import com.yash.ymplayer.util.SongsContextMenuClickListener;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -36,14 +42,14 @@ import java.util.List;
  * A simple {@link Fragment} subclass.
  */
 public class Artists extends Fragment {
-    private FragmentArtistsBinding artistsBinding;
-    private MediaBrowserCompat mMediaBrowser;
-    private LocalViewModel viewModel;
-    private MediaControllerCompat mMediaController;
-    private List<MediaBrowserCompat.MediaItem> songs = new ArrayList<>();
-    private SongListAdapter adapter;
+    FragmentArtistsBinding artistsBinding;
+    MediaBrowserCompat mMediaBrowser;
+    LocalViewModel viewModel;
+    MediaControllerCompat mMediaController;
+    List<MediaBrowserCompat.MediaItem> songs = new ArrayList<>();
+    SongListAdapter artistsAdapter;
     private static Artists instance;
-    private Handler handler = new Handler();
+    Handler handler = new Handler();
 
     public Artists() {
         // Required empty public constructor
@@ -68,26 +74,14 @@ public class Artists extends Fragment {
         super.onActivityCreated(savedInstanceState);
         mMediaBrowser = new MediaBrowserCompat(getContext(), new ComponentName(getContext(), PlayerService.class), mConnectionCallbacks, null);
         mMediaBrowser.connect();
-        adapter = new SongListAdapter(getContext(), songs, new SongListAdapter.OnItemClickListener() {
-            @Override
-            public void onClick(MediaBrowserCompat.MediaItem song) {
-                if (song.isBrowsable()) {
-                    Intent intent = new Intent(getActivity(), ListExpandActivity.class);
-                    intent.putExtra("parent_id", song.getMediaId());
-                    intent.putExtra("type", "artist");
-                    startActivity(intent);
-                }
-            }
-        }, 1);
-        artistsBinding.allArtists.setAdapter(adapter);
         artistsBinding.allArtists.setLayoutManager(new LinearLayoutManager(getContext()));
-        artistsBinding.allArtists.addItemDecoration(new DividerItemDecoration(getContext(),DividerItemDecoration.VERTICAL));
+        artistsBinding.allArtists.addItemDecoration(new DividerItemDecoration(getContext(), DividerItemDecoration.VERTICAL));
     }
 
     @Override
     public void startActivity(Intent intent) {
         super.startActivity(intent);
-        getActivity().overridePendingTransition(android.R.anim.slide_in_left,android.R.anim.slide_out_right);
+        getActivity().overridePendingTransition(android.R.anim.slide_in_left, android.R.anim.slide_out_right);
     }
 
     @Override
@@ -102,30 +96,39 @@ public class Artists extends Fragment {
             try {
                 viewModel = new ViewModelProvider(getActivity()).get(LocalViewModel.class);
                 mMediaController = new MediaControllerCompat(getContext(), mMediaBrowser.getSessionToken());
+                artistsAdapter = new SongListAdapter(getContext(), songs, new SongListAdapter.OnItemClickListener() {
+                    @Override
+                    public void onClick(MediaBrowserCompat.MediaItem song) {
+                        if (song.isBrowsable()) {
+                            Intent intent = new Intent(getActivity(), ListExpandActivity.class);
+                            intent.putExtra("parent_id", song.getMediaId());
+                            intent.putExtra("type", "artist");
+                            startActivity(intent);
+                        }
+                    }
+                }, new SongsContextMenuClickListener(getContext(),mMediaController),1);
+                artistsBinding.allArtists.setAdapter(artistsAdapter);
                 mMediaController.registerCallback(mMediaControllerCallbacks);
-                artistsBinding.artistsRefresh.setColorSchemeColors(((MainActivity)getActivity()).getAttributeColor(R.attr.colorPrimary));
+                artistsBinding.artistsRefresh.setColorSchemeColors(((MainActivity) getActivity()).getAttributeColor(R.attr.colorPrimary));
                 artistsBinding.artistsRefresh.setOnRefreshListener(new SwipeRefreshLayout.OnRefreshListener() {
                     @Override
                     public void onRefresh() {
                         artistsBinding.artistsRefresh.setRefreshing(true);
-                        viewModel.refresh(getContext(),mMediaBrowser);
+                        viewModel.refresh(getContext(), mMediaBrowser);
                         //viewModel.getAllArtists(, null);
                     }
                 });
-                viewModel.getAllArtists(mMediaBrowser, null);
+                if (viewModel.allArtists.getValue() == null || viewModel.allArtists.getValue().isEmpty())
+                    viewModel.getAllArtists(mMediaBrowser, null);
                 viewModel.allArtists.observe(getActivity(), new Observer<List<MediaBrowserCompat.MediaItem>>() {
                     @Override
                     public void onChanged(List<MediaBrowserCompat.MediaItem> songs) {
                         Artists.this.songs.clear();
                         Artists.this.songs.addAll(songs);
-                        handler.postDelayed(new Runnable() {
-                            @Override
-                            public void run() {
-                                artistsBinding.artistsRefresh.setRefreshing(false);
-                                adapter.notifyDataSetChanged();
-                                artistsBinding.progressBar.setVisibility(View.INVISIBLE);
-                            }
-                        }, 400);
+                        artistsBinding.artistsRefresh.setRefreshing(false);
+                        artistsAdapter.refreshList();
+                        artistsAdapter.notifyDataSetChanged();
+                        artistsBinding.progressBar.setVisibility(View.INVISIBLE);
                     }
                 });
             } catch (RemoteException e) {
@@ -135,7 +138,7 @@ public class Artists extends Fragment {
         }
     };
 
-    private MediaControllerCompat.Callback mMediaControllerCallbacks = new MediaControllerCompat.Callback() {
+    MediaControllerCompat.Callback mMediaControllerCallbacks = new MediaControllerCompat.Callback() {
         @Override
         public void onPlaybackStateChanged(PlaybackStateCompat state) {
             super.onPlaybackStateChanged(state);

@@ -1,21 +1,28 @@
 package com.yash.ymplayer.ui.main;
 
 import android.app.AlertDialog;
+import android.content.Intent;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.LayoutInflater;
+import android.view.Menu;
+import android.view.MenuInflater;
+import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.appcompat.widget.SearchView;
 import androidx.fragment.app.Fragment;
 import androidx.viewpager2.widget.ViewPager2;
 
 import com.google.android.material.tabs.TabLayout;
 import com.google.android.material.tabs.TabLayoutMediator;
 import com.yash.ymplayer.ActivityActionProvider;
+import com.yash.ymplayer.R;
+import com.yash.ymplayer.SearchActivity;
 import com.yash.ymplayer.databinding.CreatePlaylistBinding;
 import com.yash.ymplayer.databinding.FragmentLocalSongsBinding;
 import com.yash.ymplayer.repository.Repository;
@@ -44,6 +51,7 @@ public class LocalSongs extends Fragment{
     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
         // Inflate the layout for this fragment
         binding = FragmentLocalSongsBinding.inflate(inflater, container, false);
+        setHasOptionsMenu(true);
         return binding.getRoot();
     }
 
@@ -83,6 +91,23 @@ public class LocalSongs extends Fragment{
         }
     };
 
+
+    @Override
+    public void onCreateOptionsMenu(@NonNull Menu menu, @NonNull MenuInflater inflater) {
+        inflater.inflate(R.menu.app_menu_extention_search,menu);
+        super.onCreateOptionsMenu(menu, inflater);
+    }
+
+    @Override
+    public boolean onOptionsItemSelected(@NonNull MenuItem item) {
+        Log.d(TAG, "onOptionsItemSelected: LocalSongs");
+        if(item.getItemId() == R.id.search)
+        {
+            startActivity(new Intent(getContext(), SearchActivity.class));
+            getActivity().overridePendingTransition(android.R.anim.fade_in,android.R.anim.fade_out);
+        }
+        return super.onOptionsItemSelected(item);
+    }
 
     public void onFabClicked(Playlists playlist){
         binding.floatingActionButton.setOnClickListener(new View.OnClickListener() {

@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
-<menu xmlns:app="http://schemas.android.com/apk/res-auto"
-    xmlns:android="http://schemas.android.com/apk/res/android">
+<menu xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto">
     <item
         android:id="@+id/play_single"
         android:title="Play Single" />
@@ -13,4 +13,10 @@
     <item
         android:id="@+id/goto_artist"
         android:title="Goto Artist" />
+    <item
+        android:id="@+id/shareSong"
+        android:title="Share" />
+    <item
+        android:id="@+id/deleteFromStorage"
+        android:title="Delete from storage" />
 </menu>

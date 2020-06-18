@@ -1,14 +1,104 @@
 <?xml version="1.0" encoding="utf-8"?>
 <FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     tools:context=".ui.main.AboutFragment">
 
-    <!-- TODO: Update blank fragment layout -->
-    <TextView
+    <ScrollView
         android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:text="@string/hello_blank_fragment" />
+        android:layout_height="match_parent">
+
+        <androidx.constraintlayout.widget.ConstraintLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content">
+
+            <ImageView
+                android:id="@+id/author_image"
+                android:layout_width="225dp"
+                android:layout_height="225dp"
+                android:layout_marginTop="40dp"
+                android:background="@drawable/circular_album_art_bg"
+                android:src="@drawable/author_img"
+                android:scaleType="centerCrop"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toTopOf="parent" />
+
+            <TextView
+                android:id="@+id/author_name"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:text="@string/author_name"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintHorizontal_bias="0.5"
+                app:layout_constraintStart_toStartOf="parent"
+                android:gravity="center"
+                android:padding="5dp"
+                android:layout_marginTop="30dp"
+                android:textSize="24sp"
+                android:fontFamily="@font/royal_acid"
+                android:textColor="?attr/listTitleTextColor"
+                app:layout_constraintTop_toBottomOf="@+id/author_image" />
+            <TextView
+                android:id="@+id/author_subtitle"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:text="Developer"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintHorizontal_bias="0.5"
+                app:layout_constraintStart_toStartOf="parent"
+                android:gravity="center"
+                android:textSize="14sp"
+                android:textStyle="italic"
+                android:textColor="?attr/listTitleTextColor"
+                app:layout_constraintTop_toBottomOf="@+id/author_name" />
+
+            <TextView
+                android:id="@+id/app_description"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintHorizontal_bias="0.5"
+                app:layout_constraintStart_toStartOf="parent"
+                android:textSize="14sp"
+                android:layout_marginTop="40dp"
+                android:gravity="fill_horizontal"
+                android:padding="30dp"
+                android:text="\t\t'YM Player' is a Music Player for Android. It is developed using the media playback guidelines of Android. It features all the necessary actions on media playing. It supports all the devices running Android 5.0 or up. There is also support for Android Auto and Automotive OS playback."
+                android:textColor="?attr/listTitleTextColor"
+                app:layout_constraintTop_toBottomOf="@+id/author_subtitle" />
+            <TextView
+                android:id="@+id/heading_changelog"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintHorizontal_bias="0.5"
+                app:layout_constraintStart_toStartOf="parent"
+                android:textSize="16sp"
+                android:layout_marginTop="40dp"
+                android:gravity="center"
+                android:padding="10dp"
+                android:text="Change Logs"
+                android:textStyle="bold"
+                android:fontFamily="@font/open_sans_cond_bold"
+                android:textColor="?attr/listTitleTextColor"
+                app:layout_constraintTop_toBottomOf="@+id/app_description" />
+            <TextView
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintHorizontal_bias="0.5"
+                app:layout_constraintStart_toStartOf="parent"
+                android:textSize="14sp"
+                android:layout_marginTop="40dp"
+                android:padding="10dp"
+                android:text="@string/changelog"
+                android:textColor="?attr/listTitleTextColor"
+                app:layout_constraintTop_toBottomOf="@+id/heading_changelog" />
+        </androidx.constraintlayout.widget.ConstraintLayout>
+    </ScrollView>
+
 
 </FrameLayout>

@@ -1,16 +1,15 @@
 package com.yash.ymplayer;
 
 import android.Manifest;
-import android.app.AlertDialog;
 import android.app.NotificationChannel;
 import android.app.NotificationManager;
 import android.content.ComponentName;
+import android.content.ContentUris;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.pm.ApplicationInfo;
 import android.content.pm.PackageManager;
 import android.graphics.Color;
-import android.graphics.drawable.BitmapDrawable;
 import android.graphics.drawable.Drawable;
 import android.media.MediaMetadataRetriever;
 import android.net.Uri;
@@ -18,9 +17,8 @@ import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.RemoteException;
+import android.provider.MediaStore;
 import android.support.v4.media.MediaBrowserCompat;
-import android.support.v4.media.MediaBrowserCompat.MediaItem;
-import android.support.v4.media.MediaDescriptionCompat;
 import android.support.v4.media.MediaMetadataCompat;
 import android.support.v4.media.session.MediaControllerCompat;
 import android.support.v4.media.session.MediaSessionCompat;
@@ -38,14 +36,14 @@ import android.widget.Toast;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.ActionBarDrawerToggle;
+import androidx.appcompat.widget.SearchView;
 import androidx.appcompat.widget.Toolbar;
 import androidx.core.content.FileProvider;
 import androidx.core.view.GravityCompat;
-import androidx.preference.Preference;
+import androidx.drawerlayout.widget.DrawerLayout;
 import androidx.preference.PreferenceManager;
 import androidx.recyclerview.widget.DividerItemDecoration;
 import androidx.recyclerview.widget.ItemTouchHelper;
-import androidx.recyclerview.widget.ItemTouchHelper.Callback;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
@@ -59,16 +57,16 @@ import com.bumptech.glide.request.transition.Transition;
 import com.google.android.material.bottomsheet.BottomSheetBehavior;
 import com.google.android.material.navigation.NavigationView;
 import com.sothree.slidinguppanel.SlidingUpPanelLayout;
+import com.spotify.sdk.android.auth.AuthorizationClient;
+import com.spotify.sdk.android.auth.AuthorizationResponse;
 import com.yash.ymplayer.databinding.ActivityMainBinding;
-import com.yash.ymplayer.databinding.NavHeaderLayoutBinding;
 import com.yash.ymplayer.ui.main.AboutFragment;
 import com.yash.ymplayer.ui.main.LocalSongs;
 import com.yash.ymplayer.ui.main.SettingsFragment;
+import com.yash.ymplayer.ui.spotify.SpotifySongs;
 import com.yash.ymplayer.util.Keys;
 import com.yash.ymplayer.util.QueueListAdapter;
 import com.yash.ymplayer.util.Song;
-import com.yash.ymplayer.util.SongListAdapter;
-import com.yash.ymplayer.util.SongsListAdapter;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -77,13 +75,15 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
+
+import static com.yash.ymplayer.ui.spotify.SpotifySongs.REQUEST_CODE;
 
 public class MainActivity extends BaseActivity implements ActivityActionProvider {
     public static final String STATE_PREF = "PlayerState";
@@ -111,6 +111,10 @@ public class MainActivity extends BaseActivity implements ActivityActionProvider
     QueueListAdapter adapter;
     int previousPlayingPosition = -1;
     ItemTouchHelper itemTouchHelper;
+    String currentMediaId;
+    ExecutorService executor = Executors.newSingleThreadExecutor();
+    int navigationItemId = -1;
+    SearchView searchView;
 
 
     @Override
@@ -165,38 +169,68 @@ public class MainActivity extends BaseActivity implements ActivityActionProvider
         activityMainBinding.navView.setNavigationItemSelectedListener(new NavigationView.OnNavigationItemSelectedListener() {
             @Override
             public boolean onNavigationItemSelected(@NonNull MenuItem item) {
-                switch (item.getItemId()) {
+               navigationItemId = item.getItemId();
+               activityMainBinding.drawerLayout.closeDrawer(GravityCompat.START);
+               return true;
+            }
+        });
+        activityMainBinding.drawerLayout.addDrawerListener(new DrawerLayout.DrawerListener() {
+            @Override
+            public void onDrawerSlide(@NonNull View drawerView, float slideOffset) {
+                drawerToggle.onDrawerSlide(drawerView,slideOffset);
+            }
+
+            @Override
+            public void onDrawerOpened(@NonNull View drawerView) {
+                drawerToggle.onDrawerOpened(drawerView);
+            }
+
+            @Override
+            public void onDrawerClosed(@NonNull View drawerView) {
+                Log.d(TAG, "onDrawerClosed: ");
+                if(navigationItemId == -1) return;
+                switch (navigationItemId) {
+                    case R.id.spotifySongs:
+                        if(currentFragment.equals(Keys.Fragments.SPOTIFY_SONGS)) return;
+                        currentFragment = Keys.Fragments.SPOTIFY_SONGS;
+                        getSupportFragmentManager().beginTransaction().replace(activityMainBinding.container.getId(), new SpotifySongs(), Keys.Fragments.SPOTIFY_SONGS).commit();
+                        return;
                     case R.id.localSongs:
+                        if(currentFragment.equals(Keys.Fragments.LOCAL_SONGS)) return;
                         currentFragment = Keys.Fragments.LOCAL_SONGS;
                         getSupportFragmentManager().beginTransaction().replace(activityMainBinding.container.getId(), new LocalSongs(), Keys.Fragments.LOCAL_SONGS).commit();
-                        activityMainBinding.drawerLayout.closeDrawer(GravityCompat.START);
-                        return true;
+                        return;
                     case R.id.settings:
+                        if(currentFragment.equals(Keys.Fragments.SETTINGS)) return;
                         currentFragment = Keys.Fragments.SETTINGS;
                         getSupportFragmentManager().beginTransaction().replace(activityMainBinding.container.getId(), new SettingsFragment(), Keys.Fragments.SETTINGS).commit();
-                        activityMainBinding.drawerLayout.closeDrawer(GravityCompat.START);
-                        return true;
+                        return;
                     case R.id.share:
                         shareMyApp();
-                        activityMainBinding.drawerLayout.closeDrawer(GravityCompat.START);
-                        return true;
+                        return;
                     case R.id.about:
+                        if(currentFragment.equals(Keys.Fragments.ABOUT)) return;
                         currentFragment = Keys.Fragments.ABOUT;
                         getSupportFragmentManager().beginTransaction().replace(activityMainBinding.container.getId(), new AboutFragment(), Keys.Fragments.ABOUT).commit();
-                        activityMainBinding.drawerLayout.closeDrawer(GravityCompat.START);
+
 //                        AlertDialog.Builder builder = new AlertDialog.Builder(this);
 //                        builder.setTitle("About")
 //                                .setMessage("Application version: " + BuildConfig.VERSION_NAME)
 //                                .setPositiveButton("Cancel", (dialog, which) -> dialog.dismiss());
 //                        AlertDialog alertDialog = builder.create();
 //                        alertDialog.show();
-                        return true;
+                        return;
                     default:
-                        return false;
                 }
+            }
 
+            @Override
+            public void onDrawerStateChanged(int newState) {
+                    drawerToggle.onDrawerStateChanged(newState);
             }
         });
+        
+        
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
             if (checkSelfPermission(Manifest.permission.WRITE_EXTERNAL_STORAGE) == PackageManager.PERMISSION_GRANTED) {
                 Log.d(TAG, "onCreate: Fragment Transaction:");
@@ -317,7 +351,7 @@ public class MainActivity extends BaseActivity implements ActivityActionProvider
 
         }
     };
-    private MediaControllerCompat.Callback mediaControllerCallback = new MediaControllerCompat.Callback() {
+    MediaControllerCompat.Callback mediaControllerCallback = new MediaControllerCompat.Callback() {
         @Override
         public void onShuffleModeChanged(int shuffleMode) {
             switch (shuffleMode) {
@@ -348,22 +382,46 @@ public class MainActivity extends BaseActivity implements ActivityActionProvider
 
         @Override
         public void onQueueChanged(List<MediaSessionCompat.QueueItem> queue) {
-            songs.clear();
             int color = getAttributeColor(R.attr.listTitleTextColor);
-            for (int i = 0; i < queue.size(); i++) {
+            Log.d(TAG, "onQueueChanged: queue size:" + queue.size() + " song size:" + songs.size());
+            executor.execute(new Runnable() {
+                @Override
+                public void run() {
+                    if (songs.isEmpty() || songs.size() != queue.size()) {
+                        songs.clear();
+                        for (int i = 0; i < queue.size(); i++) {
+                            Log.d(TAG, "QueueIem : " + queue.get(i).getDescription().getTitle());
+                            Song song = new Song(
+                                    queue.get(i).getDescription().getMediaId(),
+                                    queue.get(i).getDescription().getTitle() + "",
+                                    queue.get(i).getDescription().getSubtitle() + "",
+                                    color,
+                                    i);
+                            songs.add(song);
+                        }
+                        previousPlayingPosition = -1;
+                        handler.post(notifyAdapterDataChange);
+                        Log.d(TAG, "onQueueChanged: Adapter Notified");
+                    } else {
+                        boolean isChange = false;
+                        for (int i = 0; i < queue.size(); i++) {
+                            //Log.d(TAG, "onQueueChanged: MediaId : song :" + songs.get(i).getId() + " queue item: " + queue.get(i).getDescription().getMediaId());
+                            if (!songs.get(i).getId().equals(queue.get(i).getDescription().getMediaId())) {
+                                Log.d(TAG, "onQueueChanged: true");
+                                isChange = true;
+                                break;
+                            }
+                        }
+                        if (isChange) {
+                            Log.d(TAG, "onQueueChanged: Queue Diff");
+                            previousPlayingPosition = -1;
+                            handler.post(notifyAdapterDataChange);
+                        } else Log.d(TAG, "onQueueChanged: QueueSame");
+                    }
+                }
+            });
 
-                Log.d(TAG, "QueueIem : " + queue.get(i).getDescription().getTitle());
-                Song song = new Song(
-                        queue.get(i).getDescription().getMediaId(),
-                        queue.get(i).getDescription().getTitle().toString(),
-                        queue.get(i).getDescription().getSubtitle().toString(),
-                        color,
-                        i);
-                songs.add(song);
-            }
-            previousPlayingPosition = -1;
-            adapter.notifyDataSetChanged();
-            Log.d(TAG, "onQueueChanged: Adapter Notified");
+
         }
 
         @Override
@@ -372,8 +430,9 @@ public class MainActivity extends BaseActivity implements ActivityActionProvider
             Log.d(TAG, "onMetadataChanged: song:" + metadata.getDescription().getTitle());
             if ((currentAlbumArtUri == null) || !currentAlbumArtUri.equalsIgnoreCase(metadata.getString(MediaMetadataCompat.METADATA_KEY_ALBUM_ART_URI))) {
                 currentAlbumArtUri = metadata.getString(MediaMetadataCompat.METADATA_KEY_ALBUM_ART_URI);
-                retriever.setDataSource(MainActivity.this, Uri.parse(currentAlbumArtUri));
-                Glide.with(MainActivity.this).load(retriever.getEmbeddedPicture()).placeholder(R.drawable.album_art_placeholder).listener(new RequestListener<Drawable>() {
+                if (currentAlbumArtUri != null)
+                    retriever.setDataSource(MainActivity.this, Uri.parse(currentAlbumArtUri));
+                Glide.with(MainActivity.this).load(currentAlbumArtUri == null ? currentAlbumArtUri : retriever.getEmbeddedPicture()).placeholder(R.drawable.album_art_placeholder).listener(new RequestListener<Drawable>() {
                     @Override
                     public boolean onLoadFailed(@Nullable GlideException e, Object model, Target<Drawable> target, boolean isFirstResource) {
                         Log.d(TAG, "onLoadFailed: ");
@@ -412,7 +471,9 @@ public class MainActivity extends BaseActivity implements ActivityActionProvider
             activityMainBinding.musicProgress.setMax((int) metadata.getLong(MediaMetadataCompat.METADATA_KEY_DURATION));
             activityMainBinding.favouriteBtn.setImageResource(metadata.getLong(PlayerService.METADATA_KEY_FAVOURITE) == 0 ? R.drawable.icon_favourite_off : R.drawable.icon_favourite);
 
+            currentMediaId = metadata.getString(MediaMetadataCompat.METADATA_KEY_MEDIA_ID);
             int pos = (int) metadata.getLong(MediaMetadataCompat.METADATA_KEY_TRACK_NUMBER);
+
             notifyCurrentPlayingSong(pos);
             Log.d(TAG, "onMetadataChanged: Duration:" + metadata.getLong(MediaMetadataCompat.METADATA_KEY_DURATION));
         }
@@ -438,9 +499,6 @@ public class MainActivity extends BaseActivity implements ActivityActionProvider
                     activityMainBinding.playPauseBtn.setImageResource(R.drawable.icon_play_circle);
                     stopScheduledFutureUpdate();
                     break;
-                case PlaybackStateCompat.STATE_SKIPPING_TO_NEXT:
-                case PlaybackStateCompat.STATE_SKIPPING_TO_PREVIOUS:
-                    break;
                 case PlaybackStateCompat.STATE_NONE:
                     stopScheduledFutureUpdate();
                     handler.postDelayed(() -> activityMainBinding.slidingLayout.setPanelState(SlidingUpPanelLayout.PanelState.HIDDEN), 300);
@@ -451,6 +509,42 @@ public class MainActivity extends BaseActivity implements ActivityActionProvider
 
 
     };
+
+
+    @Override
+    public void onActivityResult(int requestCode, int resultCode, @Nullable Intent data) {
+        // Check if result comes from the correct activity
+        super.onActivityResult(requestCode, resultCode, data);
+        Log.d(TAG, "onActivityResult: ");
+        if (requestCode == REQUEST_CODE) {
+            AuthorizationResponse response = AuthorizationClient.getResponse(resultCode, data);
+            switch (response.getType()) {
+                // Response was successful and contains auth token
+                case TOKEN:
+                    SharedPreferences.Editor editor;
+                    editor = getSharedPreferences(Keys.SHARED_PREFERENCES.SPOTIFY, MODE_PRIVATE).edit();
+                    editor.putString(Keys.PREFERENCE_KEYS.TOKEN, response.getAccessToken());
+                    Log.d(TAG, "GOT AUTH TOKEN");
+                    editor.apply();
+                    SpotifySongs spotifySongs = (SpotifySongs) getSupportFragmentManager().findFragmentByTag(Keys.Fragments.SPOTIFY_SONGS);
+                    if (spotifySongs != null)
+                        spotifySongs.refresh();
+                    else Log.d(TAG, "onActivityResult: Null fragment");
+                    break;
+
+                // Auth flow returned an error
+                case ERROR:
+                    Log.d(TAG, "onActivityResult: ERROR");
+                    // Handle error response
+                    break;
+
+                // Most likely auth flow was cancelled
+                default:
+                    Log.d(TAG, "onActivityResult: default");
+                    // Handle other cases
+            }
+        }
+    }
 
 
     @Override
@@ -482,7 +576,9 @@ public class MainActivity extends BaseActivity implements ActivityActionProvider
     @Override
     public void onBackPressed() {
 
-        if (activityMainBinding.slidingLayout.getPanelState() == SlidingUpPanelLayout.PanelState.EXPANDED)
+        if (bottomSheetBehavior.getState() == BottomSheetBehavior.STATE_EXPANDED)
+            bottomSheetBehavior.setState(BottomSheetBehavior.STATE_COLLAPSED);
+        else if (activityMainBinding.slidingLayout.getPanelState() == SlidingUpPanelLayout.PanelState.EXPANDED)
             activityMainBinding.slidingLayout.setPanelState(SlidingUpPanelLayout.PanelState.COLLAPSED);
         else if (!getSupportFragmentManager().getFragments().contains(getSupportFragmentManager().findFragmentByTag(Keys.Fragments.LOCAL_SONGS))) {
             getSupportFragmentManager().beginTransaction().replace(activityMainBinding.container.getId(), new LocalSongs(), Keys.Fragments.LOCAL_SONGS).commit();
@@ -511,7 +607,7 @@ public class MainActivity extends BaseActivity implements ActivityActionProvider
         if (title != null)
             getSupportActionBar().setTitle(title);
         drawerToggle = new ActionBarDrawerToggle(this, activityMainBinding.drawerLayout, R.string.open, R.string.close);
-        activityMainBinding.drawerLayout.addDrawerListener(drawerToggle);
+        //activityMainBinding.drawerLayout.addDrawerListener(drawerToggle);
         drawerToggle.syncState();
     }
 
@@ -527,10 +623,7 @@ public class MainActivity extends BaseActivity implements ActivityActionProvider
         if (!mExecutorService.isShutdown()) {
             mScheduledFuture = mExecutorService.scheduleAtFixedRate(() -> handler.post(() -> {
                 activityMainBinding.musicProgress.setProgress((int) currentProgress);
-
-                if (currentProgress > activityMainBinding.musicProgress.getMax())
-                    currentProgress = currentProgress - activityMainBinding.musicProgress.getMax();
-                else currentProgress += 250;
+                currentProgress += 250;
             }), 0, TimeUnit.MILLISECONDS.toMillis(250), TimeUnit.MILLISECONDS);
         }
     }
@@ -587,6 +680,20 @@ public class MainActivity extends BaseActivity implements ActivityActionProvider
             mediaController.getTransportControls().setShuffleMode((mediaController.getShuffleMode() + 1) % 2);
         }
     };
+    View.OnClickListener shareSongListener = new View.OnClickListener() {
+        @Override
+        public void onClick(View v) {
+            String[] parts = currentMediaId.split("[|/]");
+            long mediaId = Long.parseLong(parts[parts.length - 1]);
+            Uri contentUri = ContentUris.withAppendedId(MediaStore.Audio.Media.EXTERNAL_CONTENT_URI, mediaId);
+            Intent intent = new Intent(Intent.ACTION_SEND);
+            intent.setType("audio/*");
+            intent.putExtra(Intent.EXTRA_STREAM, contentUri);
+            intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
+            MainActivity.this.startActivity(Intent.createChooser(intent, "Share Song via"));
+        }
+    };
+
 
     View.OnClickListener toggleFavouriteListener = new View.OnClickListener() {
         @Override
@@ -672,6 +779,7 @@ public class MainActivity extends BaseActivity implements ActivityActionProvider
         }
 
         if (mediaController.getMetadata() != null) {
+            currentMediaId = mediaController.getMetadata().getString(MediaMetadataCompat.METADATA_KEY_MEDIA_ID);
             currentAlbumArtUri = mediaController.getMetadata().getString(MediaMetadataCompat.METADATA_KEY_ALBUM_ART_URI);
             retriever.setDataSource(this, Uri.parse(currentAlbumArtUri));
             Glide.with(MainActivity.this).load(retriever.getEmbeddedPicture()).listener(new RequestListener<Drawable>() {
@@ -741,7 +849,7 @@ public class MainActivity extends BaseActivity implements ActivityActionProvider
         activityMainBinding.musicProgress.setOnSeekBarChangeListener(progressListener);
         activityMainBinding.closeBottomSheet.setOnClickListener(closeBottomSheetListener);
         activityMainBinding.minimize.setOnClickListener(v -> activityMainBinding.slidingLayout.setPanelState(SlidingUpPanelLayout.PanelState.COLLAPSED));
-
+        activityMainBinding.shareThis.setOnClickListener(shareSongListener);
     }
 
     public int getAttributeColor(int resId) {
@@ -805,6 +913,7 @@ public class MainActivity extends BaseActivity implements ActivityActionProvider
 
         Log.d(TAG, "notifyCurrentPlayingSong: current: " + currentPosition + " prev:" + previousPlayingPosition);
         songs.get(currentPosition).setColor(Color.GREEN);
+        Log.d(TAG, "notifyCurrentPlayingSong: Adapter notified");
         adapter.notifyItemChanged(currentPosition);
         if (previousPlayingPosition != -1 && currentPosition != previousPlayingPosition && previousPlayingPosition < songs.size()) {
             songs.get(previousPlayingPosition).setColor(getAttributeColor(R.attr.listTitleTextColor));
@@ -814,6 +923,8 @@ public class MainActivity extends BaseActivity implements ActivityActionProvider
     }
 
     ItemTouchHelper.SimpleCallback simpleCallback = new ItemTouchHelper.SimpleCallback(ItemTouchHelper.UP | ItemTouchHelper.DOWN, 0) {
+        int fromPosition = -1, toPosition = -1;
+
         @Override
         public boolean isLongPressDragEnabled() {
             return false;
@@ -824,26 +935,46 @@ public class MainActivity extends BaseActivity implements ActivityActionProvider
             Log.d(TAG, "onMove: Source Pos: " + viewHolder.getAdapterPosition() + " Target Pos: " + target.getAdapterPosition());
             int fromPosition = viewHolder.getAdapterPosition();
             int toPosition = target.getAdapterPosition();
+            if (this.fromPosition == -1) {
+                this.fromPosition = fromPosition;
+            }
+            this.toPosition = toPosition;
             Collections.swap(songs, fromPosition, toPosition);
-            Bundle extras = new Bundle();
-            extras.putInt(Keys.FROM_POSITION, fromPosition);
-            extras.putInt(Keys.TO_POSITION, toPosition);
-            mediaController.getTransportControls().sendCustomAction(Keys.Action.SWAP_QUEUE_ITEM, extras);
+            recyclerView.getAdapter().notifyItemMoved(fromPosition, toPosition);
             if (previousPlayingPosition == fromPosition)
                 previousPlayingPosition = toPosition;
             else if (previousPlayingPosition > fromPosition && previousPlayingPosition <= toPosition)
                 previousPlayingPosition--;
             else if (previousPlayingPosition < fromPosition && previousPlayingPosition >= toPosition)
                 previousPlayingPosition++;
-            recyclerView.getAdapter().notifyItemMoved(fromPosition, toPosition);
-            return false;
+            return true;
         }
+
 
         @Override
         public void onSwiped(@NonNull RecyclerView.ViewHolder viewHolder, int direction) {
 
         }
+
+        @Override
+        public void clearView(@NonNull RecyclerView recyclerView, @NonNull RecyclerView.ViewHolder viewHolder) {
+            super.clearView(recyclerView, viewHolder);
+            if (fromPosition != -1 && toPosition != -1 && fromPosition != toPosition) {
+                Bundle extras = new Bundle();
+                extras.putInt(Keys.FROM_POSITION, fromPosition);
+                extras.putInt(Keys.TO_POSITION, toPosition);
+                mediaController.getTransportControls().sendCustomAction(Keys.Action.SWAP_QUEUE_ITEM, extras);
+            }
+            fromPosition = toPosition = -1;
+
+        }
     };
 
+    Runnable notifyAdapterDataChange = new Runnable() {
+        @Override
+        public void run() {
+            adapter.notifyDataSetChanged();
+        }
+    };
 
 }

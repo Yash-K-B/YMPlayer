@@ -10,6 +10,7 @@ import android.content.IntentFilter;
 import android.content.SharedPreferences;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
+import android.graphics.drawable.Drawable;
 import android.media.AudioAttributes;
 import android.media.AudioFocusRequest;
 import android.media.AudioManager;
@@ -23,7 +24,6 @@ import android.provider.MediaStore;
 import android.service.media.MediaBrowserService;
 import android.support.v4.media.MediaBrowserCompat;
 import android.support.v4.media.MediaMetadataCompat;
-import android.support.v4.media.session.MediaControllerCompat;
 import android.support.v4.media.session.MediaSessionCompat;
 import android.support.v4.media.session.PlaybackStateCompat;
 import android.util.Log;
@@ -36,20 +36,31 @@ import androidx.media.MediaBrowserServiceCompat;
 import androidx.media.session.MediaButtonReceiver;
 import androidx.preference.PreferenceManager;
 
+import com.bumptech.glide.load.Key;
+import com.bumptech.glide.load.model.ResourceLoader;
+import com.google.android.exoplayer2.C;
+import com.google.android.exoplayer2.ExoPlaybackException;
 import com.google.android.exoplayer2.ExoPlayer;
+import com.google.android.exoplayer2.Player;
 import com.google.android.exoplayer2.SimpleExoPlayer;
+import com.google.android.exoplayer2.ext.mediasession.MediaSessionConnector;
 import com.google.android.exoplayer2.source.ConcatenatingMediaSource;
 import com.google.android.exoplayer2.source.MediaSource;
 import com.google.android.exoplayer2.source.ProgressiveMediaSource;
+import com.google.android.exoplayer2.source.hls.HlsMediaSource;
 import com.google.android.exoplayer2.upstream.DataSource;
 import com.google.android.exoplayer2.upstream.DefaultDataSourceFactory;
+import com.google.android.exoplayer2.upstream.DefaultHttpDataSourceFactory;
+import com.google.android.exoplayer2.util.UriUtil;
 import com.google.android.exoplayer2.util.Util;
 import com.yash.ymplayer.repository.Repository;
 import com.yash.ymplayer.storage.MediaItem;
 import com.yash.ymplayer.util.Keys;
 import com.yash.ymplayer.util.Song;
 
+import java.io.File;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
@@ -81,9 +92,10 @@ public class PlayerService extends MediaBrowserServiceCompat implements AudioMan
     AudioFocusRequest audioFocusRequest;
     private long currentPlayerPosition;
     ConcatenatingMediaSource mediaSources;
-    int repeatMode = 0;
-    boolean isShuffleModeEnabled = false;
-    boolean isPlaying;
+    int repeatMode;
+    boolean isShuffleModeEnabled;
+    boolean isSeek;
+    MediaSessionConnector mMediaSessionConnector;
 
 
     @Override
@@ -101,15 +113,22 @@ public class PlayerService extends MediaBrowserServiceCompat implements AudioMan
         currentMediaId = preferences.getString(MEDIA_ID, null);
         mediaSources = new ConcatenatingMediaSource();
         mediaIdLists = new ArrayList<>();
-        isPlaying = false;
+        isSeek = false;
+        repeatMode = preferences.getInt(Keys.REPEAT_MODE, 0);
+        isShuffleModeEnabled = preferences.getBoolean(Keys.SHUFFLE_MODE, false);
 
         //MediaSession
         mSession = new MediaSessionCompat(this, this.getClass().getSimpleName());
+//        mMediaSessionConnector = new MediaSessionConnector(mSession);
+//        mMediaSessionConnector.setPlayer(player);
         mSession.setCallback(mediaSessionCallbacks);
         mSession.setFlags(MediaSessionCompat.FLAG_HANDLES_MEDIA_BUTTONS | MediaSessionCompat.FLAG_HANDLES_TRANSPORT_CONTROLS);
         setSessionToken(mSession.getSessionToken());
         setPlaybackState(PlaybackState.STATE_NONE);
+        mSession.setRepeatMode(repeatMode);
+        mSession.setShuffleMode(isShuffleModeEnabled ? PlaybackStateCompat.SHUFFLE_MODE_ALL : PlaybackStateCompat.SHUFFLE_MODE_NONE);
         mSession.setActive(true);
+
 
         //MediaPlayer
         player = null;
@@ -217,8 +236,10 @@ public class PlayerService extends MediaBrowserServiceCompat implements AudioMan
                 setPlaybackState(PlaybackStateCompat.STATE_BUFFERING);
             setPlayingQueue(mediaId, extras);
             resolveQueuePosition(mediaId);
-            onPlay();
-            Log.d(TAG, "onPlayFromMediaId: mediaId:" + mediaId + " index:" + queuePos + " of total:" + playingQueue.size());
+            if (!isAudioFocusGranted()) return;
+            playRequest();
+            Log.d(TAG, "onPlayFromMediaId: \n MediaID : " + currentMediaId + " \n Queue Position : " + queuePos +
+                    " \n No Queue Items : " + playingQueue.size() + " \n Player Position: ");
         }
 
         /**
@@ -240,7 +261,6 @@ public class PlayerService extends MediaBrowserServiceCompat implements AudioMan
         public void onPause() {
             Log.d(TAG, "onPause: ");
             if (player != null) {
-                isPlaying = false;
                 player.setPlayWhenReady(false);
                 setPlaybackState(PlaybackStateCompat.STATE_PAUSED);
                 pushNotification(PlaybackStateCompat.STATE_PAUSED);
@@ -254,12 +274,29 @@ public class PlayerService extends MediaBrowserServiceCompat implements AudioMan
          */
         @Override
         public void onSkipToNext() {
-            Log.d(TAG, "onSkipToNext: " + ((queuePos + 1) != playingQueue.size()));
+            Log.d(TAG, "onSkipToNext: ");
+            handler.removeCallbacks(playNextOnMediaError);
+            if (!isAudioFocusGranted())
+                return;
+            Log.d(TAG, "onSkipToPrevious: " + (player.getPlaybackState() == ExoPlayer.STATE_ENDED) + " or idle :" + (player.getPlaybackState() == ExoPlayer.STATE_IDLE) + " state:" + player.getPlaybackState());
 
-            setPlaybackState(PlaybackStateCompat.STATE_SKIPPING_TO_NEXT);
-            if (isAudioFocusGranted())
-                playRequest();
-
+            if (player == null) {
+                player = getSimpleExoPlayer(null);
+                preparePlayer(player);
+                if (player.getNextWindowIndex() == -1)
+                    mSession.getController().getTransportControls().stop();
+            } else if (player.getPlaybackState() == ExoPlayer.STATE_IDLE) {
+                if (player.getNextWindowIndex() == -1)
+                    mSession.getController().getTransportControls().stop();
+                else {
+                    queuePos = player.getNextWindowIndex();
+                    preparePlayer(player);
+                    player.setPlayWhenReady(true);
+                }
+            } else {
+                player.next();
+                player.setPlayWhenReady(true);
+            }
         }
 
         /**
@@ -267,20 +304,31 @@ public class PlayerService extends MediaBrowserServiceCompat implements AudioMan
          */
         @Override
         public void onSkipToPrevious() {
-            Log.d(TAG, "onSkipToPrevious: " + (queuePos != 0));
-            if (player != null && player.getContentPosition() > 2000) {
-                if (isAudioFocusGranted()) {
+            Log.d(TAG, "onSkipToPrevious: ");
+            handler.removeCallbacks(playNextOnMediaError);
+            if (!isAudioFocusGranted())
+                return;
+
+            if (player == null) {
+                player = getSimpleExoPlayer(null);
+                preparePlayer(player);
+            } else if (player.getPlaybackState() == ExoPlayer.STATE_IDLE) {
+                queuePos = player.getPreviousWindowIndex();
+                preparePlayer(player);
+                player.setPlayWhenReady(true);
+            } else {
+                Log.d(TAG, "onSkipToPrevious: " + player);
+                if (player.getContentPosition() > 2000) {
                     onSeekTo(0);
-                    isPlaying = true;
                     player.setPlayWhenReady(true);
                     setPlaybackState(PlaybackStateCompat.STATE_PLAYING);
+                } else {
+                    player.previous();
+                    player.setPlayWhenReady(true);
                 }
-
-            } else {
-                setPlaybackState(PlaybackStateCompat.STATE_SKIPPING_TO_PREVIOUS);
-                if (isAudioFocusGranted())
-                    playRequest();
             }
+
+
         }
 
         /**
@@ -293,7 +341,6 @@ public class PlayerService extends MediaBrowserServiceCompat implements AudioMan
             player.stop();
             player.release();
             player = null;
-            isPlaying = false;
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
                 audioManager.abandonAudioFocusRequest(audioFocusRequest);
             } else {
@@ -312,6 +359,7 @@ public class PlayerService extends MediaBrowserServiceCompat implements AudioMan
         public void onSeekTo(long pos) {
             Log.d(TAG, "onSeekTo: " + pos);
             if (player != null) {
+                isSeek = true;
                 player.seekTo(pos);
                 setPlaybackState(mSession.getController().getPlaybackState().getState());
             }
@@ -321,8 +369,12 @@ public class PlayerService extends MediaBrowserServiceCompat implements AudioMan
         public void onSetRepeatMode(int repeatMode) {
             Log.d(TAG, "onSetRepeatMode: ");
             player = getSimpleExoPlayer(player);
+            PlayerService.this.repeatMode = repeatMode;
             player.setRepeatMode(repeatMode);
             mSession.setRepeatMode(repeatMode);
+            SharedPreferences.Editor editor = preferences.edit();
+            editor.putInt(Keys.REPEAT_MODE, repeatMode);
+            editor.apply();
         }
 
         @Override
@@ -336,6 +388,10 @@ public class PlayerService extends MediaBrowserServiceCompat implements AudioMan
             player = getSimpleExoPlayer(player);
             player.setShuffleModeEnabled(isShuffleModeEnabled);
             mSession.setShuffleMode(shuffleMode);
+            SharedPreferences.Editor editor = preferences.edit();
+            editor.putBoolean(Keys.SHUFFLE_MODE, isShuffleModeEnabled);
+            editor.apply();
+
         }
 
         @Override
@@ -365,6 +421,7 @@ public class PlayerService extends MediaBrowserServiceCompat implements AudioMan
                 case Keys.Action.QUEUE_NEXT:
                     if (extras != null && extras.containsKey(Keys.MEDIA_ID)) {
                         String mediaId = extras.getString(Keys.MEDIA_ID);
+                        Log.d(TAG, "onCustomAction: QUEUE_NEXT:MediaId:"+mediaId);
                         int pos = getPositionInQueue(mediaId);
                         Log.d(TAG, "onCustomAction: QUEUE_NEXT: " + pos);
                         if (pos == -1) {
@@ -430,12 +487,19 @@ public class PlayerService extends MediaBrowserServiceCompat implements AudioMan
                 case Keys.Action.SWAP_QUEUE_ITEM:
                     if (extras != null && extras.containsKey(Keys.FROM_POSITION) && extras.containsKey(Keys.TO_POSITION)) {
                         String mediaId = mediaIdLists.get(queuePos);
+                        Log.d(TAG, "onCustomAction: SWAP_QUEUE_ITEM mediaid = "+mediaId+" pos:"+queuePos);
                         int fromPosition = extras.getInt(Keys.FROM_POSITION);
                         int toPosition = extras.getInt(Keys.TO_POSITION);
-                        Collections.swap(playingQueue, fromPosition, toPosition);
-                        Collections.swap(mediaIdLists, fromPosition, toPosition);
+                        Log.d(TAG, "onCustomAction: from :"+fromPosition + " to :"+toPosition);
+                        MediaSessionCompat.QueueItem item = playingQueue.remove(fromPosition);
+                        playingQueue.add(toPosition,item);
+                        String id = mediaIdLists.remove(fromPosition);
+                        mediaIdLists.add(toPosition,id);
                         mediaSources.moveMediaSource(fromPosition, toPosition);
                         queuePos = mediaIdLists.indexOf(mediaId);
+                        Log.d(TAG, "onCustomAction: new pos = "+queuePos);
+                        mSession.setQueue(playingQueue);
+                        setMediaMetadata(playingQueue.get(queuePos));
                     }
                     break;
 
@@ -443,9 +507,9 @@ public class PlayerService extends MediaBrowserServiceCompat implements AudioMan
                     String[] parts = playingQueue.get(queuePos).getDescription().getMediaId().split("[/|]");
                     String mediaId = parts[parts.length - 1];
                     if (mSession.getController().getMetadata().getLong(PlayerService.METADATA_KEY_FAVOURITE) == 0) {
-                        Repository.getInstance(PlayerService.this).addToPlaylist(new MediaItem(mediaId, playingQueue.get(queuePos).getDescription().getTitle().toString(), playingQueue.get(queuePos).getDescription().getSubtitle().toString(), playingQueue.get(queuePos).getDescription().getDescription().toString(), "Favourite"));
+                        Repository.getInstance(PlayerService.this).addToPlaylist(new MediaItem(mediaId, playingQueue.get(queuePos).getDescription().getTitle().toString(), playingQueue.get(queuePos).getDescription().getSubtitle().toString(), playingQueue.get(queuePos).getDescription().getDescription().toString(), Keys.PLAYLISTS.FAVOURITES));
                     } else {
-                        Repository.getInstance(PlayerService.this).removeFromPlaylist(mediaId, "Favourite");
+                        Repository.getInstance(PlayerService.this).removeFromPlaylist(mediaId, Keys.PLAYLISTS.FAVOURITES);
                     }
                     setMediaMetadata(playingQueue.get(queuePos));
                     break;
@@ -529,23 +593,13 @@ public class PlayerService extends MediaBrowserServiceCompat implements AudioMan
      * Play Media based on PlaybackStates
      */
     void playRequest() {
-        isPlaying = true;
         player = getSimpleExoPlayer(player);
         switch (mSession.getController().getPlaybackState().getState()) {
             case PlaybackStateCompat.STATE_NONE:
             case PlaybackStateCompat.STATE_STOPPED:
             case PlaybackStateCompat.STATE_BUFFERING:
                 preparePlayer(player);
-                player.setPlayWhenReady(true);
-                break;
-
-            case PlaybackStateCompat.STATE_SKIPPING_TO_NEXT:
-                player.next();
-                player.setPlayWhenReady(true);
-                break;
-
-            case PlaybackStateCompat.STATE_SKIPPING_TO_PREVIOUS:
-                player.previous();
+                Log.d(TAG, "playRequest: window index" + player.getCurrentWindowIndex());
                 player.setPlayWhenReady(true);
                 break;
 
@@ -554,10 +608,10 @@ public class PlayerService extends MediaBrowserServiceCompat implements AudioMan
                 setPlaybackState(PlaybackStateCompat.STATE_PLAYING);
                 pushNotification(PlaybackStateCompat.STATE_PLAYING);
                 break;
-
             default:
         }
     }
+
 
     /**
      * Build and set playback state to @link MediaSessionCompat
@@ -579,28 +633,46 @@ public class PlayerService extends MediaBrowserServiceCompat implements AudioMan
      * @param currentItem current mediaItem playing
      */
     void setMediaMetadata(MediaSessionCompat.QueueItem currentItem) {
-        MediaMetadataRetriever retriever = new MediaMetadataRetriever();
-        Uri albumArtUri = ContentUris.withAppendedId(MediaStore.Audio.Media.EXTERNAL_CONTENT_URI, Long.parseLong(currentItem.getDescription().getMediaId()));
-        retriever.setDataSource(this, albumArtUri);
-        byte[] data = retriever.getEmbeddedPicture();
-        if (data != null)
-            currentBitmap = BitmapFactory.decodeByteArray(data, 0, data.length);
-        else
-            currentBitmap = BitmapFactory.decodeResource(getResources(), R.drawable.album_art_placeholder);
-        mMediaMetadataBuilder = new MediaMetadataCompat.Builder()
-                .putText(MediaMetadataCompat.METADATA_KEY_TITLE, currentItem.getDescription().getTitle())
-                .putText(MediaMetadataCompat.METADATA_KEY_ARTIST, currentItem.getDescription().getSubtitle())
-                .putText(MediaMetadataCompat.METADATA_KEY_ALBUM, currentItem.getDescription().getDescription())
-                .putString(MediaMetadataCompat.METADATA_KEY_ALBUM_ART_URI, albumArtUri.toString())
-                .putLong(MediaMetadataCompat.METADATA_KEY_TRACK_NUMBER, mediaIdLists.indexOf(currentItem.getDescription().getMediaId()))
-                .putLong(PlayerService.METADATA_KEY_FAVOURITE, Repository.getInstance(this).isAddedTo(currentItem.getDescription().getMediaId(), "Favourite"))
-                .putLong(MediaMetadataCompat.METADATA_KEY_DURATION, Long.parseLong(retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_DURATION)));
-        if (PreferenceManager.getDefaultSharedPreferences(this).getBoolean("albumart_enabled", true))
-            mMediaMetadataBuilder.putBitmap(MediaMetadataCompat.METADATA_KEY_ALBUM_ART, currentBitmap);
-        mSession.setMetadata(mMediaMetadataBuilder.build());
+        try {
+            MediaMetadataRetriever retriever = new MediaMetadataRetriever();
+            Uri albumArtUri = ContentUris.withAppendedId(MediaStore.Audio.Media.EXTERNAL_CONTENT_URI, Long.parseLong(currentItem.getDescription().getMediaId()));
+            retriever.setDataSource(this, albumArtUri);
+            byte[] data = retriever.getEmbeddedPicture();
+            if (data != null)
+                currentBitmap = BitmapFactory.decodeByteArray(data, 0, data.length);
+            else
+                currentBitmap = BitmapFactory.decodeResource(getResources(), R.drawable.album_art_placeholder);
+            mMediaMetadataBuilder = new MediaMetadataCompat.Builder()
+                    .putText(MediaMetadataCompat.METADATA_KEY_MEDIA_ID,currentItem.getDescription().getMediaId())
+                    .putText(MediaMetadataCompat.METADATA_KEY_TITLE, currentItem.getDescription().getTitle())
+                    .putText(MediaMetadataCompat.METADATA_KEY_ARTIST, currentItem.getDescription().getSubtitle())
+                    .putText(MediaMetadataCompat.METADATA_KEY_ALBUM, currentItem.getDescription().getDescription())
+                    .putString(MediaMetadataCompat.METADATA_KEY_ALBUM_ART_URI, albumArtUri.toString())
+                    .putLong(MediaMetadataCompat.METADATA_KEY_TRACK_NUMBER, mediaIdLists.indexOf(currentItem.getDescription().getMediaId()))
+                    .putLong(PlayerService.METADATA_KEY_FAVOURITE, Repository.getInstance(this).isAddedTo(currentItem.getDescription().getMediaId(), Keys.PLAYLISTS.FAVOURITES))
+                    .putLong(MediaMetadataCompat.METADATA_KEY_DURATION, Long.parseLong(retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_DURATION)));
+            if (PreferenceManager.getDefaultSharedPreferences(this).getBoolean("albumart_enabled", true))
+                mMediaMetadataBuilder.putBitmap(MediaMetadataCompat.METADATA_KEY_ALBUM_ART, currentBitmap);
+            mSession.setMetadata(mMediaMetadataBuilder.build());
+        } catch (Exception e) {
+            e.printStackTrace();
+            mMediaMetadataBuilder = new MediaMetadataCompat.Builder()
+                    .putText(MediaMetadataCompat.METADATA_KEY_TITLE, "Media Playback Error")
+                    .putText(MediaMetadataCompat.METADATA_KEY_ARTIST, "Corrupted media file")
+                    .putText(MediaMetadataCompat.METADATA_KEY_ALBUM, "error")
+                    .putString(MediaMetadataCompat.METADATA_KEY_ALBUM_ART_URI, null)
+                    .putLong(MediaMetadataCompat.METADATA_KEY_TRACK_NUMBER, mediaIdLists.indexOf(currentItem.getDescription().getMediaId()))
+                    .putLong(PlayerService.METADATA_KEY_FAVOURITE, Repository.getInstance(this).isAddedTo(currentItem.getDescription().getMediaId(), Keys.PLAYLISTS.FAVOURITES))
+                    .putLong(MediaMetadataCompat.METADATA_KEY_DURATION, 0);
+            mSession.setMetadata(mMediaMetadataBuilder.build());
+
+        }
+
     }
 
     void pushNotification(long state) {
+        if (currentBitmap == null)
+            return;
         Bitmap bitmap = currentBitmap;// mSession.getController().getMetadata().getBitmap(MediaMetadataCompat.METADATA_KEY_ALBUM_ART);
         int minLength = Math.min(bitmap.getWidth(), bitmap.getHeight());
         Intent notificationIntent = new Intent(this, MainActivity.class);
@@ -645,21 +717,37 @@ public class PlayerService extends MediaBrowserServiceCompat implements AudioMan
             switch (reason) {
                 case ExoPlayer.DISCONTINUITY_REASON_PERIOD_TRANSITION:
                     Log.d(TAG, "onPositionDiscontinuity: DISCONTINUITY_REASON_PERIOD_TRANSITION : Window index: " + player.getCurrentWindowIndex());
-                    queuePos = player.getCurrentWindowIndex();
-                    setMediaMetadata(playingQueue.get(queuePos));
+                    if (queuePos != player.getCurrentWindowIndex()) {
+                        queuePos = player.getCurrentWindowIndex();
+                        setMediaMetadata(playingQueue.get(queuePos));
+                    }
                     setPlaybackState(PlaybackStateCompat.STATE_PLAYING);
                     pushNotification(PlaybackStateCompat.STATE_PLAYING);
                     break;
                 case ExoPlayer.DISCONTINUITY_REASON_SEEK:
-                    Log.d(TAG, "onPositionDiscontinuity: DISCONTINUITY_REASON_SEEK : Window index : " + player.getCurrentWindowIndex());
+                    Log.d(TAG, "onPositionDiscontinuity: DISCONTINUITY_REASON_SEEK : Window index : " + player.getCurrentWindowIndex() + " Queue Position : " + queuePos);
                     if (player.getCurrentWindowIndex() == -1) return;
+                    if (isSeek) {
+                        isSeek = false;
+                        return;
+                    }
                     queuePos = player.getCurrentWindowIndex();
+                    player.setPlayWhenReady(true);
                     setMediaMetadata(playingQueue.get(queuePos));
-                    int state = isPlaying ? PlaybackStateCompat.STATE_PLAYING : PlaybackStateCompat.STATE_PAUSED;
-                    setPlaybackState(state);
-                    pushNotification(state);
+                    setPlaybackState(PlaybackStateCompat.STATE_PLAYING);
+                    pushNotification(PlaybackStateCompat.STATE_PLAYING);
+                    break;
+                case ExoPlayer.DISCONTINUITY_REASON_INTERNAL:
+                    Log.d(TAG, "onPositionDiscontinuity: DISCONTINUITY_REASON_INTERNAL");
+                    break;
+                case ExoPlayer.DISCONTINUITY_REASON_AD_INSERTION:
+                    Log.d(TAG, "onPositionDiscontinuity: DISCONTINUITY_REASON_AD_INSERTION");
+                    break;
+                case ExoPlayer.DISCONTINUITY_REASON_SEEK_ADJUSTMENT:
+                    Log.d(TAG, "onPositionDiscontinuity: DISCONTINUITY_REASON_SEEK_ADJUSTMENT");
                     break;
                 default:
+
             }
         }
 
@@ -671,14 +759,55 @@ public class PlayerService extends MediaBrowserServiceCompat implements AudioMan
         }
 
         @Override
-        public void onPlayerStateChanged(boolean playWhenReady, int playbackState) {
-            if (playbackState == ExoPlayer.STATE_ENDED) {
-                Log.d(TAG, "Playback Ended, QueuePosition : " + queuePos);
-                setPlaybackState(PlaybackStateCompat.STATE_STOPPED);
-                if ((queuePos + 1) == playingQueue.size())
-                    mSession.getController().getTransportControls().stop();
-                else mSession.getController().getTransportControls().skipToNext();
+        public void onIsPlayingChanged(boolean isPlaying) {
+            Log.d(TAG, "onIsPlayingChanged: Playing: " + isPlaying);
 
+        }
+
+        @Override
+        public void onPlayerError(ExoPlaybackException error) {
+            switch (error.type) {
+
+                case ExoPlaybackException.TYPE_OUT_OF_MEMORY:
+                    Log.d(TAG, "onPlayerError: TYPE_OUT_OF_MEMORY");
+                    break;
+                case ExoPlaybackException.TYPE_REMOTE:
+                    Log.d(TAG, "onPlayerError: TYPE_REMOTE");
+                    break;
+                case ExoPlaybackException.TYPE_RENDERER:
+                    Log.d(TAG, "onPlayerError: TYPE_RENDERER");
+                    break;
+                case ExoPlaybackException.TYPE_SOURCE:
+                    Log.d(TAG, "onPlayerError: TYPE_SOURCE");
+                    Toast.makeText(PlayerService.this, "Unable to play! Skipping next", Toast.LENGTH_SHORT).show();
+                    Log.d(TAG, "onPlayerError: curr indx = " + player.getCurrentWindowIndex() + " next indx = " + player.getNextWindowIndex());
+                    handler.postDelayed(playNextOnMediaError, 2000);
+
+//                    mSession.getController().getTransportControls().skipToNext();
+                    break;
+                case ExoPlaybackException.TYPE_UNEXPECTED:
+                    Log.d(TAG, "onPlayerError: TYPE_UNEXPECTED");
+                    break;
+            }
+        }
+
+        @Override
+        public void onPlayerStateChanged(boolean playWhenReady, int playbackState) {
+            switch (playbackState) {
+                case Player.STATE_BUFFERING:
+                    Log.d(TAG, "onPlayerStateChanged: STATE_BUFFERING");
+                    break;
+                case Player.STATE_ENDED:
+                    Log.d(TAG, "onPlayerStateChanged: STATE_ENDED");
+                    setPlaybackState(PlaybackStateCompat.STATE_STOPPED);
+                    mSession.getController().getTransportControls().stop();
+                    break;
+                case Player.STATE_IDLE:
+                    Log.d(TAG, "onPlayerStateChanged: STATE_IDLE");
+                    break;
+                case Player.STATE_READY:
+                    Log.d(TAG, "onPlayerStateChanged: STATE_READY");
+                    break;
             }
 
         }
@@ -689,8 +818,8 @@ public class PlayerService extends MediaBrowserServiceCompat implements AudioMan
         Log.d(TAG, "MediaSource Media ID:" + mediaId);
         String[] parts = mediaId.split("[/|]");
         String id = parts[parts.length - 1];
-        DataSource.Factory factory = new DefaultDataSourceFactory(PlayerService.this, Util.getUserAgent(getApplicationContext(), "YM Player"));
         Uri contentUri = ContentUris.withAppendedId(MediaStore.Audio.Media.EXTERNAL_CONTENT_URI, Long.parseLong(id));
+        DataSource.Factory factory = new DefaultDataSourceFactory(PlayerService.this, Util.getUserAgent(getApplicationContext(), "YM Player"));
         return new ProgressiveMediaSource.Factory(factory).setTag(id).createMediaSource(contentUri);
     }
 
@@ -698,7 +827,7 @@ public class PlayerService extends MediaBrowserServiceCompat implements AudioMan
         if (mediaId == null) return;
         String[] parts = mediaId.split("[/|]");
         String id = parts[parts.length - 1];
-        DataSource.Factory factory = new DefaultDataSourceFactory(PlayerService.this, Util.getUserAgent(getApplicationContext(), "YM Player"));
+        DataSource.Factory factory = new DefaultDataSourceFactory(this, Util.getUserAgent(getApplicationContext(), "YM Player"));
         Uri contentUri = ContentUris.withAppendedId(MediaStore.Audio.Media.EXTERNAL_CONTENT_URI, Long.parseLong(id));
         mediaSources.addMediaSource(pos, new ProgressiveMediaSource.Factory(factory).setTag(id).createMediaSource(contentUri));
     }
@@ -707,8 +836,7 @@ public class PlayerService extends MediaBrowserServiceCompat implements AudioMan
      * @param player current instance of EXOPLAYER
      */
     void preparePlayer(SimpleExoPlayer player) {
-        player.stop();
-        player.prepare(mediaSources);
+        player.prepare(mediaSources, true, true);
         player.seekToDefaultPosition(queuePos);
     }
 
@@ -728,7 +856,7 @@ public class PlayerService extends MediaBrowserServiceCompat implements AudioMan
         if (focusChange == AudioManager.AUDIOFOCUS_LOSS) {
             // Permanent loss of audio focus
             // Pause playback immediately
-            mSession.getController().getTransportControls().pause();
+            mSession.getController().getTransportControls().stop();
             // Wait 30 seconds before stopping playback
             handler.postDelayed(delayDeregisterAudioFocus,
                     TimeUnit.SECONDS.toMillis(30));
@@ -778,7 +906,24 @@ public class PlayerService extends MediaBrowserServiceCompat implements AudioMan
             player.addListener(ExoplayerEventListener);
             player.setRepeatMode(repeatMode);
             player.setShuffleModeEnabled(isShuffleModeEnabled);
+            player.prepare(mediaSources);
         }
         return player;
     }
+
+    Runnable playNextOnMediaError = new Runnable() {
+        @Override
+        public void run() {
+            Log.d(TAG, "run: Executed playNextOnMediaError");
+            if (player.getNextWindowIndex() == -1)
+                mSession.getController().getTransportControls().stop();
+            else {
+                queuePos = player.getNextWindowIndex();
+                preparePlayer(player);
+                player.setPlayWhenReady(true);
+                Log.d(TAG, "onPlayerError: Next");
+            }
+        }
+    };
 }
+

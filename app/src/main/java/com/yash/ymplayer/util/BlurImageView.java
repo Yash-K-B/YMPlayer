@@ -43,6 +43,7 @@ public class BlurImageView extends ImageView {
     public void setImageDrawable(Drawable drawable) {
         super.setImageDrawable(drawable);
         imageOnView = drawable;
+
     }
     public void setImageResource(int id){
         super.setImageResource(id);

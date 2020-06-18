@@ -28,4 +28,28 @@
     <string name="next">next</string>
     <string name="play_pause">play_pause</string>
     <string name="about">About</string>
+    <string name="author_name">Yashobanta Kumar Behera</string>
+    <string name="changelog">
+        -----------------------------------\n
+        Version 1.4\n
+        ------------------------------------\n
+        * Google assistant integration for media controls\n
+        * Spotify Api integrated for online playback\n
+        -----------------------------------\n
+        Version 1.2\n
+        -----------------------------------\n
+        * Added add to favourite button\n
+        * Added shuffle button\n
+        * Background is now blurred with song embedded art\n
+        * Implemented playing Queue and arranging items\n
+        * Some minor bug fixes\n
+        -----------------------------------\n
+        Initial Version 1.0\n
+        -----------------------------------\n
+        * This is initial build, the basic music playing operations are included.\n
+    </string>
+    <string name="spotify_songs">Spotify Songs</string>
+    <string name="albums">Albums</string>
+    <string name="artists">Artists</string>
+    <string name="songs">Songs</string>
 </resources>

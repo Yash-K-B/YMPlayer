@@ -13,4 +13,10 @@
     <item
         android:id="@+id/go_to_album"
         android:title="Goto Album" />
+    <item
+        android:id="@+id/shareSong"
+        android:title="Share" />
+    <item
+        android:id="@+id/deleteFromStorage"
+        android:title="Delete from storage" />
 </menu>

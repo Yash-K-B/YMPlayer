@@ -16,7 +16,12 @@ import android.util.Log;
 
 import com.google.android.exoplayer2.source.MediaSource;
 
+import java.lang.reflect.Array;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 
@@ -55,11 +60,13 @@ public class OfflineMediaProvider {
      */
     private void fetchMusic() {
         while (cursor.moveToNext()) {
+            String artist = cursor.getString(cursor.getColumnIndex(MediaStore.Audio.Media.ARTIST));
+            String album = cursor.getString(cursor.getColumnIndex(MediaStore.Audio.Media.ALBUM));
             @SuppressLint("WrongConstant") MediaMetadata item = new MediaMetadata.Builder()
                     .putString(MediaMetadata.METADATA_KEY_MEDIA_ID, cursor.getString(cursor.getColumnIndex(MediaStore.Audio.Media._ID)))
                     .putString(MediaMetadata.METADATA_KEY_TITLE, cursor.getString(cursor.getColumnIndex(MediaStore.Audio.Media.TITLE)))
-                    .putString(MediaMetadata.METADATA_KEY_ARTIST, cursor.getString(cursor.getColumnIndex(MediaStore.Audio.Media.ARTIST)))
-                    .putString(MediaMetadata.METADATA_KEY_ALBUM, cursor.getString(cursor.getColumnIndex(MediaStore.Audio.Media.ALBUM)))
+                    .putString(MediaMetadata.METADATA_KEY_ARTIST, artist.equalsIgnoreCase("<unknown>") ? "Unknown Artist" : artist)
+                    .putString(MediaMetadata.METADATA_KEY_ALBUM, album.equalsIgnoreCase("<unknown>") ? "Unknown Album" : album)
                     .putString(OfflineMediaProvider.METADATA_KEY_ALBUM_ID, cursor.getString(cursor.getColumnIndex(MediaStore.Audio.Media.ALBUM_ID)))
                     .build();
             songs.add(item);
@@ -100,21 +107,35 @@ public class OfflineMediaProvider {
         return items;
     }
 
-    public List<MediaSessionCompat.QueueItem> getSongById(String mediaId,long queueId) {
+    public List<MediaSessionCompat.QueueItem> getSongById(String mediaId, long queueId) {
         List<MediaSessionCompat.QueueItem> list = new ArrayList<>();
         String[] parts = mediaId.split("[/|]");
         String id = parts[parts.length - 1];
         //Log.d(TAG, "getSongById: "+id+"object :"+songById.get(id));
+        try {
+            Long.parseLong(id);
+            list.add(new MediaSessionCompat.QueueItem(new MediaDescriptionCompat.Builder()
+                    .setMediaId(id)
+                    .setTitle(songById.get(id).getString(MediaMetadata.METADATA_KEY_TITLE))
+                    .setSubtitle(songById.get(id).getString(MediaMetadata.METADATA_KEY_ARTIST))
+                    .setDescription(songById.get(id).getString(MediaMetadata.METADATA_KEY_ALBUM))
+                    .build(), queueId));
+        }
+        catch (Exception e){
+            e.printStackTrace();
+            if(songsByAlbum.containsKey(id)){
+                Log.d(TAG, "getSongById: Album");
+            }
+            else if(songsByArtist.containsKey(id)){
+                Log.d(TAG, "getSongById: Artist");
+            }
+        }
+
         if (isMusicFetched) {
             fetchMusic();
         }
         // Log.d(TAG, "getSongById: map size:"+songById.size()+" artist map size:"+songsByArtist.size());
-        list.add(new MediaSessionCompat.QueueItem(new MediaDescriptionCompat.Builder()
-                .setMediaId(id)
-                .setTitle(songById.get(id).getString(MediaMetadata.METADATA_KEY_TITLE))
-                .setSubtitle(songById.get(id).getString(MediaMetadata.METADATA_KEY_ARTIST))
-                .setDescription(songById.get(id).getString(MediaMetadata.METADATA_KEY_ALBUM))
-                .build(), queueId));
+
         return list;
     }
 
@@ -128,7 +149,9 @@ public class OfflineMediaProvider {
         if (!isMusicFetched) {
             fetchMusic();
         }
-        for (String item : songsByArtist.keySet()) {
+        List<String> keys = new ArrayList<>(songsByArtist.keySet());
+        Collections.sort(keys, String::compareToIgnoreCase);
+        for (String item : keys) {
             MediaItem child = new MediaItem(new MediaDescriptionCompat.Builder()
                     .setMediaId(item)
                     .setTitle(item)
@@ -168,7 +191,9 @@ public class OfflineMediaProvider {
         if (!isMusicFetched) {
             fetchMusic();
         }
-        for (String item : songsByAlbum.keySet()) {
+        List<String> keys = new ArrayList<>(songsByAlbum.keySet());
+        Collections.sort(keys, String::compareToIgnoreCase);
+        for (String item : keys) {
             Bundle extra = new Bundle();
             extra.putString(OfflineMediaProvider.METADATA_KEY_ALBUM_ID, songsByAlbum.get(item).get(0).getString(OfflineMediaProvider.METADATA_KEY_ALBUM_ID));
             MediaItem child = new MediaItem(new MediaDescriptionCompat.Builder()
@@ -276,7 +301,7 @@ public class OfflineMediaProvider {
      * @return a sorting sql parameter
      */
     private String getSortOrder() {
-        return MediaStore.Audio.Media.TITLE + " ASC";
+        return MediaStore.Audio.Media.TITLE + " COLLATE NOCASE ASC";
     }
 
     public String getAlbumId(String mediaId) {
@@ -292,6 +317,7 @@ public class OfflineMediaProvider {
         c.close();
         return null;
     }
+
     public long getLongAlbumId(String mediaId) {
         return Long.parseLong(getAlbumId(mediaId));
     }

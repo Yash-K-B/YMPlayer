@@ -42,6 +42,8 @@
         <item name="android:windowActionBarOverlay">true</item>
         <item name="listTitleTextColor">#000000</item>
         <item name="layoutBackground">@android:color/background_light</item>
+        <item name="overlayTheme">@style/ThemeOverlay.AppCompat.Light</item>
+        <item name="backgroundHeadingTextColor">?attr/colorPrimary</item>
     </style>
 
     <!--    Light Child Themes-->
@@ -72,6 +74,8 @@
         <item name="windowNoTitle">true</item>
         <item name="android:windowActionBarOverlay">true</item>
         <item name="layoutBackground">#272727</item>
+        <item name="overlayTheme">@style/ThemeOverlay.AppCompat.Dark</item>
+        <item name="backgroundHeadingTextColor">#FFD600</item>
     </style>
 
     <!--    Dark Child Themes-->
@@ -101,6 +105,8 @@
         <item name="android:windowActionBarOverlay">true</item>
         <item name="android:windowBackground">@drawable/black_background</item>
         <item name="layoutBackground">@android:color/black</item>
+        <item name="overlayTheme">@style/ThemeOverlay.AppCompat.Dark</item>
+        <item name="backgroundHeadingTextColor">#FFD600</item>
 <!--        <item name="android:background">#000000</item>-->
     </style>
     <!--    AMOLED Themes-->

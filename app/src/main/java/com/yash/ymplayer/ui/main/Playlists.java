@@ -29,6 +29,7 @@ import com.yash.ymplayer.PlayerService;
 import com.yash.ymplayer.R;
 import com.yash.ymplayer.databinding.FragmentPlaylistsBinding;
 import com.yash.ymplayer.util.SongListAdapter;
+import com.yash.ymplayer.util.SongsContextMenuClickListener;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -78,10 +79,10 @@ public class Playlists extends Fragment implements PlaylistUpdateListener {
                     startActivity(intent);
                 }
             }
-        }, 2);
+        }, new SongsContextMenuClickListener(getContext(), mMediaController), 2);
         playlistsBinding.playlists.setAdapter(adapter);
         playlistsBinding.playlists.setLayoutManager(new LinearLayoutManager(getContext()));
-        playlistsBinding.playlists.addItemDecoration(new DividerItemDecoration(getContext(),DividerItemDecoration.VERTICAL));
+        playlistsBinding.playlists.addItemDecoration(new DividerItemDecoration(getContext(), DividerItemDecoration.VERTICAL));
     }
 
     @Override
@@ -103,7 +104,7 @@ public class Playlists extends Fragment implements PlaylistUpdateListener {
                 viewModel = new ViewModelProvider(Playlists.this).get(LocalViewModel.class);
                 mMediaController = new MediaControllerCompat(getContext(), mMediaBrowser.getSessionToken());
                 mMediaController.registerCallback(mMediaControllerCallbacks);
-                playlistsBinding.playlistRefresh.setColorSchemeColors(((MainActivity)getActivity()).getAttributeColor(R.attr.colorPrimary));
+                playlistsBinding.playlistRefresh.setColorSchemeColors(((MainActivity) getActivity()).getAttributeColor(R.attr.colorPrimary));
                 playlistsBinding.playlistRefresh.setOnRefreshListener(new SwipeRefreshLayout.OnRefreshListener() {
                     @Override
                     public void onRefresh() {
@@ -122,7 +123,7 @@ public class Playlists extends Fragment implements PlaylistUpdateListener {
                             @Override
                             public void run() {
                                 adapter.notifyDataSetChanged();
-                                playlistsBinding.noPlaylist.setVisibility((songs.size() == 0)?View.VISIBLE:View.INVISIBLE);
+                                playlistsBinding.noPlaylist.setVisibility((songs.size() == 0) ? View.VISIBLE : View.INVISIBLE);
                                 playlistsBinding.playlistRefresh.setRefreshing(false);
                                 playlistsBinding.loading.setVisibility(View.INVISIBLE);
                             }
@@ -132,7 +133,7 @@ public class Playlists extends Fragment implements PlaylistUpdateListener {
             } catch (RemoteException e) {
                 e.printStackTrace();
             }
-            LocalSongs localSongs = (LocalSongs)Playlists.this.getParentFragment();
+            LocalSongs localSongs = (LocalSongs) Playlists.this.getParentFragment();
             localSongs.onFabClicked(Playlists.this);
         }
     };

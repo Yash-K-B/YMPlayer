@@ -28,6 +28,7 @@ import com.yash.ymplayer.ui.main.LocalViewModel;
 import com.yash.ymplayer.ui.main.SongContextMenuListener;
 import com.yash.ymplayer.util.Keys;
 import com.yash.ymplayer.util.SongListAdapter;
+import com.yash.ymplayer.util.SongsContextMenuClickListener;
 import com.yash.ymplayer.util.SongsListAdapter;
 
 import java.util.List;
@@ -35,9 +36,9 @@ import java.util.List;
 public class ListExpandActivity extends BaseActivity {
     private static final String TAG = "debug";
     ListExpandActivityBinding binding;
-    private MediaBrowserCompat mMediaBrowser;
-    private LocalViewModel viewModel;
-    private MediaControllerCompat mMediaController;
+    MediaBrowserCompat mMediaBrowser;
+    LocalViewModel viewModel;
+    MediaControllerCompat mMediaController;
     String type = null;
     String parentId;
     long albumId;
@@ -80,100 +81,89 @@ public class ListExpandActivity extends BaseActivity {
     private MediaBrowserCompat.ConnectionCallback mConnectionCallbacks = new MediaBrowserCompat.ConnectionCallback() {
         @Override
         public void onConnected() {
-            if (type.equalsIgnoreCase("artist")) {
-                artistTracks();
-            } else if (type.equalsIgnoreCase("album")) {
-                albumTracks();
-            }
-            else if(type.equalsIgnoreCase("playlist")){
-                playListTracks();
+            try {
+                mMediaController = new MediaControllerCompat(ListExpandActivity.this, mMediaBrowser.getSessionToken());
+                mMediaController.registerCallback(mMediaControllerCallbacks);
+
+                if (type.equalsIgnoreCase("artist")) {
+                    artistTracks();
+                } else if (type.equalsIgnoreCase("album")) {
+                    albumTracks();
+                } else if (type.equalsIgnoreCase("playlist")) {
+                    playListTracks();
+                }
+            } catch (RemoteException e) {
+                e.printStackTrace();
             }
         }
     };
 
     void artistTracks() {
-        try {
-            mMediaController = new MediaControllerCompat(ListExpandActivity.this, mMediaBrowser.getSessionToken());
-            mMediaController.registerCallback(mMediaControllerCallbacks);
-            viewModel.getAllArtists(mMediaBrowser, parentId);
-            viewModel.allArtists.observe(ListExpandActivity.this, new Observer<List<MediaBrowserCompat.MediaItem>>() {
-                @Override
-                public void onChanged(List<MediaBrowserCompat.MediaItem> songs) {
-                    SongsListAdapter adapter = new SongsListAdapter(context, songs, new SongListAdapter.OnItemClickListener() {
-                        @Override
-                        public void onClick(MediaBrowserCompat.MediaItem song) {
-                            if (song.isBrowsable())
-                                viewModel.getAllArtists(mMediaBrowser, song.getMediaId());
-                            else if (song.isPlayable())
-                                mMediaController.getTransportControls().playFromMediaId(song.getMediaId(), null);
-                        }
-                    }, songContextMenuListener, SongsListAdapter.MODE.ARTIST);
-                    binding.list.setLayoutManager(new LinearLayoutManager(ListExpandActivity.this));
-                    binding.list.setAdapter(adapter);
-                }
-            });
-        } catch (RemoteException e) {
-            e.printStackTrace();
-        }
-
+        viewModel.getAllArtists(mMediaBrowser, parentId);
+        viewModel.allArtists.observe(ListExpandActivity.this, new Observer<List<MediaBrowserCompat.MediaItem>>() {
+            @Override
+            public void onChanged(List<MediaBrowserCompat.MediaItem> songs) {
+                SongsListAdapter adapter = new SongsListAdapter(context, songs, new SongListAdapter.OnItemClickListener() {
+                    @Override
+                    public void onClick(MediaBrowserCompat.MediaItem song) {
+                        if (song.isBrowsable())
+                            viewModel.getAllArtists(mMediaBrowser, song.getMediaId());
+                        else if (song.isPlayable())
+                            mMediaController.getTransportControls().playFromMediaId(song.getMediaId(), null);
+                    }
+                }, new SongsContextMenuClickListener(context, mMediaController), SongsListAdapter.MODE.ARTIST);
+                adapter.setViewModel(viewModel);
+                binding.list.setLayoutManager(new LinearLayoutManager(ListExpandActivity.this));
+                binding.list.setAdapter(adapter);
+            }
+        });
     }
 
     void albumTracks() {
-        try {
-            Glide.with(context).load(ContentUris.withAppendedId(Uri.parse("content://media/external/audio/albumart"), albumId)).placeholder(R.drawable.album_art_placeholder).into(binding.appBarImage);
-            mMediaController = new MediaControllerCompat(ListExpandActivity.this, mMediaBrowser.getSessionToken());
-            mMediaController.registerCallback(mMediaControllerCallbacks);
-            viewModel.getAllAlbums(mMediaBrowser, parentId);
-            viewModel.allAlbums.observe(ListExpandActivity.this, new Observer<List<MediaBrowserCompat.MediaItem>>() {
-                @Override
-                public void onChanged(List<MediaBrowserCompat.MediaItem> songs) {
-                    SongsListAdapter adapter = new SongsListAdapter(context, songs, new SongListAdapter.OnItemClickListener() {
-                        @Override
-                        public void onClick(MediaBrowserCompat.MediaItem song) {
-                            if (song.isBrowsable())
-                                viewModel.getAllAlbums(mMediaBrowser, song.getMediaId());
-                            else if (song.isPlayable())
-                                mMediaController.getTransportControls().playFromMediaId(song.getMediaId(), null);
-                        }
-                    }, songContextMenuListener, SongsListAdapter.MODE.ALBUM);
-                    binding.list.setLayoutManager(new LinearLayoutManager(ListExpandActivity.this));
-                    binding.list.setAdapter(adapter);
-                    binding.list.addItemDecoration(new DividerItemDecoration(ListExpandActivity.this,DividerItemDecoration.VERTICAL));
-                }
-            });
-        } catch (RemoteException e) {
-            e.printStackTrace();
-        }
+        Glide.with(context).load(ContentUris.withAppendedId(Uri.parse("content://media/external/audio/albumart"), albumId)).placeholder(R.drawable.album_art_placeholder).into(binding.appBarImage);
+        viewModel.getAllAlbums(mMediaBrowser, parentId);
+        viewModel.allAlbums.observe(ListExpandActivity.this, new Observer<List<MediaBrowserCompat.MediaItem>>() {
+            @Override
+            public void onChanged(List<MediaBrowserCompat.MediaItem> songs) {
+                SongsListAdapter adapter = new SongsListAdapter(context, songs, new SongListAdapter.OnItemClickListener() {
+                    @Override
+                    public void onClick(MediaBrowserCompat.MediaItem song) {
+                        if (song.isBrowsable())
+                            viewModel.getAllAlbums(mMediaBrowser, song.getMediaId());
+                        else if (song.isPlayable())
+                            mMediaController.getTransportControls().playFromMediaId(song.getMediaId(), null);
+                    }
+                }, new SongsContextMenuClickListener(context, mMediaController), SongsListAdapter.MODE.ALBUM);
+                adapter.setViewModel(viewModel);
+                binding.list.setLayoutManager(new LinearLayoutManager(ListExpandActivity.this));
+                binding.list.setAdapter(adapter);
+                binding.list.addItemDecoration(new DividerItemDecoration(ListExpandActivity.this, DividerItemDecoration.VERTICAL));
+            }
+        });
     }
 
-    void playListTracks(){
-        try {
-            mMediaController = new MediaControllerCompat(ListExpandActivity.this, mMediaBrowser.getSessionToken());
-            mMediaController.registerCallback(mMediaControllerCallbacks);
-            viewModel.getAllPlaylists(mMediaBrowser, parentId);
-            viewModel.allPlaylists.observe(ListExpandActivity.this, new Observer<List<MediaBrowserCompat.MediaItem>>() {
-                @Override
-                public void onChanged(List<MediaBrowserCompat.MediaItem> songs) {
-                    SongsListAdapter adapter = new SongsListAdapter(context, songs, new SongListAdapter.OnItemClickListener() {
-                        @Override
-                        public void onClick(MediaBrowserCompat.MediaItem song) {
-                            if (song.isBrowsable())
-                                viewModel.getAllPlaylists(mMediaBrowser, song.getMediaId());
-                            else if (song.isPlayable())
-                                mMediaController.getTransportControls().playFromMediaId(song.getMediaId(), null);
-                        }
-                    }, songContextMenuListener, SongsListAdapter.MODE.ALL);
-                    binding.list.setLayoutManager(new LinearLayoutManager(ListExpandActivity.this));
-                    binding.list.setAdapter(adapter);
-                }
-            });
-        } catch (RemoteException e) {
-            e.printStackTrace();
-        }
-
+    void playListTracks() {
+        viewModel.getAllPlaylists(mMediaBrowser, parentId);
+        viewModel.allPlaylists.observe(ListExpandActivity.this, new Observer<List<MediaBrowserCompat.MediaItem>>() {
+            @Override
+            public void onChanged(List<MediaBrowserCompat.MediaItem> songs) {
+                SongsListAdapter adapter = new SongsListAdapter(context, songs, new SongListAdapter.OnItemClickListener() {
+                    @Override
+                    public void onClick(MediaBrowserCompat.MediaItem song) {
+                        if (song.isBrowsable())
+                            viewModel.getAllPlaylists(mMediaBrowser, song.getMediaId());
+                        else if (song.isPlayable())
+                            mMediaController.getTransportControls().playFromMediaId(song.getMediaId(), null);
+                    }
+                }, new SongsContextMenuClickListener(context, mMediaController), SongsListAdapter.MODE.PLAYLIST);
+                adapter.setViewModel(viewModel);
+                binding.list.setLayoutManager(new LinearLayoutManager(ListExpandActivity.this));
+                binding.list.setAdapter(adapter);
+            }
+        });
     }
 
-    private MediaControllerCompat.Callback mMediaControllerCallbacks = new MediaControllerCompat.Callback() {
+    MediaControllerCompat.Callback mMediaControllerCallbacks = new MediaControllerCompat.Callback() {
         @Override
         public void onPlaybackStateChanged(PlaybackStateCompat state) {
             super.onPlaybackStateChanged(state);
@@ -202,51 +192,4 @@ public class ListExpandActivity extends BaseActivity {
 
     }
 
-
-    SongContextMenuListener songContextMenuListener = new SongContextMenuListener() {
-        @Override
-        public void playSingle(MediaBrowserCompat.MediaItem item) {
-            Bundle extra = new Bundle();
-            extra.putBoolean(Keys.PLAY_SINGLE,true);
-            mMediaController.getTransportControls().playFromMediaId(item.getDescription().getMediaId(), extra);
-        }
-
-        @Override
-        public void queueNext(MediaBrowserCompat.MediaItem item) {
-
-            Bundle extras = new Bundle();
-            extras.putString(Keys.MEDIA_ID,item.getDescription().getMediaId());
-            mMediaController.getTransportControls().sendCustomAction(Keys.Action.QUEUE_NEXT,extras);
-        }
-
-        @Override
-        public void addToPlaylist(MediaBrowserCompat.MediaItem item, String playlist) {
-            String[] parts = item.getDescription().getMediaId().split("[/|]");
-            Log.d(TAG, "addToPlaylist: id:"+parts[parts.length-1]);
-            Bundle extras = new Bundle();
-            extras.putString(Keys.MEDIA_ID,parts[parts.length - 1]);
-            extras.putString(Keys.TITLE,item.getDescription().getTitle().toString());
-            extras.putString(Keys.ARTIST,item.getDescription().getSubtitle().toString());
-            extras.putString(Keys.ALBUM,item.getDescription().getDescription().toString());
-            extras.putString(Keys.PLAYLIST_NAME,playlist);
-            mMediaController.getTransportControls().sendCustomAction(Keys.Action.ADD_TO_PLAYLIST,extras);
-        }
-
-        @Override
-        public void gotoAlbum(MediaBrowserCompat.MediaItem item) {
-            Intent intent = new Intent(ListExpandActivity.this, ListExpandActivity.class);
-            intent.putExtra("parent_id", item.getDescription().getDescription());
-            intent.putExtra("type", "album");
-            intent.putExtra("imageId", Long.parseLong(Repository.getInstance(ListExpandActivity.this).getOfflineProvider().getAlbumId(item.getMediaId())));
-            startActivity(intent);
-        }
-
-        @Override
-        public void gotoArtist(MediaBrowserCompat.MediaItem item) {
-            Intent intent = new Intent(ListExpandActivity.this, ListExpandActivity.class);
-            intent.putExtra("parent_id", item.getDescription().getSubtitle());
-            intent.putExtra("type", "artist");
-            startActivity(intent);
-        }
-    };
 }

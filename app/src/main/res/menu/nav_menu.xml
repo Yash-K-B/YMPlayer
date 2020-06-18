@@ -3,8 +3,12 @@
     xmlns:android="http://schemas.android.com/apk/res/android">
     <group android:checkableBehavior="single">
         <item
+            android:id="@+id/spotifySongs"
+            android:icon="@drawable/ic_spotify"
+            android:title="@string/spotify_songs" />
+        <item
             android:id="@+id/localSongs"
-            android:icon="@drawable/ic_audiotrack_black_24dp"
+            android:icon="@drawable/ic_library_music_24"
             android:title="@string/local_songs" />
         <item
             android:id="@+id/settings"

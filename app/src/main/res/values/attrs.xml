@@ -3,4 +3,6 @@
     <attr name="listTitleTextColor" type="color|reference"/>
     <attr name="listSubTitleTextColor" type="color|reference"/>
     <attr name="layoutBackground" format="color"/>
+    <attr name="overlayTheme" format="reference"/>
+    <attr name="backgroundHeadingTextColor" format="color"/>
 </resources>

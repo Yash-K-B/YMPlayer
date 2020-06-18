@@ -10,6 +10,8 @@ import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.Filter;
+import android.widget.Filterable;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -19,21 +21,23 @@ import androidx.recyclerview.widget.RecyclerView;
 import com.bumptech.glide.Glide;
 import com.bumptech.glide.request.target.CustomTarget;
 import com.bumptech.glide.request.transition.Transition;
-import com.yash.ymplayer.R;
 import com.yash.ymplayer.databinding.ItemAlbumBinding;
 import com.yash.ymplayer.storage.OfflineMediaProvider;
 
+import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 
-public class AlbumListAdapter extends RecyclerView.Adapter<AlbumListAdapter.AlbumViewHolder> {
+public class AlbumListAdapter extends RecyclerView.Adapter<AlbumListAdapter.AlbumViewHolder> implements Filterable {
     private static final String TAG = "debug";
-    private List<MediaBrowserCompat.MediaItem> songs;
+    private List<MediaBrowserCompat.MediaItem> albums;
+    List<MediaBrowserCompat.MediaItem> allAlbums = new ArrayList<>();
     private OnItemClickListener listener;
     private Context context;
 
 
     public AlbumListAdapter(Context context, List<MediaBrowserCompat.MediaItem> songs, OnItemClickListener listener) {
-        this.songs = songs;
+        this.albums = songs;
         this.listener = listener;
         this.context = context;
     }
@@ -47,12 +51,12 @@ public class AlbumListAdapter extends RecyclerView.Adapter<AlbumListAdapter.Albu
 
     @Override
     public void onBindViewHolder(@NonNull AlbumViewHolder holder, int position) {
-        holder.bindAlbums(songs.get(position), listener);
+        holder.bindAlbums(albums.get(position), listener);
     }
 
     @Override
     public int getItemCount() {
-        return songs.size();
+        return albums.size();
     }
 
     class AlbumViewHolder extends RecyclerView.ViewHolder {
@@ -98,6 +102,46 @@ public class AlbumListAdapter extends RecyclerView.Adapter<AlbumListAdapter.Albu
             });
         }
     }
+
+    public void refreshList(){
+        allAlbums.clear();
+        allAlbums.addAll(albums);
+    }
+
+    @Override
+    public Filter getFilter() {
+        return filter;
+    }
+
+    Filter filter = new Filter() {
+
+        @Override
+        protected FilterResults performFiltering(CharSequence constraint) {
+            List<MediaBrowserCompat.MediaItem> filteredList = new ArrayList<>();
+            Log.d(TAG, "performFiltering: allsongs size:" + albums.size());
+            if (constraint == null || constraint.length() == 0) {
+                filteredList.addAll(allAlbums);
+                Log.d(TAG, "performFiltering: All list return");
+            } else {
+                for (MediaBrowserCompat.MediaItem item : allAlbums) {
+                    if (item.getDescription().getTitle().toString().toLowerCase().contains(constraint.toString().toLowerCase())) {
+                        filteredList.add(item);
+                    }
+                }
+            }
+            FilterResults filterResults = new FilterResults();
+            filterResults.values = filteredList;
+            return filterResults;
+        }
+
+        @Override
+        protected void publishResults(CharSequence constraint, FilterResults results) {
+            Log.d(TAG, "publishResults: new size :");
+            albums.clear();
+            albums.addAll((Collection<? extends MediaBrowserCompat.MediaItem>) results.values);
+            notifyDataSetChanged();
+        }
+    };
 
     public interface OnItemClickListener {
         void onClick(MediaBrowserCompat.MediaItem song,long id);

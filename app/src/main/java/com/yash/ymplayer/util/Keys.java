@@ -1,27 +1,41 @@
 package com.yash.ymplayer.util;
 
-public class Keys {
-    public static final String MEDIA_ID = "mediaId";
-    public static final String TITLE = "title";
-    public static final String ARTIST = "artist";
-    public static final String ALBUM = "album";
-    public static final String PLAYLIST_NAME = "playlist_name";
-    public static final String PLAY_SINGLE = "single";
-    public static final String QUEUE_POS = "queuePos";
-    public static final String FROM_POSITION = "fromPosition";
-    public static final String TO_POSITION = "toPosition";
+public interface Keys {
+    String MEDIA_ID = "mediaId";
+    String TITLE = "title";
+    String ARTIST = "artist";
+    String ALBUM = "album";
+    String PLAYLIST_NAME = "playlist_name";
+    String PLAY_SINGLE = "single";
+    String QUEUE_POS = "queuePos";
+    String FROM_POSITION = "fromPosition";
+    String TO_POSITION = "toPosition";
+    String REPEAT_MODE = "repeatMode";
+    String SHUFFLE_MODE = "shuffleMode";
 
-    public static class Action {
-        public static final String ADD_TO_PLAYLIST = "addToPlaylist";
-        public static final String QUEUE_NEXT = "queueNext";
-        public static final String PLAY_FROM_QUEUE = "playFromQueue";
-        public static final String REMOVE_FROM_QUEUE = "removeFromQueue";
-        public static final String SWAP_QUEUE_ITEM = "swapQueueItem";
-        public static final String TOGGLE_FAVOURITE = "favourite";
+    interface Action {
+        String ADD_TO_PLAYLIST = "addToPlaylist";
+        String QUEUE_NEXT = "queueNext";
+        String PLAY_FROM_QUEUE = "playFromQueue";
+        String REMOVE_FROM_QUEUE = "removeFromQueue";
+        String SWAP_QUEUE_ITEM = "swapQueueItem";
+        String TOGGLE_FAVOURITE = "favourite";
     }
-    public static class Fragments{
-        public static final String LOCAL_SONGS = "localSongs";
-        public static final String SETTINGS = "settings";
-        public static final String ABOUT = "about";
+    interface Fragments{
+        String LOCAL_SONGS = "localSongs";
+        String SETTINGS = "settings";
+        String ABOUT = "about";
+        String SPOTIFY_SONGS = "spotifySongs";
+    }
+
+    interface SHARED_PREFERENCES {
+        String SPOTIFY = "SPOTIFY";
+    }
+    interface PREFERENCE_KEYS{
+        String TOKEN = "token";
+    }
+
+    public interface PLAYLISTS {
+        String FAVOURITES = "Favourites";
     }
 }

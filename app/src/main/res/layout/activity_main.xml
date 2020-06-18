@@ -13,9 +13,9 @@
         android:layout_height="match_parent"
         android:gravity="bottom"
         android:orientation="vertical"
+        app:umanoDragView="@+id/player_top"
         app:umanoPanelHeight="58dp"
-        app:umanoShadowHeight="4dp"
-        app:umanoDragView="@+id/player_top">
+        app:umanoShadowHeight="4dp">
 
         <androidx.coordinatorlayout.widget.CoordinatorLayout
             android:layout_width="match_parent"
@@ -69,7 +69,8 @@
                     app:layout_constraintEnd_toEndOf="parent"
                     app:layout_constraintHorizontal_bias="0.5"
                     app:layout_constraintStart_toStartOf="parent"
-                    app:layout_constraintTop_toTopOf="parent" />
+                    app:layout_constraintTop_toTopOf="parent"
+                    app:radius="5" />
 
                 <TextView
                     android:layout_width="match_parent"
@@ -265,9 +266,9 @@
                         android:layout_height="48dp"
                         android:layout_marginBottom="20dp"
                         android:background="@drawable/ripple_click_effect"
+                        android:scaleType="centerInside"
                         android:src="@drawable/icon_favourite_off"
                         android:tint="@android:color/white"
-                        android:scaleType="centerInside"
                         app:layout_constraintBottom_toTopOf="@+id/music_progress"
                         app:layout_constraintEnd_toEndOf="parent"
                         app:layout_constraintHorizontal_bias="0.5"
@@ -280,10 +281,10 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:background="@drawable/bottomsheet_round_top"
+                    android:elevation="2dp"
                     android:padding="10dp"
                     app:behavior_hideable="false"
                     app:behavior_peekHeight="0dp"
-                    android:elevation="2dp"
                     app:layout_behavior="com.google.android.material.bottomsheet.BottomSheetBehavior">
 
                     <Button
@@ -291,19 +292,19 @@
                         android:layout_width="wrap_content"
                         android:layout_height="30dp"
                         android:layout_alignParentEnd="true"
-                        android:text="CLOSE"
-                        android:textColor="?attr/listTitleTextColor"
                         android:background="?attr/selectableItemBackground"
                         android:gravity="center"
-                        android:textStyle="bold"/>
+                        android:text="CLOSE"
+                        android:textColor="?attr/listTitleTextColor"
+                        android:textStyle="bold" />
 
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="30dp"
+                        android:gravity="center"
                         android:text="Playing Queue"
                         android:textColor="?attr/listTitleTextColor"
-                        android:gravity="center"
-                        android:textStyle="bold"/>
+                        android:textStyle="bold" />
 
                     <androidx.recyclerview.widget.RecyclerView
                         android:id="@+id/playlist_container"
@@ -311,7 +312,7 @@
                         android:layout_height="400dp"
                         android:layout_marginTop="40dp"
                         tools:itemCount="10"
-                        tools:listitem="@layout/item_playing_queue"/>
+                        tools:listitem="@layout/item_playing_queue" />
                 </RelativeLayout>
             </androidx.coordinatorlayout.widget.CoordinatorLayout>
 
@@ -339,12 +340,25 @@
                         android:layout_width="match_parent"
                         android:layout_height="match_parent"
                         android:layout_marginStart="5dp"
+                        android:layout_toStartOf="@+id/shareThis"
                         android:layout_toEndOf="@+id/minimize"
                         android:gravity="center_vertical"
                         android:text="Player"
                         android:textColor="@android:color/white"
                         android:textSize="20sp"
                         android:textStyle="bold" />
+
+                    <ImageButton
+                        android:id="@+id/shareThis"
+                        android:layout_width="40dp"
+                        android:layout_height="40dp"
+                        android:layout_alignParentEnd="true"
+                        android:layout_centerVertical="true"
+                        android:layout_marginStart="10dp"
+                        android:layout_marginEnd="10dp"
+                        android:background="?attr/selectableItemBackgroundBorderless"
+                        android:src="@drawable/ic_share_black_24dp"
+                        android:tint="@android:color/white" />
 
                 </RelativeLayout>
 

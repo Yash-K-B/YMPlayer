@@ -123,7 +123,7 @@ public class Repository {
             }
         } else {
             Log.d(TAG, "getCurrentPlayingQueue: OfflineProvider");
-            items.addAll(OfflineMediaProvider.getInstance(context).getCurrentPlayingQueue(mediaId));
+            items.addAll(offlineProvider.getCurrentPlayingQueue(mediaId));
         }
         return items;
     }
@@ -131,7 +131,7 @@ public class Repository {
     private final RoomDatabase.Callback DatabaseCallback = new RoomDatabase.Callback() {
         @Override
         public void onCreate(@NonNull SupportSQLiteDatabase db) {
-            db.execSQL("insert into playlist values('Favourite')");
+            db.execSQL("insert into playlist values('Favourites')");
         }
 
         @Override

@@ -1,6 +1,7 @@
 package com.yash.ymplayer.ui.main;
 
 import android.content.Context;
+import android.graphics.drawable.Drawable;
 import android.os.Bundle;
 import android.support.v4.media.MediaBrowserCompat;
 import android.util.Log;
@@ -14,7 +15,9 @@ import com.yash.ymplayer.repository.Repository;
 import com.yash.ymplayer.util.Song;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 public class LocalViewModel extends ViewModel {
 
@@ -25,15 +28,16 @@ public class LocalViewModel extends ViewModel {
     public MutableLiveData<List<MediaBrowserCompat.MediaItem>> allArtists = new MutableLiveData<>();
     public MutableLiveData<List<MediaBrowserCompat.MediaItem>> allPlaylists = new MutableLiveData<>();
 
-    void refresh(Context context,MediaBrowserCompat mediaBrowser)
-    {
+    public Map<String, Drawable> songImages = new HashMap<>();
+
+    public void refresh(Context context, MediaBrowserCompat mediaBrowser) {
         Repository.getRefreshedInstance(context);
         querySongs(mediaBrowser);
-        getAllAlbums(mediaBrowser,null);
-        getAllArtists(mediaBrowser,null);
+        getAllAlbums(mediaBrowser, null);
+        getAllArtists(mediaBrowser, null);
     }
 
-    void querySongs(MediaBrowserCompat browser) {
+    public void querySongs(MediaBrowserCompat browser) {
         Log.d(TAG, "querySongs: ViewModel");
         Bundle extra = new Bundle();
         browser.subscribe("ALL_SONGS", extra, new MediaBrowserCompat.SubscriptionCallback() {
@@ -96,4 +100,5 @@ public class LocalViewModel extends ViewModel {
             return "PLAYLISTS";
         } else return "PLAYLISTS" + "/" + parentId;
     }
+
 }

@@ -25,6 +25,7 @@ public class AboutFragment extends Fragment {
                              Bundle savedInstanceState) {
         // Inflate the layout for this fragment
         FragmentAboutBinding binding = FragmentAboutBinding.inflate(inflater,container,false);
+        binding.authorImage.setClipToOutline(true);
         return binding.getRoot();
     }
 
