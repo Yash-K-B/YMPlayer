@@ -1,6 +1,8 @@
 package com.yash.ymplayer.util;
 
 import android.content.Context;
+import android.graphics.Color;
+import android.util.TypedValue;
 import android.view.LayoutInflater;
 import android.view.MotionEvent;
 import android.view.View;
@@ -9,19 +11,26 @@ import android.view.ViewGroup;
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 
+import com.yash.ymplayer.R;
 import com.yash.ymplayer.databinding.ItemPlayingQueueBinding;
+import com.yash.ymplayer.helper.LogHelper;
 
 import java.util.List;
 
 public class QueueListAdapter extends RecyclerView.Adapter<QueueListAdapter.QueueItemHolder> {
+    private static final String TAG = "QueueListAdapter";
     Context context;
     QueueItemOnClickListener listener;
     List<Song> songs;
+    int activePosition = -1;
+    int prevActivePosition = -1;
+    int color;
 
     public QueueListAdapter(Context context, QueueItemOnClickListener listener, List<Song> songs) {
         this.context = context;
         this.listener = listener;
         this.songs = songs;
+        this.color = getAttributeColor(R.attr.listTitleTextColor);
     }
 
     @NonNull
@@ -33,6 +42,8 @@ public class QueueListAdapter extends RecyclerView.Adapter<QueueListAdapter.Queu
 
     @Override
     public void onBindViewHolder(@NonNull QueueItemHolder holder, int position) {
+        LogHelper.d(TAG, "onBindViewHolder: "+position);
+        songs.get(position).setColor((position == activePosition) ? Color.GREEN : color);
         holder.bindQueueItem(songs.get(position), listener, holder);
     }
 
@@ -40,6 +51,8 @@ public class QueueListAdapter extends RecyclerView.Adapter<QueueListAdapter.Queu
     public int getItemCount() {
         return songs.size();
     }
+
+
 
     static class QueueItemHolder extends RecyclerView.ViewHolder {
         ItemPlayingQueueBinding binding;
@@ -68,6 +81,45 @@ public class QueueListAdapter extends RecyclerView.Adapter<QueueListAdapter.Queu
             binding.trackName.setOnClickListener(v -> listener.onClick(song));
         }
     }
+
+    private int getAttributeColor(int resId) {
+        TypedValue value = new TypedValue();
+        context.getTheme().resolveAttribute(resId, value, true);
+        return value.data;
+    }
+
+
+    public void notifyQueueChange(int activePosition) {
+        this.activePosition = activePosition;
+        notifyDataSetChanged();
+    }
+
+    public void notifyItemMoved(int fromPosition, int toPosition, int activePosition) {
+        this.activePosition = activePosition;
+        notifyItemMoved(fromPosition, toPosition);
+    }
+    public void notifyItemDeleted(int pos) {
+        if(activePosition != pos)
+            if(pos<activePosition) activePosition--;
+        notifyItemRemoved(pos);
+    }
+
+    public void notifyActiveItem(int currentPosition) {
+        if (songs.size() <= currentPosition)
+            activePosition = currentPosition;
+        else {
+            activePosition = currentPosition;
+            LogHelper.d(TAG, "notifyActiveItem: "+currentPosition);
+            notifyItemChanged(currentPosition);
+        }
+    }
+
+    public void invalidateItem(int previousPlayingPosition) {
+        if (songs.size() <= previousPlayingPosition) return;
+        LogHelper.d(TAG, "invalidateItem: "+previousPlayingPosition);
+        notifyItemChanged(previousPlayingPosition);
+    }
+
 
     public interface QueueItemOnClickListener {
         /**

@@ -14,11 +14,13 @@
         android:text="No Playlists"
         android:layout_gravity="center"
         android:gravity="center"
-        android:visibility="invisible"/>
+        android:visibility="invisible" />
+
     <androidx.swiperefreshlayout.widget.SwipeRefreshLayout
         android:id="@+id/playlist_refresh"
         android:layout_width="match_parent"
         android:layout_height="match_parent">
+
         <androidx.recyclerview.widget.RecyclerView
             android:id="@+id/playlists"
             android:layout_margin="5dp"
@@ -30,6 +32,6 @@
         android:id="@+id/loading"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_gravity="center"/>
+        android:layout_gravity="center" />
 
 </FrameLayout>

@@ -7,13 +7,9 @@ import android.graphics.drawable.Drawable;
 import android.net.Uri;
 import android.os.Handler;
 import android.support.v4.media.MediaBrowserCompat;
-import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.view.animation.AnimationUtils;
-import android.widget.Filter;
-import android.widget.Filterable;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -23,19 +19,18 @@ import androidx.recyclerview.widget.RecyclerView;
 import com.bumptech.glide.Glide;
 import com.bumptech.glide.request.target.CustomTarget;
 import com.bumptech.glide.request.transition.Transition;
+import com.yash.ymplayer.R;
 import com.yash.ymplayer.databinding.ItemAlbumBinding;
 import com.yash.ymplayer.databinding.ItemPlayingQueueBinding;
 import com.yash.ymplayer.databinding.ItemSearchSongBinding;
-import com.yash.ymplayer.storage.OfflineMediaProvider;
 
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
-public class SearchListAdapter extends RecyclerView.Adapter<SearchListAdapter.SongViewHolder> implements Filterable {
-    private static final String TAG = "debug";
+public class SearchListAdapter extends RecyclerView.Adapter<SearchListAdapter.SongViewHolder>{
+    private static final String TAG = "SearchListAdapter";
 
     List<MediaBrowserCompat.MediaItem> songs;
     List<MediaBrowserCompat.MediaItem> allSongs = new ArrayList<>();
@@ -49,7 +44,7 @@ public class SearchListAdapter extends RecyclerView.Adapter<SearchListAdapter.So
     View recyclerView;
 
     public SearchListAdapter(Context context, List<MediaBrowserCompat.MediaItem> songs, OnItemClickListener listener, int type, View headView, View recyclerview) {
-        this.songs = songs;
+        this.songs = new ArrayList<>(songs);
         this.listener = listener;
         this.context = context;
         this.type = type;
@@ -74,25 +69,25 @@ public class SearchListAdapter extends RecyclerView.Adapter<SearchListAdapter.So
     @Override
     public void onBindViewHolder(@NonNull SongViewHolder holder, int position) {
         if (type == ItemType.SONGS)
-            ((ItemViewHolder) holder).bindSongs(songs.get(position), listener);
+            ((ItemViewHolder) holder).bindSongs(songs.get(holder.getAdapterPosition()), listener);
         else if (type == ItemType.ALBUMS)
-            ((AlbumViewHolder) holder).bindAlbums(songs.get(position), listener);
+            ((AlbumViewHolder) holder).bindAlbums(songs.get(holder.getAdapterPosition()), listener);
         else if (type == ItemType.ARTISTS)
-            ((ItemViewHolder) holder).bindArtists(songs.get(position), listener);
+            ((ItemViewHolder) holder).bindArtists(songs.get(holder.getAdapterPosition()), listener);
 
 
     }
 
-    @Override
-    public int getItemViewType(int position) {
-        //  listPos = getListPosition(position);
-        return listPos;
-    }
 
     @Override
     public int getItemCount() {
         return songs.size();
     }
+
+    public void setModels(List<MediaBrowserCompat.MediaItem> models) {
+        songs = new ArrayList<>(models);
+    }
+
 
     static class SongViewHolder extends RecyclerView.ViewHolder {
         public SongViewHolder(View view) {
@@ -129,7 +124,7 @@ public class SearchListAdapter extends RecyclerView.Adapter<SearchListAdapter.So
         }
 
         void bindAlbums(MediaBrowserCompat.MediaItem song, OnItemClickListener listener) {
-            long id = Long.parseLong(song.getDescription().getExtras().getString(OfflineMediaProvider.METADATA_KEY_ALBUM_ID));
+            long id = Long.parseLong(song.getMediaId().split("[/]",2)[1]);
             executor.execute(new Runnable() {
                 @Override
                 public void run() {
@@ -138,6 +133,27 @@ public class SearchListAdapter extends RecyclerView.Adapter<SearchListAdapter.So
                         public void onResourceReady(@NonNull Drawable resource, @Nullable Transition<? super Drawable> transition) {
                             handler.post(() -> binding.albumArt.setImageDrawable(resource));
                             Palette.from(((BitmapDrawable) resource).getBitmap())
+                                    .generate(new Palette.PaletteAsyncListener() {
+                                        @Override
+                                        public void onGenerated(Palette palette) {
+                                            Palette.Swatch textSwatch = palette.getVibrantSwatch();
+                                            if (textSwatch != null) {
+                                                handler.post(() -> {
+                                                    binding.albumItem.setBackgroundColor(textSwatch.getRgb());
+                                                    binding.albumName.setTextColor(textSwatch.getTitleTextColor());
+                                                    binding.albumSubText.setTextColor(textSwatch.getBodyTextColor());
+                                                });
+
+                                            }
+                                        }
+                                    });
+                        }
+
+                        @Override
+                        public void onLoadFailed(@Nullable Drawable errorDrawable) {
+                            Drawable drawable = context.getResources().getDrawable(R.drawable.album_art_placeholder,context.getTheme());
+                            handler.post(() -> binding.albumArt.setImageDrawable(drawable));
+                            Palette.from(((BitmapDrawable) drawable).getBitmap())
                                     .generate(new Palette.PaletteAsyncListener() {
                                         @Override
                                         public void onGenerated(Palette palette) {
@@ -171,7 +187,6 @@ public class SearchListAdapter extends RecyclerView.Adapter<SearchListAdapter.So
 
             });
 
-
         }
     }
 
@@ -184,11 +199,7 @@ public class SearchListAdapter extends RecyclerView.Adapter<SearchListAdapter.So
         }
 
         void bindSongs(MediaBrowserCompat.MediaItem song, OnItemClickListener listener) {
-//            executor.execute(new Runnable() {
-//                @Override
-//                public void run() {
-//
-//                    handler.post(() -> {
+
             binding.title.setText(song.getDescription().getTitle());
             binding.subTitle.setText(song.getDescription().getSubtitle());
             itemView.setOnClickListener(new View.OnClickListener() {
@@ -197,18 +208,11 @@ public class SearchListAdapter extends RecyclerView.Adapter<SearchListAdapter.So
                     listener.onClick(song);
                 }
             });
-//                    });
-//
-//                }
-//            });
 
         }
 
         void bindArtists(MediaBrowserCompat.MediaItem song, OnItemClickListener listener) {
-//            executor.execute(new Runnable() {
-//                @Override
-//                public void run() {
-//                    handler.post(() -> {
+
             binding.title.setText(song.getDescription().getTitle());
             binding.subTitle.setText(song.getDescription().getSubtitle());
             itemView.setOnClickListener(new View.OnClickListener() {
@@ -217,60 +221,59 @@ public class SearchListAdapter extends RecyclerView.Adapter<SearchListAdapter.So
                     listener.onClick(song);
                 }
             });
-//                    });
-//                }
-//            });
 
         }
     }
 
-    public void refreshList() {
-        allSongs.clear();
-        allSongs.addAll(songs);
-        songs.clear();
+
+    public void animateTo(List<MediaBrowserCompat.MediaItem> models) {
+        applyAndAnimateRemovals(models);
+        applyAndAnimateAdditions(models);
+        applyAndAnimateMovedItems(models);
     }
 
-    @Override
-    public Filter getFilter() {
-        return filter;
-    }
-
-    int constraint_length = 0;
-    Filter filter = new Filter() {
-        @Override
-        protected FilterResults performFiltering(CharSequence constraint) {
-            List<MediaBrowserCompat.MediaItem> result_list = new ArrayList<>();
-            constraint_length = constraint.length();
-            if (constraint != null && constraint.length() != 0) {
-                for (int i = 0; i < allSongs.size(); i++) {
-                    if (allSongs.get(i).getDescription().getTitle().toString().toLowerCase().contains(constraint.toString().toLowerCase())) {
-                        result_list.add(allSongs.get(i));
-                        Log.d(TAG, "performFiltering: " + allSongs.get(i).getDescription().getTitle());
-                    }
-                }
+    private void applyAndAnimateRemovals(List<MediaBrowserCompat.MediaItem> newModels) {
+        for (int i = songs.size() - 1; i >= 0; i--) {
+            final MediaBrowserCompat.MediaItem model = songs.get(i);
+            if (!newModels.contains(model)) {
+                removeItem(i);
             }
-            FilterResults filterResults = new FilterResults();
-            filterResults.values = result_list;
-            return filterResults;
         }
-
-        @Override
-        protected void publishResults(CharSequence constraint, FilterResults results) {
-
-            List<MediaBrowserCompat.MediaItem> result_list = new ArrayList<>((Collection<? extends MediaBrowserCompat.MediaItem>) results.values);
-            songs.clear();
-            if (!result_list.isEmpty()) songs.addAll(result_list);
-            if (constraint_length == 0 || songs.isEmpty()) {
-                headView.setVisibility(View.GONE);
-                recyclerView.setVisibility(View.GONE);
-            } else {
-                headView.setVisibility(View.VISIBLE);
-                recyclerView.setVisibility(View.VISIBLE);
+    }
+    private void applyAndAnimateAdditions(List<MediaBrowserCompat.MediaItem> newModels) {
+        for (int i = 0, count = newModels.size(); i < count; i++) {
+            final MediaBrowserCompat.MediaItem model = newModels.get(i);
+            if (!songs.contains(model)) {
+                addItem(i, model);
             }
-            Log.d(TAG, "publishResults: no of result: " + songs.size());
-            notifyDataSetChanged();
         }
-    };
+    }
+    private void applyAndAnimateMovedItems(List<MediaBrowserCompat.MediaItem> newModels) {
+        for (int toPosition = newModels.size() - 1; toPosition >= 0; toPosition--) {
+            final MediaBrowserCompat.MediaItem model = newModels.get(toPosition);
+            final int fromPosition = songs.indexOf(model);
+            if (fromPosition >= 0 && fromPosition != toPosition) {
+                moveItem(fromPosition, toPosition);
+            }
+        }
+    }
+
+    public MediaBrowserCompat.MediaItem removeItem(int position) {
+        final MediaBrowserCompat.MediaItem model = songs.remove(position);
+        notifyItemRemoved(position);
+        return model;
+    }
+
+    public void addItem(int position, MediaBrowserCompat.MediaItem model) {
+        songs.add(position, model);
+        notifyItemInserted(position);
+    }
+
+    public void moveItem(int fromPosition, int toPosition) {
+        final MediaBrowserCompat.MediaItem model = songs.remove(fromPosition);
+        songs.add(toPosition, model);
+        notifyItemMoved(fromPosition, toPosition);
+    }
 
     public interface OnItemClickListener {
         default void onClick(MediaBrowserCompat.MediaItem song) {

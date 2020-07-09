@@ -1,6 +1,7 @@
 package com.yash.ymplayer.ui.main;
 
 import android.content.ComponentName;
+import android.content.Context;
 import android.content.Intent;
 import android.os.Bundle;
 
@@ -8,6 +9,7 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.appcompat.widget.SearchView;
 import androidx.fragment.app.Fragment;
+import androidx.fragment.app.FragmentActivity;
 import androidx.lifecycle.Observer;
 import androidx.lifecycle.ViewModelProvider;
 import androidx.recyclerview.widget.DividerItemDecoration;
@@ -32,6 +34,8 @@ import com.yash.ymplayer.MainActivity;
 import com.yash.ymplayer.PlayerService;
 import com.yash.ymplayer.R;
 import com.yash.ymplayer.databinding.FragmentArtistsBinding;
+import com.yash.ymplayer.util.AlbumOrArtistContextMenuClickListener;
+import com.yash.ymplayer.util.Keys;
 import com.yash.ymplayer.util.SongListAdapter;
 import com.yash.ymplayer.util.SongsContextMenuClickListener;
 
@@ -50,6 +54,8 @@ public class Artists extends Fragment {
     SongListAdapter artistsAdapter;
     private static Artists instance;
     Handler handler = new Handler();
+    Context context;
+    FragmentActivity activity;
 
     public Artists() {
         // Required empty public constructor
@@ -72,16 +78,18 @@ public class Artists extends Fragment {
     @Override
     public void onActivityCreated(@Nullable Bundle savedInstanceState) {
         super.onActivityCreated(savedInstanceState);
-        mMediaBrowser = new MediaBrowserCompat(getContext(), new ComponentName(getContext(), PlayerService.class), mConnectionCallbacks, null);
+        context = getContext();
+        activity = getActivity();
+        mMediaBrowser = new MediaBrowserCompat(getContext(), new ComponentName(context, PlayerService.class), mConnectionCallbacks, null);
         mMediaBrowser.connect();
         artistsBinding.allArtists.setLayoutManager(new LinearLayoutManager(getContext()));
-        artistsBinding.allArtists.addItemDecoration(new DividerItemDecoration(getContext(), DividerItemDecoration.VERTICAL));
+        artistsBinding.allArtists.addItemDecoration(new DividerItemDecoration(context, DividerItemDecoration.VERTICAL));
     }
 
     @Override
     public void startActivity(Intent intent) {
         super.startActivity(intent);
-        getActivity().overridePendingTransition(android.R.anim.slide_in_left, android.R.anim.slide_out_right);
+        activity.overridePendingTransition(android.R.anim.slide_in_left, android.R.anim.slide_out_right);
     }
 
     @Override
@@ -94,19 +102,20 @@ public class Artists extends Fragment {
         @Override
         public void onConnected() {
             try {
-                viewModel = new ViewModelProvider(getActivity()).get(LocalViewModel.class);
+                viewModel = new ViewModelProvider(activity).get(LocalViewModel.class);
                 mMediaController = new MediaControllerCompat(getContext(), mMediaBrowser.getSessionToken());
                 artistsAdapter = new SongListAdapter(getContext(), songs, new SongListAdapter.OnItemClickListener() {
                     @Override
                     public void onClick(MediaBrowserCompat.MediaItem song) {
                         if (song.isBrowsable()) {
                             Intent intent = new Intent(getActivity(), ListExpandActivity.class);
-                            intent.putExtra("parent_id", song.getMediaId());
-                            intent.putExtra("type", "artist");
+                            intent.putExtra(Keys.EXTRA_PARENT_ID, song.getMediaId());
+                            intent.putExtra(Keys.EXTRA_TYPE, "artist");
+                            intent.putExtra(Keys.EXTRA_TITLE,song.getDescription().getTitle());
                             startActivity(intent);
                         }
                     }
-                }, new SongsContextMenuClickListener(getContext(),mMediaController),1);
+                }, new AlbumOrArtistContextMenuClickListener(context,mMediaController),1);
                 artistsBinding.allArtists.setAdapter(artistsAdapter);
                 mMediaController.registerCallback(mMediaControllerCallbacks);
                 artistsBinding.artistsRefresh.setColorSchemeColors(((MainActivity) getActivity()).getAttributeColor(R.attr.colorPrimary));

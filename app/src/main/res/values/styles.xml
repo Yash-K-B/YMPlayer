@@ -24,7 +24,7 @@
     <!--    SplashScreen-->
     <style name="SplashScreen" parent="Theme.AppCompat.Light.NoActionBar">
         <item name="colorPrimary">@color/colorPrimary</item>
-        <item name="colorPrimaryDark">#B900CA</item>
+        <item name="colorPrimaryDark">#00168E</item>
         <item name="colorAccent">@color/colorAccent</item>
         <item name="android:windowBackground">@drawable/music_bg</item>
     </style>
@@ -107,7 +107,7 @@
         <item name="layoutBackground">@android:color/black</item>
         <item name="overlayTheme">@style/ThemeOverlay.AppCompat.Dark</item>
         <item name="backgroundHeadingTextColor">#FFD600</item>
-<!--        <item name="android:background">#000000</item>-->
+        <!--        <item name="android:background">#000000</item>-->
     </style>
     <!--    AMOLED Themes-->
     <style name="YTheme.AMOLED.Red.NoActionBar" parent="YTheme.AMOLED">

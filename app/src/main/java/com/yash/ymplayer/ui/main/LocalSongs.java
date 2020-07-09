@@ -1,8 +1,11 @@
 package com.yash.ymplayer.ui.main;
 
 import android.app.AlertDialog;
+import android.content.ContentValues;
+import android.content.Context;
 import android.content.Intent;
 import android.os.Bundle;
+import android.provider.MediaStore;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.Menu;
@@ -30,10 +33,11 @@ import com.yash.ymplayer.repository.Repository;
 /**
  * A simple {@link Fragment} subclass.
  */
-public class LocalSongs extends Fragment{
+public class LocalSongs extends Fragment {
     private static final String[] TAB_TITLES = new String[]{"All Songs", "Albums", "Artists", "Playlist"};
     private static final String TAG = "debug";
     FragmentLocalSongsBinding binding;
+    Context context;
     public static LocalSongs instance;
 
     public LocalSongs() {
@@ -59,8 +63,9 @@ public class LocalSongs extends Fragment{
     public void onActivityCreated(@Nullable Bundle savedInstanceState) {
         super.onActivityCreated(savedInstanceState);
         Log.d(TAG, "onActivityCreated: LocalSongs");
+        context = getContext();
         ((ActivityActionProvider) getActivity()).setCustomToolbar(binding.toolbar, "Local Library");
-        SectionsPagerAdapter sectionsPagerAdapter = new SectionsPagerAdapter(getChildFragmentManager(),getActivity().getLifecycle());
+        SectionsPagerAdapter sectionsPagerAdapter = new SectionsPagerAdapter(getChildFragmentManager(), getActivity().getLifecycle());
         binding.floatingActionButton.hide();
         binding.viewPager.setAdapter(sectionsPagerAdapter);
         new TabLayoutMediator(binding.tabs, binding.viewPager, new TabLayoutMediator.TabConfigurationStrategy() {
@@ -94,22 +99,21 @@ public class LocalSongs extends Fragment{
 
     @Override
     public void onCreateOptionsMenu(@NonNull Menu menu, @NonNull MenuInflater inflater) {
-        inflater.inflate(R.menu.app_menu_extention_search,menu);
+        inflater.inflate(R.menu.app_menu_extention_search, menu);
         super.onCreateOptionsMenu(menu, inflater);
     }
 
     @Override
     public boolean onOptionsItemSelected(@NonNull MenuItem item) {
         Log.d(TAG, "onOptionsItemSelected: LocalSongs");
-        if(item.getItemId() == R.id.search)
-        {
+        if (item.getItemId() == R.id.search) {
             startActivity(new Intent(getContext(), SearchActivity.class));
-            getActivity().overridePendingTransition(android.R.anim.fade_in,android.R.anim.fade_out);
+            getActivity().overridePendingTransition(android.R.anim.fade_in, android.R.anim.fade_out);
         }
         return super.onOptionsItemSelected(item);
     }
 
-    public void onFabClicked(Playlists playlist){
+    public void onFabClicked(Playlists playlist) {
         binding.floatingActionButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -118,12 +122,16 @@ public class LocalSongs extends Fragment{
                 builder.setTitle("Create playlist")
                         .setView(playlistBinding.getRoot())
                         .setPositiveButton("SAVE", (dialog, which) -> {
-                            if(Repository.getInstance(getContext()).createPlaylist(playlistBinding.playlistName.getText().toString()) == -1){
-                                Toast.makeText(getContext(), "Playlist already exists", Toast.LENGTH_SHORT).show();
-                            };
+                            ContentValues contentValues = new ContentValues();
+                            contentValues.put(MediaStore.Audio.Playlists.NAME, playlistBinding.playlistName.getText() + "");
+                            contentValues.put(MediaStore.Audio.Playlists.DATE_ADDED, System.currentTimeMillis());
+                            if (context.getContentResolver().insert(MediaStore.Audio.Playlists.EXTERNAL_CONTENT_URI, contentValues) == null)
+                                Toast.makeText(context, "Playlist Already Exist", Toast.LENGTH_SHORT).show();
                             playlist.onChanged();
                         })
-                        .setNegativeButton("CANCEL", (dialog, which) -> { dialog.dismiss(); });
+                        .setNegativeButton("CANCEL", (dialog, which) -> {
+                            dialog.dismiss();
+                        });
                 AlertDialog dialog = builder.create();
                 dialog.show();
             }

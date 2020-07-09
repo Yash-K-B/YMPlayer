@@ -3,11 +3,11 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    tools:context=".ui.spotify.SpotifyAlbums">
+    tools:context=".spotify.SpotifyAlbums">
 
     <androidx.recyclerview.widget.RecyclerView
         android:id="@+id/spotifyAlbumContainer"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        tools:listitem="@layout/item_album"/>
+        tools:listitem="@layout/item_album" />
 </FrameLayout>

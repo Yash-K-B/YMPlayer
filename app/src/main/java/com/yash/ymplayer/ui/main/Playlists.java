@@ -15,6 +15,7 @@ import androidx.swiperefreshlayout.widget.SwipeRefreshLayout;
 import android.os.Handler;
 import android.os.RemoteException;
 import android.support.v4.media.MediaBrowserCompat;
+import android.support.v4.media.MediaDescriptionCompat;
 import android.support.v4.media.MediaMetadataCompat;
 import android.support.v4.media.session.MediaControllerCompat;
 import android.support.v4.media.session.PlaybackStateCompat;
@@ -28,9 +29,13 @@ import com.yash.ymplayer.MainActivity;
 import com.yash.ymplayer.PlayerService;
 import com.yash.ymplayer.R;
 import com.yash.ymplayer.databinding.FragmentPlaylistsBinding;
+import com.yash.ymplayer.repository.OnlineYoutubeRepository;
+import com.yash.ymplayer.util.AlbumOrArtistContextMenuClickListener;
+import com.yash.ymplayer.util.Keys;
 import com.yash.ymplayer.util.SongListAdapter;
 import com.yash.ymplayer.util.SongsContextMenuClickListener;
 
+import java.security.Key;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -74,15 +79,17 @@ public class Playlists extends Fragment implements PlaylistUpdateListener {
             public void onClick(MediaBrowserCompat.MediaItem song) {
                 if (song.isBrowsable()) {
                     Intent intent = new Intent(getActivity(), ListExpandActivity.class);
-                    intent.putExtra("parent_id", song.getMediaId());
-                    intent.putExtra("type", "playlist");
+                    intent.putExtra(Keys.EXTRA_PARENT_ID, song.getMediaId());
+                    intent.putExtra(Keys.EXTRA_TYPE, "playlist");
+                    intent.putExtra(Keys.EXTRA_TITLE, song.getDescription().getTitle());
                     startActivity(intent);
                 }
             }
-        }, new SongsContextMenuClickListener(getContext(), mMediaController), 2);
+        }, new AlbumOrArtistContextMenuClickListener(getContext(), mMediaController), 2);
         playlistsBinding.playlists.setAdapter(adapter);
         playlistsBinding.playlists.setLayoutManager(new LinearLayoutManager(getContext()));
         playlistsBinding.playlists.addItemDecoration(new DividerItemDecoration(getContext(), DividerItemDecoration.VERTICAL));
+        //OnlineYoutubeRepository.getInstance(getContext()).topTracks();
     }
 
     @Override
@@ -117,7 +124,7 @@ public class Playlists extends Fragment implements PlaylistUpdateListener {
                     @Override
                     public void onChanged(List<MediaBrowserCompat.MediaItem> songs) {
                         Log.d(TAG, "onChanged: Playlist: " + songs.size());
-                        Playlists.this.songs.clear();
+                        initPlaylist();
                         Playlists.this.songs.addAll(songs);
                         handler.postDelayed(new Runnable() {
                             @Override
@@ -161,4 +168,20 @@ public class Playlists extends Fragment implements PlaylistUpdateListener {
             viewModel.getAllPlaylists(mMediaBrowser, null);
     }
 
+
+    void initPlaylist(){
+        songs.clear();
+//        songs.add(new MediaBrowserCompat.MediaItem(new MediaDescriptionCompat.Builder()
+//                .setMediaId("PLAYLISTS/RECENT")
+//                .setTitle("Recently Played")
+//                .build(), MediaBrowserCompat.MediaItem.FLAG_BROWSABLE));
+        songs.add(new MediaBrowserCompat.MediaItem(new MediaDescriptionCompat.Builder()
+                .setMediaId("PLAYLISTS/LAST_ADDED")
+                .setTitle("Last Added")
+                .build(), MediaBrowserCompat.MediaItem.FLAG_BROWSABLE));
+        songs.add(new MediaBrowserCompat.MediaItem(new MediaDescriptionCompat.Builder()
+                .setMediaId("PLAYLISTS/FAVOURITE")
+                .setTitle("Favourites")
+                .build(), MediaBrowserCompat.MediaItem.FLAG_BROWSABLE));
+    }
 }

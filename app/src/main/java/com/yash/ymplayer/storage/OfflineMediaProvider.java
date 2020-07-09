@@ -11,10 +11,12 @@ import android.os.Bundle;
 import android.provider.MediaStore;
 import android.support.v4.media.MediaBrowserCompat.MediaItem;
 import android.support.v4.media.MediaDescriptionCompat;
+import android.support.v4.media.MediaMetadataCompat;
 import android.support.v4.media.session.MediaSessionCompat;
 import android.util.Log;
 
 import com.google.android.exoplayer2.source.MediaSource;
+import com.yash.ymplayer.helper.LogHelper;
 
 import java.lang.reflect.Array;
 import java.util.ArrayList;
@@ -24,17 +26,25 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Random;
 
 public class OfflineMediaProvider {
     public static final String METADATA_KEY_ALBUM_ID = "albumId";
     private static final String TAG = "debug";
+    public static final String METADATA_KEY_FIRST_ITEM_ID = "first_item_media_id";
     private List<MediaMetadata> songs;
+    private List<MediaMetadataCompat> playlists;
     private HashMap<String, MediaMetadata> songById;
     private HashMap<String, List<MediaMetadata>> songsByArtist;
     private HashMap<String, List<MediaMetadata>> songsByAlbum;
     private boolean isMusicFetched;
     ContentResolver resolver;
     private Cursor cursor;
+    private Cursor albumCursor;
+    private Cursor artistCursor;
+    private Cursor playlistCursor;
+    private boolean isPlaylistFetched;
+
 
     private static OfflineMediaProvider instance;
 
@@ -46,12 +56,15 @@ public class OfflineMediaProvider {
 
     public OfflineMediaProvider(Context context) {
         songs = new ArrayList<>();
+        playlists = new ArrayList<>();
         songById = new HashMap<>();
         songsByArtist = new HashMap<>();
         songsByAlbum = new HashMap<>();
         isMusicFetched = false;
+        isPlaylistFetched = false;
         resolver = context.getApplicationContext().getContentResolver();
         cursor = resolver.query(getUri(), getProjection(), getSelectionArg(), null, getSortOrder());
+       // playlistCursor = resolver.query(MediaStore.Audio.Playlists.EXTERNAL_CONTENT_URI, new String[]{MediaStore.Audio.Playlists._ID,MediaStore.Audio.Playlists.NAME,MediaStore.Audio.Playlists._COUNT,MediaStore.Audio.Playlists.CONTENT_TYPE}, null, null, null);
     }
 
 
@@ -109,6 +122,9 @@ public class OfflineMediaProvider {
 
     public List<MediaSessionCompat.QueueItem> getSongById(String mediaId, long queueId) {
         List<MediaSessionCompat.QueueItem> list = new ArrayList<>();
+        if (!isMusicFetched) {
+            fetchMusic();
+        }
         String[] parts = mediaId.split("[/|]");
         String id = parts[parts.length - 1];
         //Log.d(TAG, "getSongById: "+id+"object :"+songById.get(id));
@@ -120,23 +136,25 @@ public class OfflineMediaProvider {
                     .setSubtitle(songById.get(id).getString(MediaMetadata.METADATA_KEY_ARTIST))
                     .setDescription(songById.get(id).getString(MediaMetadata.METADATA_KEY_ALBUM))
                     .build(), queueId));
-        }
-        catch (Exception e){
+        } catch (Exception e) {
             e.printStackTrace();
-            if(songsByAlbum.containsKey(id)){
-                Log.d(TAG, "getSongById: Album");
-            }
-            else if(songsByArtist.containsKey(id)){
-                Log.d(TAG, "getSongById: Artist");
-            }
         }
-
-        if (isMusicFetched) {
-            fetchMusic();
-        }
-        // Log.d(TAG, "getSongById: map size:"+songById.size()+" artist map size:"+songsByArtist.size());
 
         return list;
+    }
+
+
+    public List<MediaSessionCompat.QueueItem> getSongsById(String mediaId, long queueId, int type) {
+        switch (type) {
+            case QueueType.SONG:
+                return getSongById(mediaId, queueId);
+            case QueueType.ALBUM_SONGS:
+            case QueueType.ARTIST_SONGS:
+                return getQueue(mediaId);
+            default:
+                return new ArrayList<>();
+
+        }
     }
 
     /**
@@ -152,10 +170,13 @@ public class OfflineMediaProvider {
         List<String> keys = new ArrayList<>(songsByArtist.keySet());
         Collections.sort(keys, String::compareToIgnoreCase);
         for (String item : keys) {
+            Bundle extras = new Bundle();
+            extras.putString(METADATA_KEY_FIRST_ITEM_ID, songsByArtist.get(item).get(0).getString(MediaMetadata.METADATA_KEY_MEDIA_ID));
             MediaItem child = new MediaItem(new MediaDescriptionCompat.Builder()
                     .setMediaId(item)
                     .setTitle(item)
                     .setSubtitle(songsByArtist.get(item).size() + " - " + ((songsByArtist.get(item).size() > 1) ? "songs" : "song"))
+                    .setExtras(extras)
                     .build(), MediaItem.FLAG_BROWSABLE);
             items.add(child);
         }
@@ -196,6 +217,7 @@ public class OfflineMediaProvider {
         for (String item : keys) {
             Bundle extra = new Bundle();
             extra.putString(OfflineMediaProvider.METADATA_KEY_ALBUM_ID, songsByAlbum.get(item).get(0).getString(OfflineMediaProvider.METADATA_KEY_ALBUM_ID));
+            extra.putString(METADATA_KEY_FIRST_ITEM_ID, songsByAlbum.get(item).get(0).getString(MediaMetadata.METADATA_KEY_MEDIA_ID));
             MediaItem child = new MediaItem(new MediaDescriptionCompat.Builder()
                     .setMediaId(item)
                     .setTitle(item)
@@ -227,6 +249,10 @@ public class OfflineMediaProvider {
     }
 
     public List<MediaSessionCompat.QueueItem> getCurrentPlayingQueue(String mediaId) {
+        return getQueue(mediaId);
+    }
+
+    public List<MediaSessionCompat.QueueItem> getQueue(String mediaId) {
         List<MediaSessionCompat.QueueItem> items = new ArrayList<>();
         String[] parts = mediaId.split("[/|]", 3);
         if (!isMusicFetched) {
@@ -320,5 +346,54 @@ public class OfflineMediaProvider {
 
     public long getLongAlbumId(String mediaId) {
         return Long.parseLong(getAlbumId(mediaId));
+    }
+
+    public List<MediaSessionCompat.QueueItem> getRandomQueue() {
+        List<MediaSessionCompat.QueueItem> items = new ArrayList<>();
+        if (!isMusicFetched) {
+            fetchMusic();
+        }
+        List<MediaMetadata> list = new ArrayList<>(songs);
+        LogHelper.d(TAG, "getRandomQueue: before:" + list.size());
+        Collections.shuffle(list);
+        LogHelper.d(TAG, "getRandomQueue: after:" + list.size());
+        int size = Math.min(list.size(), 10);
+        for (int i = 0; i < size; i++) {
+            items.add(new MediaSessionCompat.QueueItem(new MediaDescriptionCompat.Builder()
+                    .setMediaId(list.get(i).getString(MediaMetadata.METADATA_KEY_MEDIA_ID))
+                    .setTitle(list.get(i).getString(MediaMetadata.METADATA_KEY_TITLE))
+                    .setSubtitle(list.get(i).getString(MediaMetadata.METADATA_KEY_ARTIST))
+                    .setDescription(list.get(i).getString(MediaMetadata.METADATA_KEY_ALBUM))
+                    .build(), Long.parseLong(list.get(i).getString(MediaMetadata.METADATA_KEY_MEDIA_ID))));
+        }
+        return items;
+    }
+
+//    synchronized void fetchPlaylist(){
+//        MediaMetadataCompat item;
+//        while (playlistCursor.moveToNext()){
+//            String id = playlistCursor.getString(playlistCursor.getColumnIndex(MediaStore.Audio.Playlists._ID));
+//            String name = playlistCursor.getString(playlistCursor.getColumnIndex(MediaStore.Audio.Playlists.NAME));
+//            String count = playlistCursor.getString(playlistCursor.getColumnIndex(MediaStore.Audio.Playlists._COUNT));
+//            String contentType = playlistCursor.getString(playlistCursor.getColumnIndex(MediaStore.Audio.Playlists.CONTENT_TYPE));
+//            item = new MediaMetadataCompat.Builder()
+//                    .putString(MediaMetadataCompat.METADATA_KEY_MEDIA_ID,id)
+//                    .putString(MediaMetadataCompat.METADATA_KEY_TITLE,name)
+//                    .putString(MediaMetadataCompat.METADATA_KEY_ARTIST,Integer.parseInt(count)>1?count+"-songs":count+"-song")
+//                    .build();
+//            playlists.add(item);
+//        }
+//        isPlaylistFetched = true;
+//    }
+
+
+
+
+
+
+    public interface QueueType {
+        int ALBUM_SONGS = 0;
+        int ARTIST_SONGS = 1;
+        int SONG = 2;
     }
 }

@@ -34,7 +34,7 @@
         Version 1.4\n
         ------------------------------------\n
         * Google assistant integration for media controls\n
-        * Spotify Api integrated for online playback\n
+        * Youtube API integrated for online streaming\n
         -----------------------------------\n
         Version 1.2\n
         -----------------------------------\n
@@ -52,4 +52,5 @@
     <string name="albums">Albums</string>
     <string name="artists">Artists</string>
     <string name="songs">Songs</string>
+    <string name="youtube_songs">Youtube Songs</string>
 </resources>

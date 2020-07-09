@@ -41,6 +41,7 @@
                 android:fontFamily="@font/royal_acid"
                 android:textColor="?attr/listTitleTextColor"
                 app:layout_constraintTop_toBottomOf="@+id/author_image" />
+
             <TextView
                 android:id="@+id/author_subtitle"
                 android:layout_width="0dp"
@@ -69,6 +70,7 @@
                 android:text="\t\t'YM Player' is a Music Player for Android. It is developed using the media playback guidelines of Android. It features all the necessary actions on media playing. It supports all the devices running Android 5.0 or up. There is also support for Android Auto and Automotive OS playback."
                 android:textColor="?attr/listTitleTextColor"
                 app:layout_constraintTop_toBottomOf="@+id/author_subtitle" />
+
             <TextView
                 android:id="@+id/heading_changelog"
                 android:layout_width="0dp"
@@ -85,6 +87,7 @@
                 android:fontFamily="@font/open_sans_cond_bold"
                 android:textColor="?attr/listTitleTextColor"
                 app:layout_constraintTop_toBottomOf="@+id/app_description" />
+
             <TextView
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"

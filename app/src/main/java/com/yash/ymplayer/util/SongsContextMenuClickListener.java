@@ -1,7 +1,5 @@
 package com.yash.ymplayer.util;
 
-import android.content.ContentProvider;
-import android.content.ContentResolver;
 import android.content.ContentUris;
 import android.content.Context;
 import android.content.Intent;
@@ -9,30 +7,22 @@ import android.database.Cursor;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
-import android.os.Environment;
-import android.os.FileUtils;
 import android.provider.MediaStore;
 import android.support.v4.media.MediaBrowserCompat;
 import android.support.v4.media.session.MediaControllerCompat;
-import android.util.Log;
 import android.widget.Toast;
 
-import androidx.annotation.RequiresPermission;
-import androidx.core.content.FileProvider;
-import androidx.core.graphics.PathUtils;
-import androidx.recyclerview.widget.RecyclerView;
-
 import com.yash.ymplayer.ListExpandActivity;
+import com.yash.ymplayer.helper.LogHelper;
 import com.yash.ymplayer.repository.Repository;
+import com.yash.ymplayer.storage.AudioProvider;
+import com.yash.ymplayer.storage.OfflineMediaProvider;
 import com.yash.ymplayer.ui.main.SongContextMenuListener;
 
 import java.io.File;
-import java.io.FileNotFoundException;
-import java.io.IOException;
-import java.io.InputStream;
 
 public class SongsContextMenuClickListener implements SongContextMenuListener {
-    private static final String TAG = "debug";
+    private static final String TAG = "SongsContextMenuClickLi";
     MediaControllerCompat mMediaController;
     Context context;
 
@@ -50,16 +40,16 @@ public class SongsContextMenuClickListener implements SongContextMenuListener {
 
     @Override
     public void queueNext(MediaBrowserCompat.MediaItem item) {
-
         Bundle extras = new Bundle();
         extras.putString(Keys.MEDIA_ID, item.getDescription().getMediaId());
+        extras.putInt(Keys.QUEUE_HINT, AudioProvider.QueueHint.SINGLE_SONG);
         mMediaController.getTransportControls().sendCustomAction(Keys.Action.QUEUE_NEXT, extras);
     }
 
     @Override
     public void addToPlaylist(MediaBrowserCompat.MediaItem item, String playlist) {
         String[] parts = item.getDescription().getMediaId().split("[/|]");
-        Log.d(TAG, "addToPlaylist: id:" + parts[parts.length - 1]);
+        LogHelper.d(TAG, "addToPlaylist: id:" + parts[parts.length - 1]);
         Bundle extras = new Bundle();
         extras.putString(Keys.MEDIA_ID, parts[parts.length - 1]);
         extras.putString(Keys.TITLE, item.getDescription().getTitle().toString());
@@ -71,18 +61,24 @@ public class SongsContextMenuClickListener implements SongContextMenuListener {
 
     @Override
     public void gotoAlbum(MediaBrowserCompat.MediaItem item) {
+        if (item.getDescription().getExtras() == null || !item.getDescription().getExtras().containsKey(Keys.EXTRA_ALBUM_ID))
+            return;
+
         Intent intent = new Intent(context, ListExpandActivity.class);
-        intent.putExtra("parent_id", item.getDescription().getDescription());
-        intent.putExtra("type", "album");
-        intent.putExtra("imageId", Long.parseLong(Repository.getInstance(context).getOfflineProvider().getAlbumId(item.getMediaId())));
+        intent.putExtra(Keys.EXTRA_PARENT_ID, item.getDescription().getExtras().getString(Keys.EXTRA_ALBUM_ID));
+        intent.putExtra(Keys.EXTRA_TYPE, "album");
+        intent.putExtra(Keys.EXTRA_TITLE, item.getDescription().getDescription());
         context.startActivity(intent);
     }
 
     @Override
     public void gotoArtist(MediaBrowserCompat.MediaItem item) {
+        if (item.getDescription().getExtras() == null || !item.getDescription().getExtras().containsKey(Keys.EXTRA_ARTIST_ID))
+            return;
         Intent intent = new Intent(context, ListExpandActivity.class);
-        intent.putExtra("parent_id", item.getDescription().getSubtitle());
-        intent.putExtra("type", "artist");
+        intent.putExtra(Keys.EXTRA_PARENT_ID, item.getDescription().getExtras().getString(Keys.EXTRA_ARTIST_ID));
+        intent.putExtra(Keys.EXTRA_TYPE, "artist");
+        intent.putExtra(Keys.EXTRA_TITLE, item.getDescription().getSubtitle());
         context.startActivity(intent);
     }
 
@@ -95,7 +91,7 @@ public class SongsContextMenuClickListener implements SongContextMenuListener {
         intent.setType("audio/*");
         intent.putExtra(Intent.EXTRA_STREAM, contentUri);
         intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
-        context.startActivity(Intent.createChooser(intent, "Share app via"));
+        context.startActivity(Intent.createChooser(intent, "Share song via"));
     }
 
     @Override
@@ -110,9 +106,9 @@ public class SongsContextMenuClickListener implements SongContextMenuListener {
                 File file = new File(cursor.getString(cursor.getColumnIndex(MediaStore.Audio.Media.DATA)));
                 if (file.delete()) {
                     int x = context.getContentResolver().delete(fileUri, null, null);
-                    Log.d(TAG, "deleteFromStorage: " + fileUri.getEncodedPath() + " exist:" + file.exists());
+                    LogHelper.d(TAG, "deleteFromStorage: " + fileUri.getEncodedPath() + " exist:" + file.exists());
                     Toast.makeText(context, "File Deleted", Toast.LENGTH_SHORT).show();
-                    return x!=0;
+                    return x != 0;
                 } else {
                     Toast.makeText(context, "File Not Deleted", Toast.LENGTH_SHORT).show();
                     return false;
@@ -123,7 +119,7 @@ public class SongsContextMenuClickListener implements SongContextMenuListener {
         } else {
             context.revokeUriPermission(fileUri, Intent.FLAG_GRANT_WRITE_URI_PERMISSION);
             int x = context.getContentResolver().delete(fileUri, null, null);
-            Log.d(TAG, "deleteFromStorage: " + fileUri.getEncodedPath());
+            LogHelper.d(TAG, "deleteFromStorage: " + fileUri.getEncodedPath());
             return x != 0;
         }
 

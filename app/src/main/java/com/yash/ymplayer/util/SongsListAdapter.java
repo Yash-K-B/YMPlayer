@@ -35,7 +35,7 @@ import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
-public class SongsListAdapter extends RecyclerView.Adapter<SongsListAdapter.ItemViewHolder> implements Filterable {
+public class SongsListAdapter extends RecyclerView.Adapter<SongsListAdapter.ItemViewHolder> {
     private static final String TAG = "debug";
     List<MediaBrowserCompat.MediaItem> songs;
     List<MediaBrowserCompat.MediaItem> allSongs = new ArrayList<>();
@@ -89,42 +89,6 @@ public class SongsListAdapter extends RecyclerView.Adapter<SongsListAdapter.Item
         return songs.size();
     }
 
-    @Override
-    public Filter getFilter() {
-        return filter;
-    }
-
-    Filter filter = new Filter() {
-
-        @Override
-        protected FilterResults performFiltering(CharSequence constraint) {
-            List<MediaBrowserCompat.MediaItem> filteredList = new ArrayList<>();
-            Log.d(TAG, "performFiltering: allsongs size:" + songs.size());
-            if (constraint == null || constraint.length() == 0) {
-                filteredList.addAll(allSongs);
-                Log.d(TAG, "performFiltering: All list return");
-            } else {
-                for (MediaBrowserCompat.MediaItem item : allSongs) {
-                    if (item.getDescription().getTitle().toString().toLowerCase().contains(constraint.toString().toLowerCase())) {
-                        filteredList.add(item);
-                    }
-                }
-            }
-            FilterResults filterResults = new FilterResults();
-            filterResults.values = filteredList;
-            return filterResults;
-        }
-
-        @Override
-        protected void publishResults(CharSequence constraint, FilterResults results) {
-            Log.d(TAG, "publishResults: new size :");
-            songs.clear();
-            songs.addAll((Collection<? extends MediaBrowserCompat.MediaItem>) results.values);
-            notifyDataSetChanged();
-        }
-    };
-
-
     class ItemViewHolder extends RecyclerView.ViewHolder {
         ItemMusicBinding binding;
 
@@ -138,16 +102,16 @@ public class SongsListAdapter extends RecyclerView.Adapter<SongsListAdapter.Item
             PopupMenu menu = new PopupMenu(context, binding.more);
             switch (mode) {
                 case MODE.ALBUM:
-                    menu.getMenuInflater().inflate(R.menu.album_songs_context_menu, menu.getMenu());
+                    menu.inflate(R.menu.album_songs_context_menu);
                     break;
                 case MODE.ARTIST:
-                    menu.getMenuInflater().inflate(R.menu.artist_songs_context_menu, menu.getMenu());
+                    menu.inflate(R.menu.artist_songs_context_menu);
                     break;
                 case MODE.PLAYLIST:
-                    menu.getMenuInflater().inflate(R.menu.playlist_songs_context_menu, menu.getMenu());
+                    menu.inflate(R.menu.playlist_songs_context_menu);
                     break;
                 default:
-                    menu.getMenuInflater().inflate(R.menu.song_context_menu, menu.getMenu());
+                    menu.inflate(R.menu.song_context_menu);
             }
 
             menu.setOnMenuItemClickListener(item -> {
@@ -200,8 +164,8 @@ public class SongsListAdapter extends RecyclerView.Adapter<SongsListAdapter.Item
                 if (viewModel.songImages.get(song.getDescription().getMediaId()) == null) {
                     MediaMetadataRetriever retriever = new MediaMetadataRetriever();
                     String[] parts = song.getDescription().getMediaId().split("[/|]");
-                    long id = Long.parseLong(parts[parts.length - 1]);
                     try {
+                        long id = Long.parseLong(parts[parts.length - 1]);
                         retriever.setDataSource(context, ContentUris.withAppendedId(MediaStore.Audio.Media.EXTERNAL_CONTENT_URI, id));
                         Glide.with(context).load(retriever.getEmbeddedPicture()).into(new CustomTarget<Drawable>(size, size) {
                             @Override
@@ -233,7 +197,6 @@ public class SongsListAdapter extends RecyclerView.Adapter<SongsListAdapter.Item
             });
 
         }
-
     }
 
     public static class MODE {

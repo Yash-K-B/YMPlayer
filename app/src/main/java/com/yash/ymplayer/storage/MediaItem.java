@@ -18,14 +18,24 @@ public class MediaItem {
     String album;
     @ForeignKey(entity = PlayList.class,parentColumns = "playlist",childColumns = "playlist")
     String playlist;
+    String artwork;
 
 
-    public MediaItem(String mediaId, String name, String artist, String album, String playlist) {
+//    public MediaItem(String mediaId, String name, String artist, String album, String playlist) {
+//        this.mediaId = mediaId;
+//        this.name = name;
+//        this.artist = artist;
+//        this.album = album;
+//        this.playlist = playlist;
+//    }
+
+    public MediaItem(String mediaId, String name, String artist, String album, String playlist, String artwork) {
         this.mediaId = mediaId;
         this.name = name;
         this.artist = artist;
         this.album = album;
         this.playlist = playlist;
+        this.artwork = artwork;
     }
 
     public String getMediaId() {
@@ -46,5 +56,9 @@ public class MediaItem {
 
     public String getPlaylist() {
         return playlist;
+    }
+
+    public String getArtwork() {
+        return artwork;
     }
 }

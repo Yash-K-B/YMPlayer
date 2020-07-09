@@ -11,12 +11,10 @@ import android.renderscript.RenderScript;
 import android.renderscript.ScriptIntrinsicBlur;
 import android.util.AttributeSet;
 import android.util.Log;
-import android.widget.ImageView;
 
-import com.google.android.material.drawable.DrawableUtils;
 import com.yash.ymplayer.R;
 
-public class BlurImageView extends ImageView {
+public class BlurImageView extends androidx.appcompat.widget.AppCompatImageView {
 
 
     private float defaultBitmapScale = 0.1f;

@@ -64,7 +64,7 @@ public class LocalViewModel extends ViewModel {
     public String getAlbumParentId(String parentId) {
         if (parentId == null) {
             return "ALBUMS";
-        } else return "ALBUMS" + "/" + parentId;
+        } else return /*"ALBUMS" + "/" +*/ parentId;
     }
 
 
@@ -81,7 +81,7 @@ public class LocalViewModel extends ViewModel {
     public String getArtistParentId(String parentId) {
         if (parentId == null) {
             return "ARTISTS";
-        } else return "ARTISTS" + "/" + parentId;
+        } else return /*"ARTISTS" + "/" +*/ parentId;
     }
 
     public void getAllPlaylists(MediaBrowserCompat mediaBrowser, String parentId) {
@@ -98,7 +98,7 @@ public class LocalViewModel extends ViewModel {
     public String getPlaylistParentId(String parentId) {
         if (parentId == null) {
             return "PLAYLISTS";
-        } else return "PLAYLISTS" + "/" + parentId;
+        } else return /*"PLAYLISTS" + "/" +*/ parentId;
     }
 
 }

@@ -142,6 +142,7 @@
                         android:layout_height="20dp"
                         android:layout_marginBottom="32dp"
                         android:indeterminate="false"
+                        android:secondaryProgressTint="@android:color/white"
                         app:layout_constraintBottom_toTopOf="@+id/play_pause_btn"
                         app:layout_constraintEnd_toStartOf="@+id/maxDuration"
                         app:layout_constraintHorizontal_bias="0.5"
@@ -188,6 +189,16 @@
                         app:layout_constraintEnd_toStartOf="@+id/skip_next_btn"
                         app:layout_constraintHorizontal_bias="0.5"
                         app:layout_constraintStart_toEndOf="@+id/skip_prev_btn" />
+
+                    <ProgressBar
+                        android:id="@+id/player_loading"
+                        android:layout_width="60dp"
+                        android:layout_height="60dp"
+                        app:layout_constraintBottom_toBottomOf="@+id/play_pause_btn"
+                        app:layout_constraintEnd_toEndOf="@+id/play_pause_btn"
+                        app:layout_constraintStart_toStartOf ="@+id/play_pause_btn"
+                        app:layout_constraintTop_toTopOf="@+id/play_pause_btn"
+                        android:visibility="invisible"/>
 
                     <ImageButton
                         android:id="@+id/skip_next_btn"
@@ -323,6 +334,7 @@
                 android:background="@android:color/transparent">
 
                 <RelativeLayout
+                    android:id="@+id/player_top_back"
                     android:layout_width="match_parent"
                     android:layout_height="58dp"
                     android:background="@android:color/transparent">
@@ -366,8 +378,7 @@
                     android:id="@+id/player_top"
                     android:layout_width="match_parent"
                     android:layout_height="58dp"
-                    android:background="?attr/colorPrimary"
-                    android:visibility="gone">
+                    android:background="?attr/colorPrimary">
 
                     <ImageView
                         android:id="@+id/art"
@@ -443,6 +454,7 @@
         android:layout_gravity="start"
         android:fitsSystemWindows="true"
         app:headerLayout="@layout/nav_header_layout"
+        app:itemBackground="@android:color/transparent"
         app:menu="@menu/nav_menu" />
 
 

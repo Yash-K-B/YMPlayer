@@ -2,12 +2,16 @@
 <menu xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:android="http://schemas.android.com/apk/res/android">
 
-    <item android:title="Home"
-        android:icon="@drawable/ic_home_24"/>
-    <item android:title="Albums"
-        android:icon="@drawable/ic_album_24"/>
-    <item android:title="Artists"
-        android:icon="@drawable/ic_artist_track_24"/>
-    <item android:title="Playlists"
-        android:icon="@drawable/ic__play_list_24"/>
+    <item
+        android:title="Home"
+        android:icon="@drawable/ic_home_24" />
+    <item
+        android:title="Albums"
+        android:icon="@drawable/ic_album_24" />
+    <item
+        android:title="Artists"
+        android:icon="@drawable/ic_artist_track_24" />
+    <item
+        android:title="Playlists"
+        android:icon="@drawable/ic__play_list_24" />
 </menu>

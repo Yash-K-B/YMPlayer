@@ -2,10 +2,14 @@
 <menu xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:android="http://schemas.android.com/apk/res/android">
     <group android:checkableBehavior="single">
-        <item
+       <!-- <item
             android:id="@+id/spotifySongs"
             android:icon="@drawable/ic_spotify"
-            android:title="@string/spotify_songs" />
+            android:title="@string/spotify_songs" />-->
+        <item
+            android:id="@+id/youtubeLibSongs"
+            android:icon="@drawable/youtube_video_library_24"
+            android:title="@string/youtube_songs" />
         <item
             android:id="@+id/localSongs"
             android:icon="@drawable/ic_library_music_24"
@@ -13,7 +17,7 @@
         <item
             android:id="@+id/settings"
             android:icon="@drawable/icon_settings"
-            android:title="@string/settings"/>
+            android:title="@string/settings" />
         <item
             android:id="@+id/about"
             android:icon="@android:drawable/ic_dialog_info"
@@ -21,9 +25,10 @@
     </group>
     <item android:title="@string/communication">
         <menu>
-            <item android:id="@+id/share"
+            <item
+                android:id="@+id/share"
                 android:icon="@drawable/ic_share_black_24dp"
-                android:title="@string/share"/>
+                android:title="@string/share" />
         </menu>
     </item>
 </menu>

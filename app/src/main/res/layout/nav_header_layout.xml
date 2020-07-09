@@ -8,13 +8,13 @@
 
     <ImageView
         android:id="@+id/nav_header_image"
-        android:layout_width="84dp"
-        android:layout_height="84dp"
+        android:layout_width="80dp"
+        android:layout_height="80dp"
         android:layout_marginStart="10dp"
         android:layout_marginTop="49dp"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent"
-        app:srcCompat="@drawable/logo" />
+        app:srcCompat="@drawable/ic_logo" />
 
     <TextView
         android:id="@+id/nav_header_text"
@@ -33,6 +33,7 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@+id/nav_header_image"
         app:layout_constraintVertical_bias="0.35" />
+
     <TextView
         android:id="@+id/nav_header_sub_text"
         android:layout_width="0dp"

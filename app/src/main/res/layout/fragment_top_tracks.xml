@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    tools:context=".ui.youtube.toptracks.TopTracks">
+
+    <ProgressBar
+        android:id="@+id/topTracksLoadingHint"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center" />
+
+    <androidx.recyclerview.widget.RecyclerView
+        android:id="@+id/topTracksContainer"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        tools:listitem="@layout/item_music" />
+
+    <TextView
+        android:id="@+id/noInternetHint"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center"
+        android:drawableTop="@drawable/ic_warning"
+        android:drawableTint="?attr/colorPrimary"
+        android:gravity="center"
+        android:padding="10dp"
+        android:text="No Internet Connection"
+        android:textSize="18sp"
+        android:visibility="invisible" />
+
+</FrameLayout>

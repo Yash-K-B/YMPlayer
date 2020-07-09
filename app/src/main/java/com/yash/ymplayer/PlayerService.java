@@ -16,70 +16,99 @@ import android.media.AudioFocusRequest;
 import android.media.AudioManager;
 import android.media.MediaMetadataRetriever;
 import android.media.session.PlaybackState;
+import android.net.ConnectivityManager;
+import android.net.Network;
+import android.net.NetworkCapabilities;
+import android.net.NetworkRequest;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
+import android.os.Looper;
 import android.provider.MediaStore;
 import android.service.media.MediaBrowserService;
 import android.support.v4.media.MediaBrowserCompat;
+import android.support.v4.media.MediaDescriptionCompat;
 import android.support.v4.media.MediaMetadataCompat;
 import android.support.v4.media.session.MediaSessionCompat;
 import android.support.v4.media.session.PlaybackStateCompat;
-import android.util.Log;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.core.app.NotificationCompat;
+import androidx.core.util.Pair;
+import androidx.lifecycle.Observer;
 import androidx.media.MediaBrowserServiceCompat;
 import androidx.media.session.MediaButtonReceiver;
 import androidx.preference.PreferenceManager;
 
-import com.bumptech.glide.load.Key;
-import com.bumptech.glide.load.model.ResourceLoader;
+import com.bumptech.glide.Glide;
+import com.bumptech.glide.request.target.CustomTarget;
+import com.bumptech.glide.request.transition.Transition;
+import com.github.kotvertolet.youtubejextractor.YoutubeJExtractor;
+import com.github.kotvertolet.youtubejextractor.exception.ExtractionException;
+import com.github.kotvertolet.youtubejextractor.exception.YoutubeRequestException;
+import com.github.kotvertolet.youtubejextractor.models.AdaptiveAudioStream;
+import com.github.kotvertolet.youtubejextractor.models.youtube.videoData.YoutubeVideoData;
 import com.google.android.exoplayer2.C;
 import com.google.android.exoplayer2.ExoPlaybackException;
 import com.google.android.exoplayer2.ExoPlayer;
 import com.google.android.exoplayer2.Player;
 import com.google.android.exoplayer2.SimpleExoPlayer;
+import com.google.android.exoplayer2.Timeline;
+import com.google.android.exoplayer2.audio.AudioListener;
+import com.google.android.exoplayer2.audio.AuxEffectInfo;
 import com.google.android.exoplayer2.ext.mediasession.MediaSessionConnector;
 import com.google.android.exoplayer2.source.ConcatenatingMediaSource;
-import com.google.android.exoplayer2.source.MediaSource;
 import com.google.android.exoplayer2.source.ProgressiveMediaSource;
-import com.google.android.exoplayer2.source.hls.HlsMediaSource;
+import com.google.android.exoplayer2.trackselection.DefaultTrackSelector;
+import com.google.android.exoplayer2.trackselection.TrackSelectionArray;
 import com.google.android.exoplayer2.upstream.DataSource;
+import com.google.android.exoplayer2.upstream.DataSpec;
 import com.google.android.exoplayer2.upstream.DefaultDataSourceFactory;
 import com.google.android.exoplayer2.upstream.DefaultHttpDataSourceFactory;
-import com.google.android.exoplayer2.util.UriUtil;
+import com.google.android.exoplayer2.upstream.ResolvingDataSource;
+import com.google.android.exoplayer2.util.Clock;
+import com.google.android.exoplayer2.util.HandlerWrapper;
 import com.google.android.exoplayer2.util.Util;
+import com.yash.ymplayer.data.UriCache;
+import com.yash.ymplayer.helper.LogHelper;
+import com.yash.ymplayer.repository.OnlineRepository;
+import com.yash.ymplayer.repository.OnlineYoutubeRepository;
 import com.yash.ymplayer.repository.Repository;
+import com.yash.ymplayer.storage.AudioProvider;
 import com.yash.ymplayer.storage.MediaItem;
+import com.yash.ymplayer.storage.OfflineMediaProvider;
 import com.yash.ymplayer.util.Keys;
 import com.yash.ymplayer.util.Song;
+import com.yash.ymplayer.util.YoutubeSong;
 
-import java.io.File;
+import java.io.IOException;
+import java.security.Key;
 import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
 import java.util.List;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
+import java.util.regex.Pattern;
 
 import static android.media.AudioManager.AUDIOFOCUS_LOSS_TRANSIENT;
 import static android.media.AudioManager.AUDIOFOCUS_LOSS_TRANSIENT_CAN_DUCK;
 import static android.media.AudioManager.STREAM_MUSIC;
+import static android.net.ConnectivityManager.NetworkCallback;
 
-public class PlayerService extends MediaBrowserServiceCompat implements AudioManager.OnAudioFocusChangeListener {
+public class PlayerService extends MediaBrowserServiceCompat implements PlayerHelper {
     public static final String STATE_PREF = "PlayerState";
     public static final String METADATA_KEY_LIKE = "like";
     public static final String MEDIA_ID = "mediaId";
-    private static final String TAG = "debug";
+    private static final String TAG = "PlayerService";
     private static final String CHANNEL_ID = "channelOne";
     public static final String METADATA_KEY_FAVOURITE = "favourite";
     MediaSessionCompat mSession;
     PlaybackStateCompat.Builder mPlaybackStateBuilder;
     MediaMetadataCompat.Builder mMediaMetadataBuilder;
-    String currentMediaId;
+    String currentMediaIdOrVideoId;
     SimpleExoPlayer player;
     List<MediaSessionCompat.QueueItem> playingQueue;
     List<String> mediaIdLists;
@@ -90,41 +119,93 @@ public class PlayerService extends MediaBrowserServiceCompat implements AudioMan
     Handler handler = new Handler();
     AudioManager audioManager;
     AudioFocusRequest audioFocusRequest;
-    private long currentPlayerPosition;
+    private long savedPlayerPosition;
     ConcatenatingMediaSource mediaSources;
     int repeatMode;
     boolean isShuffleModeEnabled;
     boolean isSeek;
     MediaSessionConnector mMediaSessionConnector;
+    Keys.PLAYING_MODE playingMode = Keys.PLAYING_MODE.OFFLINE;
+    ExecutorService executorService = Executors.newFixedThreadPool(20);
+    SharedPreferences audioPreferences;
+    ConnectivityManager connectivityManager;
+    boolean isInternetAvailable;
+    int playbackEndedStatus;
+    DataSource.Factory factory;
+    boolean isQueueChanged;
+    UriCache uriCache;
 
+
+    /* Declares that ContentStyle is supported */
+    public static final String CONTENT_STYLE_SUPPORTED = "android.media.browse.CONTENT_STYLE_SUPPORTED";
+
+    /*
+     * Bundle extra indicating the presentation hint for playable media items.
+     */
+    public static final String CONTENT_STYLE_PLAYABLE_HINT =
+            "android.media.browse.CONTENT_STYLE_PLAYABLE_HINT";
+
+    /*
+     * Bundle extra indicating the presentation hint for browsable media items.
+     */
+    public static final String CONTENT_STYLE_BROWSABLE_HINT =
+            "android.media.browse.CONTENT_STYLE_BROWSABLE_HINT";
+
+    /*
+     * Specifies the corresponding items should be presented as lists.
+     */
+    public static final int CONTENT_STYLE_LIST_ITEM_HINT_VALUE = 1;
+
+    /*
+     * Specifies that the corresponding items should be presented as grids.
+     */
+    public static final int CONTENT_STYLE_GRID_ITEM_HINT_VALUE = 2;
+
+    /*
+     * Specifies that the corresponding items should be presented as lists and are
+     * represented by a vector icon. This adds a small margin around the icons
+     * instead of filling the full available area.
+     */
+    public static final int CONTENT_STYLE_CATEGORY_LIST_ITEM_HINT_VALUE = 3;
+
+    /*
+     * Specifies that the corresponding items should be presented as grids and are
+     * represented by a vector icon. This adds a small margin around the icons
+     * instead of filling the full available area.
+     */
+    public static final int CONTENT_STYLE_CATEGORY_GRID_ITEM_HINT_VALUE = 4;
 
     @Override
     public void onCreate() {
         super.onCreate();
-        Log.d(TAG, "onCreate: Service");
+        LogHelper.d(TAG, "onCreate: Service");
         IntentFilter noisyIntentFilter = new IntentFilter(AudioManager.ACTION_AUDIO_BECOMING_NOISY);
-        registerReceiver(noisyReceiver, noisyIntentFilter);
+        //registerReceiver(noisyReceiver, noisyIntentFilter);
 
         //Variables
         songs = new ArrayList<>();
         playingQueue = new ArrayList<>();
-        preferences = (SharedPreferences) getSharedPreferences(STATE_PREF, MODE_PRIVATE);
+        preferences = getSharedPreferences(STATE_PREF, MODE_PRIVATE);
+        audioPreferences = getSharedPreferences(Keys.SHARED_PREFERENCES.AUDIO_URL_MAPPING, MODE_PRIVATE);
         audioManager = (AudioManager) getSystemService(AUDIO_SERVICE);
-        currentMediaId = preferences.getString(MEDIA_ID, null);
         mediaSources = new ConcatenatingMediaSource();
         mediaIdLists = new ArrayList<>();
         isSeek = false;
         repeatMode = preferences.getInt(Keys.REPEAT_MODE, 0);
         isShuffleModeEnabled = preferences.getBoolean(Keys.SHUFFLE_MODE, false);
+        connectivityManager = (ConnectivityManager) getSystemService(CONNECTIVITY_SERVICE);
+        if (connectivityManager != null)
+            connectivityManager.registerNetworkCallback(networkRequest, networkCallback);
 
         //MediaSession
         mSession = new MediaSessionCompat(this, this.getClass().getSimpleName());
 //        mMediaSessionConnector = new MediaSessionConnector(mSession);
 //        mMediaSessionConnector.setPlayer(player);
+//        mMediaSessionConnector.setPlaybackPreparer();
         mSession.setCallback(mediaSessionCallbacks);
         mSession.setFlags(MediaSessionCompat.FLAG_HANDLES_MEDIA_BUTTONS | MediaSessionCompat.FLAG_HANDLES_TRANSPORT_CONTROLS);
         setSessionToken(mSession.getSessionToken());
-        setPlaybackState(PlaybackState.STATE_NONE);
+        initPlaybackState();
         mSession.setRepeatMode(repeatMode);
         mSession.setShuffleMode(isShuffleModeEnabled ? PlaybackStateCompat.SHUFFLE_MODE_ALL : PlaybackStateCompat.SHUFFLE_MODE_NONE);
         mSession.setActive(true);
@@ -132,11 +213,14 @@ public class PlayerService extends MediaBrowserServiceCompat implements AudioMan
 
         //MediaPlayer
         player = null;
+
+        initDataSourceFactory();
+        uriCache = new UriCache(10);
     }
 
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
-        Log.d(TAG, "onStartCommand: Handle Event");
+        LogHelper.d(TAG, "onStartCommand: Handle Event");
         MediaButtonReceiver.handleIntent(mSession, intent);
         return START_NOT_STICKY;
     }
@@ -144,68 +228,135 @@ public class PlayerService extends MediaBrowserServiceCompat implements AudioMan
     @Nullable
     @Override
     public BrowserRoot onGetRoot(@NonNull String clientPackageName, int clientUid, @Nullable Bundle rootHints) {
-        return new BrowserRoot("ROOT", null);
+        Bundle extras = new Bundle();
+        extras.putBoolean(BrowserRoot.EXTRA_OFFLINE, true);
+        return new BrowserRoot("ROOT", extras);
     }
 
 
     @Override
     public void onLoadChildren(@NonNull String parentId, @NonNull Result<List<MediaBrowserCompat.MediaItem>> result) {
+        //result.detach();
 
-        result.detach();
         List<MediaBrowserCompat.MediaItem> mediaItems = null;
-        if (parentId.equals("ROOT"))
-            mediaItems = Repository.getInstance(this).getOfflineProvider().getAllSongs();
-        result.sendResult(mediaItems);
+        if (parentId.equals("ROOT")) {
+            mediaItems = getRootChildren();
+            result.sendResult(mediaItems);
+        } else {
+            onLoadChildren(parentId, result, new Bundle());
+        }
     }
+
+
+    Result<List<MediaBrowserCompat.MediaItem>> resultSender;
+
+    boolean isResultSent;
 
     @Override
     public void onLoadChildren(@NonNull String parentId, @NonNull Result<List<MediaBrowserCompat.MediaItem>> result, @NonNull Bundle options) {
-        Log.d(TAG, "onLoadChildren: PlayerSerice: Parent Id: " + parentId);
+        LogHelper.d(TAG, "onLoadChildren: PlayerService: Parent Id: " + parentId);
         result.detach();
-
+        resultSender = result;
         List<MediaBrowserCompat.MediaItem> mediaItems = null;
-        if (parentId.equals("ALL_SONGS") || parentId.equals("ROOT")) {
-            mediaItems = Repository.getInstance(this).getOfflineProvider().getAllSongs();
-        } else if (parentId.contains("ARTISTS")) {
-            if (parentId.equals("ARTISTS"))
-                mediaItems = Repository.getInstance(this).getOfflineProvider().getAllArtists();
-            else {
-                mediaItems = Repository.getInstance(this).getOfflineProvider().getSongsOfArtist(parentId);
+        if (parentId.equals("TOP_TRACKS")) {
+            isResultSent = false;
+            OnlineYoutubeRepository.getInstance(this).topTracks("", (tracks, prevToken, nextToken) -> {
+                if (!isResultSent) {
+                    isResultSent = true;
+                    result.sendResult(mapToMediaItems(tracks));
+                }
+            });
+        } else {
+            if (parentId.equals("ALL_SONGS")) {
+                mediaItems = Repository.getInstance(this).getAllSongs();
+            } else if (parentId.contains("ARTISTS")) {
+                if (parentId.equals("ARTISTS"))
+                    mediaItems = Repository.getInstance(this).getAllArtists();
+                else {
+                    mediaItems = Repository.getInstance(this).getSongsOfArtist(parentId);
+                }
+            } else if (parentId.contains("ALBUMS")) {
+                if (parentId.equals("ALBUMS"))
+                    mediaItems = Repository.getInstance(this).getAllAlbums();
+                else {
+                    mediaItems = Repository.getInstance(this).getSongsOfAlbum(parentId);
+                }
+            } else if (parentId.contains("PLAYLISTS")) {
+                if (parentId.equals("PLAYLISTS")) {
+                    mediaItems = Repository.getInstance(this).getAllPlaylists();
+                } else {
+                    mediaItems = Repository.getInstance(this).getAllSongsOfPlaylist(parentId);
+                }
             }
-        } else if (parentId.contains("ALBUMS")) {
-            if (parentId.equals("ALBUMS"))
-                mediaItems = Repository.getInstance(this).getOfflineProvider().getAllAlbums();
-            else {
-                mediaItems = Repository.getInstance(this).getOfflineProvider().getSongsOfAlbum(parentId);
-            }
-        } else if (parentId.contains("PLAYLISTS")) {
-            if (parentId.equals("PLAYLISTS")) {
-                mediaItems = Repository.getInstance(this).getAllPlaylists();
-            } else {
-                mediaItems = Repository.getInstance(this).getAllSongsOfPlaylist(parentId);
-            }
+            LogHelper.d(TAG, "onLoadChildren: PlayerService : MediaItem length - " + ((mediaItems != null) ? mediaItems.size() : null));
+            result.sendResult(mediaItems);
         }
-        Log.d(TAG, "onLoadChildren: PlayerService : MediaItem length - " + mediaItems.size());
-        result.sendResult(mediaItems);
     }
+
+    List<MediaBrowserCompat.MediaItem> mapToMediaItems(List<YoutubeSong> list) {
+        List<MediaBrowserCompat.MediaItem> mediaItems = new ArrayList<>();
+        for (YoutubeSong song : list) {
+            MediaBrowserCompat.MediaItem item = new MediaBrowserCompat.MediaItem(new MediaDescriptionCompat.Builder()
+                    .setMediaId(song.getVideoId())
+                    .setMediaUri(Uri.parse(song.getVideoId()))
+                    .setTitle(song.getTitle())
+                    .setSubtitle(song.getChannelTitle())
+                    .setIconUri(Uri.parse(song.getArt_url_medium()))
+                    .build(), MediaBrowserCompat.MediaItem.FLAG_PLAYABLE);
+            mediaItems.add(item);
+        }
+        return mediaItems;
+    }
+
+
+    private List<MediaBrowserCompat.MediaItem> getRootChildren() {
+        List<MediaBrowserCompat.MediaItem> items = new ArrayList<>();
+        Bundle extras = new Bundle();
+        items.add(new MediaBrowserCompat.MediaItem(new MediaDescriptionCompat.Builder()
+                .setMediaId("ALL_SONGS")
+                .setTitle("All Tracks")
+                .build(), MediaBrowserCompat.MediaItem.FLAG_BROWSABLE));
+        items.add(new MediaBrowserCompat.MediaItem(new MediaDescriptionCompat.Builder()
+                .setTitle("Artists")
+                .setMediaId("ARTISTS")
+                .build(), MediaBrowserCompat.MediaItem.FLAG_BROWSABLE));
+        extras.putInt(CONTENT_STYLE_BROWSABLE_HINT, CONTENT_STYLE_GRID_ITEM_HINT_VALUE);
+        extras.putInt(CONTENT_STYLE_PLAYABLE_HINT, CONTENT_STYLE_LIST_ITEM_HINT_VALUE);
+        items.add(new MediaBrowserCompat.MediaItem(new MediaDescriptionCompat.Builder()
+                .setTitle("Albums")
+                .setMediaId("ALBUMS")
+                .setExtras(extras)
+                .build(), MediaBrowserCompat.MediaItem.FLAG_BROWSABLE));
+        items.add(new MediaBrowserCompat.MediaItem(new MediaDescriptionCompat.Builder()
+                .setTitle("Playlists")
+                .setMediaId("PLAYLISTS")
+                .build(), MediaBrowserCompat.MediaItem.FLAG_BROWSABLE));
+        extras.putInt(CONTENT_STYLE_BROWSABLE_HINT, CONTENT_STYLE_LIST_ITEM_HINT_VALUE);
+        extras.putInt(CONTENT_STYLE_PLAYABLE_HINT, CONTENT_STYLE_GRID_ITEM_HINT_VALUE);
+        items.add(new MediaBrowserCompat.MediaItem(new MediaDescriptionCompat.Builder()
+                .setTitle("Top Online Tracks")
+                .setMediaId("TOP_TRACKS")
+                .setExtras(extras)
+                .build(), MediaBrowserCompat.MediaItem.FLAG_BROWSABLE));
+        return items;
+    }
+
 
     @Override
     public void onDestroy() {
+        if (connectivityManager != null)
+            connectivityManager.unregisterNetworkCallback(networkCallback);
         if (player != null)
             player.release();
         mSession.release();
         stopForeground(true);
-        unregisterReceiver(noisyReceiver);
-        SharedPreferences.Editor editor = preferences.edit();
-        editor.putString("mediaId", currentMediaId);
-        editor.apply();
-        Log.d(TAG, "onDestroy: Service Destroyed");
+        LogHelper.d(TAG, "onDestroy: Service Destroyed");
     }
 
     MediaSessionCompat.Callback mediaSessionCallbacks = new MediaSessionCompat.Callback() {
         @Override
         public boolean onMediaButtonEvent(@NonNull Intent mediaButtonIntent) {
-            Log.d(TAG, "onMediaButtonEvent: ");
+            LogHelper.d(TAG, "onMediaButtonEvent: ");
             return super.onMediaButtonEvent(mediaButtonIntent);
         }
 
@@ -220,6 +371,14 @@ public class PlayerService extends MediaBrowserServiceCompat implements AudioMan
             super.onPrepare();
         }
 
+        @Override
+        public void onPlayFromUri(Uri uri, Bundle extras) {
+            playingMode = Keys.PLAYING_MODE.ONLINE;
+            currentMediaIdOrVideoId = uri.toString();
+            setOnlinePlayingQueue(currentMediaIdOrVideoId);
+            resolveQueuePosition(extractId(currentMediaIdOrVideoId));
+            dispatchPlayRequest();
+        }
 
         /**
          * Override to handle requests to play a specific mediaId that was
@@ -230,15 +389,19 @@ public class PlayerService extends MediaBrowserServiceCompat implements AudioMan
          */
         @Override
         public void onPlayFromMediaId(String mediaId, Bundle extras) {
-            Log.d(TAG, "onPlayFromMediaId: extra: " + extras);
-            currentMediaId = mediaId;
-            if (!(mSession.getController().getPlaybackState().getState() == PlaybackStateCompat.STATE_NONE || mSession.getController().getPlaybackState().getState() == PlaybackStateCompat.STATE_STOPPED))
-                setPlaybackState(PlaybackStateCompat.STATE_BUFFERING);
+            LogHelper.d(TAG, "onPlayFromMediaId: extra: " + extras + " mediaId: " + mediaId);
+            playingMode = Keys.PLAYING_MODE.OFFLINE;
+            String id = extractId(mediaId);
+            if (!pattern.matcher(id).matches()) {
+                onPlayFromUri(Uri.parse(mediaId), null);
+                return;
+            }
+
+            currentMediaIdOrVideoId = mediaId;
             setPlayingQueue(mediaId, extras);
-            resolveQueuePosition(mediaId);
-            if (!isAudioFocusGranted()) return;
-            playRequest();
-            Log.d(TAG, "onPlayFromMediaId: \n MediaID : " + currentMediaId + " \n Queue Position : " + queuePos +
+            resolveQueuePosition(id);
+            dispatchPlayRequest();
+            LogHelper.d(TAG, "onPlayFromMediaId: \n MediaID : " + currentMediaIdOrVideoId + " \n Queue Position : " + queuePos +
                     " \n No Queue Items : " + playingQueue.size() + " \n Player Position: ");
         }
 
@@ -247,10 +410,15 @@ public class PlayerService extends MediaBrowserServiceCompat implements AudioMan
          */
         @Override
         public void onPlay() {
-            Log.d(TAG, "onPlay: currentMediaId:" + currentMediaId);
-            if (isAudioFocusGranted()) {
-                handlePlayRequest();
+            LogHelper.d(TAG, "onPlay: currentMediaId:" + currentMediaIdOrVideoId);
+
+            LogHelper.d(TAG, "onPlay: playbackstate:" + mSession.getController().getPlaybackState().getState());
+            if (currentMediaIdOrVideoId == null) {
+                if (playingQueue.isEmpty())
+                    setPlayingQueue(null, new Bundle());
+                queuePos = 0;
             }
+            dispatchPlayRequest();
         }
 
 
@@ -259,11 +427,15 @@ public class PlayerService extends MediaBrowserServiceCompat implements AudioMan
          */
         @Override
         public void onPause() {
-            Log.d(TAG, "onPause: ");
+            LogHelper.d(TAG, "onPause: ");
             if (player != null) {
+                LogHelper.d(TAG, "onPause: isPlaying: " + player.isPlaying());
+                if (player.isPlaying()) setPlaybackState(PlaybackStateCompat.STATE_PAUSED);
+                else setPlaybackState(PlaybackStateCompat.STATE_STOPPED);
                 player.setPlayWhenReady(false);
-                setPlaybackState(PlaybackStateCompat.STATE_PAUSED);
+                handler.removeCallbacks(playNextOnMediaError);
                 pushNotification(PlaybackStateCompat.STATE_PAUSED);
+
             }
 
 
@@ -274,29 +446,24 @@ public class PlayerService extends MediaBrowserServiceCompat implements AudioMan
          */
         @Override
         public void onSkipToNext() {
-            Log.d(TAG, "onSkipToNext: ");
+            LogHelper.d(TAG, "onSkipToNext: =================================>");
             handler.removeCallbacks(playNextOnMediaError);
-            if (!isAudioFocusGranted())
-                return;
-            Log.d(TAG, "onSkipToPrevious: " + (player.getPlaybackState() == ExoPlayer.STATE_ENDED) + " or idle :" + (player.getPlaybackState() == ExoPlayer.STATE_IDLE) + " state:" + player.getPlaybackState());
 
             if (player == null) {
+                if (playbackEndedStatus == PlaybackEndedStatus.Finished && !isShuffleModeEnabled && repeatMode == ExoPlayer.REPEAT_MODE_OFF)
+                    return;
                 player = getSimpleExoPlayer(null);
                 preparePlayer(player);
-                if (player.getNextWindowIndex() == -1)
-                    mSession.getController().getTransportControls().stop();
-            } else if (player.getPlaybackState() == ExoPlayer.STATE_IDLE) {
-                if (player.getNextWindowIndex() == -1)
-                    mSession.getController().getTransportControls().stop();
-                else {
-                    queuePos = player.getNextWindowIndex();
-                    preparePlayer(player);
-                    player.setPlayWhenReady(true);
-                }
+                LogHelper.d(TAG, "onSkipToNext: Next window index: " + player.getNextWindowIndex() + " Previous window index:" + player.getPreviousWindowIndex() + " queue pos: " + queuePos + " player current index:" + player.getCurrentWindowIndex() + "Timeline:" + player.getCurrentTimeline().isEmpty() + "    nnnkn:  ");
+            } else if (player.getPlaybackError() != null) {
+                LogHelper.d(TAG, "onSkipToNext: Playback Error");
+                if (player.getNextWindowIndex() == C.INDEX_UNSET) return;
+                queuePos = player.getNextWindowIndex();
+                preparePlayer(player);
             } else {
                 player.next();
-                player.setPlayWhenReady(true);
             }
+            setPlayWhenReady(true);
         }
 
         /**
@@ -304,50 +471,43 @@ public class PlayerService extends MediaBrowserServiceCompat implements AudioMan
          */
         @Override
         public void onSkipToPrevious() {
-            Log.d(TAG, "onSkipToPrevious: ");
+            LogHelper.d(TAG, "onSkipToPrevious: <==============================================");
             handler.removeCallbacks(playNextOnMediaError);
-            if (!isAudioFocusGranted())
-                return;
 
             if (player == null) {
                 player = getSimpleExoPlayer(null);
                 preparePlayer(player);
-            } else if (player.getPlaybackState() == ExoPlayer.STATE_IDLE) {
+            } else if (player.getPlaybackError() != null) {
+                if (player.getPreviousWindowIndex() == C.INDEX_UNSET) return;
                 queuePos = player.getPreviousWindowIndex();
                 preparePlayer(player);
-                player.setPlayWhenReady(true);
             } else {
-                Log.d(TAG, "onSkipToPrevious: " + player);
+                LogHelper.d(TAG, "onSkipToPrevious: " + player);
                 if (player.getContentPosition() > 2000) {
-                    onSeekTo(0);
-                    player.setPlayWhenReady(true);
-                    setPlaybackState(PlaybackStateCompat.STATE_PLAYING);
+                    isSeek = true;
+                    player.seekTo(0);
                 } else {
+                    LogHelper.d(TAG, "onSkipToPrevious: previous index: " + player.getPreviousWindowIndex() + " playwhenready:" + player.getPlayWhenReady());
                     player.previous();
-                    player.setPlayWhenReady(true);
                 }
             }
-
-
+            setPlayWhenReady(true);
+            LogHelper.d(TAG, "onSkipToPrevious: setting playWhenReady true");
         }
 
         /**
          * Override to handle requests to stop playback.
          */
-        @SuppressWarnings("deprecation")
         @Override
         public void onStop() {
-            Log.d(TAG, "onStop: ");
+            if (player == null) return;
+            savedPlayerPosition = player.getCurrentPosition();
             player.stop();
             player.release();
             player = null;
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                audioManager.abandonAudioFocusRequest(audioFocusRequest);
-            } else {
-                audioManager.abandonAudioFocus(PlayerService.this);
-            }
             setPlaybackState(PlaybackStateCompat.STATE_STOPPED);
             pushNotification(PlaybackStateCompat.STATE_STOPPED);
+            LogHelper.d(TAG, "onStop: " + savedPlayerPosition);
         }
 
         /**
@@ -357,7 +517,7 @@ public class PlayerService extends MediaBrowserServiceCompat implements AudioMan
          */
         @Override
         public void onSeekTo(long pos) {
-            Log.d(TAG, "onSeekTo: " + pos);
+            LogHelper.d(TAG, "onSeekTo: " + pos);
             if (player != null) {
                 isSeek = true;
                 player.seekTo(pos);
@@ -367,26 +527,26 @@ public class PlayerService extends MediaBrowserServiceCompat implements AudioMan
 
         @Override
         public void onSetRepeatMode(int repeatMode) {
-            Log.d(TAG, "onSetRepeatMode: ");
-            player = getSimpleExoPlayer(player);
-            PlayerService.this.repeatMode = repeatMode;
-            player.setRepeatMode(repeatMode);
+            LogHelper.d(TAG, "onSetRepeatMode: ");
+            PlayerService.this.repeatMode = Math.min(repeatMode, 2);
+            if (player != null)
+                player.setRepeatMode(PlayerService.this.repeatMode);
             mSession.setRepeatMode(repeatMode);
             SharedPreferences.Editor editor = preferences.edit();
-            editor.putInt(Keys.REPEAT_MODE, repeatMode);
+            editor.putInt(Keys.REPEAT_MODE, PlayerService.this.repeatMode);
             editor.apply();
         }
 
         @Override
         public void onSetShuffleMode(int shuffleMode) {
-            Log.d(TAG, "onSetShuffleMode: ");
+            LogHelper.d(TAG, "onSetShuffleMode: ");
             if (shuffleMode == 0) {
                 isShuffleModeEnabled = false;
             } else if (shuffleMode > 0) {
                 isShuffleModeEnabled = true;
             }
-            player = getSimpleExoPlayer(player);
-            player.setShuffleModeEnabled(isShuffleModeEnabled);
+            if (player != null)
+                player.setShuffleModeEnabled(isShuffleModeEnabled);
             mSession.setShuffleMode(shuffleMode);
             SharedPreferences.Editor editor = preferences.edit();
             editor.putBoolean(Keys.SHUFFLE_MODE, isShuffleModeEnabled);
@@ -395,12 +555,23 @@ public class PlayerService extends MediaBrowserServiceCompat implements AudioMan
         }
 
         @Override
+        public void onSkipToQueueItem(long id) {
+            LogHelper.d(TAG, "onSkipToQueueItem: id: " + id);
+            if (id == -1) return;
+            queuePos = (int) id;
+            isQueueChanged = false;
+            setPlaybackState(PlaybackStateCompat.STATE_SKIPPING_TO_QUEUE_ITEM);
+            dispatchPlayRequest();
+        }
+
+        @Override
         public void onCustomAction(String action, Bundle extras) {
-            Log.d(TAG, "onCustomAction: ");
+            LogHelper.d(TAG, "onCustomAction: ");
+            Bundle extra = new Bundle();
             switch (action) {
                 case "like":
                     likeState = extras.getLong("like_enabled", 0);
-                    Log.d(TAG, "onCustomAction: likeState: " + likeState);
+                    LogHelper.d(TAG, "onCustomAction: likeState: " + likeState);
                     setMediaMetadata(playingQueue.get(queuePos));
                     break;
                 case Keys.Action.ADD_TO_PLAYLIST:
@@ -410,7 +581,9 @@ public class PlayerService extends MediaBrowserServiceCompat implements AudioMan
                         String title = extras.getString(Keys.TITLE);
                         String artist = extras.getString(Keys.ARTIST);
                         String album = extras.getString(Keys.ALBUM);
-                        MediaItem item = new MediaItem(mediaId, title, artist, album, playlist);
+                        String artwork = extra.getString(Keys.ARTWORK);
+                        MediaItem item = new MediaItem(mediaId, title, artist, album, playlist, artwork);
+
                         if (Repository.getInstance(PlayerService.this).addToPlaylist(item) == -1)
                             Toast.makeText(PlayerService.this, "Already Added to " + playlist, Toast.LENGTH_SHORT).show();
                         else
@@ -419,95 +592,94 @@ public class PlayerService extends MediaBrowserServiceCompat implements AudioMan
                         Toast.makeText(PlayerService.this, "Please Select Playlist name", Toast.LENGTH_SHORT).show();
                     break;
                 case Keys.Action.QUEUE_NEXT:
-                    if (extras != null && extras.containsKey(Keys.MEDIA_ID)) {
+                    if (extras != null && extras.containsKey(Keys.MEDIA_ID) && extras.containsKey(Keys.QUEUE_HINT)) {
                         String mediaId = extras.getString(Keys.MEDIA_ID);
-                        Log.d(TAG, "onCustomAction: QUEUE_NEXT:MediaId:"+mediaId);
-                        int pos = getPositionInQueue(mediaId);
-                        Log.d(TAG, "onCustomAction: QUEUE_NEXT: " + pos);
-                        if (pos == -1) {
-                            List<MediaSessionCompat.QueueItem> item = Repository.getInstance(PlayerService.this).getOfflineProvider().getSongById(mediaId, (int) (queuePos + 1));
-                            addToMediaSources(mediaId, (queuePos + 1));
-                            playingQueue.addAll((queuePos + 1), item);
-                            mediaIdLists.add((queuePos + 1), item.get(0).getDescription().getMediaId());
-                        } else if (pos != queuePos) {
-                            MediaSessionCompat.QueueItem item = playingQueue.get(pos);
-                            if (pos > queuePos) {
-                                playingQueue.remove(pos);
-                                mediaIdLists.remove(pos);
-                                playingQueue.add((queuePos + 1), item);
-                                mediaIdLists.add((queuePos + 1), item.getDescription().getMediaId());
-                                mediaSources.moveMediaSource(pos, queuePos + 1);
-                            } else {
-                                mediaSources.moveMediaSource(pos, queuePos);
-                                playingQueue.add((queuePos + 1), item);
-                                mediaIdLists.add((queuePos + 1), mediaIdLists.get(pos));
-                                playingQueue.remove(pos);
-                                mediaIdLists.remove(pos);
-                                queuePos--;
-                            }
+                        int type = extras.getInt(Keys.QUEUE_HINT);
+                        LogHelper.d(TAG, "onCustomAction: QUEUE_NEXT:MediaId:" + mediaId);
 
+                        List<MediaSessionCompat.QueueItem> items = Repository.getInstance(PlayerService.this).getQueue(type, mediaId);
+                        playingQueue.addAll((queuePos + 1), items);
+                        for (int i = 0; i < items.size(); i++) {
+                            int queue_pos = queuePos + 1 + i;
+                            String media_id = items.get(i).getDescription().getMediaId();
+                            addToMediaSources(media_id, queue_pos);
+                            mediaIdLists.add(queue_pos, media_id);
                         }
+
+
+                        mSession.setQueueTitle(Keys.QUEUE_TITLE.USER_QUEUE);
                         mSession.setQueue(playingQueue);
-                        setMediaMetadata(playingQueue.get(queuePos));
-                    }
-                    break;
-                case Keys.Action.PLAY_FROM_QUEUE:
-                    if (extras != null && extras.containsKey(Keys.QUEUE_POS)) {
-                        int pos = extras.getInt(Keys.QUEUE_POS);
-                        Log.d(TAG, "onCustomAction: Position :" + pos);
-                        queuePos = pos;
-                        setPlaybackState(PlaybackStateCompat.STATE_BUFFERING);
-                        handlePlayRequest();
+                        if (player != null)
+                            setPlaybackState(mSession.getController().getPlaybackState().getState());
                     }
                     break;
 
                 case Keys.Action.REMOVE_FROM_QUEUE:
-                    if (extras != null && extras.containsKey(Keys.QUEUE_POS)) {
-                        int pos = extras.getInt(Keys.QUEUE_POS);
-                        mediaSources.removeMediaSource(pos);
+                    if (extras != null && extras.containsKey(Keys.MEDIA_ID)) {
+                        int pos = mediaIdLists.indexOf(extras.getString(Keys.MEDIA_ID));
+                        if (pos == -1) return;
+                        LogHelper.d(TAG, "onCustomAction: REMOVE_FROM_QUEUE:" + " Position found:" + pos);
                         playingQueue.remove(pos);
                         mediaIdLists.remove(pos);
+                        mediaSources.removeMediaSource(pos);
+
                         if (playingQueue.size() != 0) {
-                            if (pos == queuePos) {
-                                queuePos = queuePos % playingQueue.size();
-                                setPlaybackState(PlaybackStateCompat.STATE_BUFFERING);
-                                handlePlayRequest();
-                            } else if (pos < queuePos) queuePos--;
-                            setMediaMetadata(playingQueue.get(queuePos));
+                            mSession.setQueueTitle(Keys.QUEUE_TITLE.CUSTOM);
+                            if (queuePos == pos) {
+                                if (isShuffleModeEnabled) {
+                                    if (player == null) return;
+                                    player.setPlayWhenReady(false);
+                                    pos = player.getCurrentTimeline().getNextWindowIndex(queuePos, Player.REPEAT_MODE_ALL, true);
+                                    player.prepare(mediaSources);
+                                    queuePos = pos > queuePos ? pos - 1 : pos;
+                                } else {
+                                    queuePos = queuePos % playingQueue.size();
+                                    LogHelper.d(TAG, "onCustomAction: REMOVE_FROM_QUEUE: queuePos:" + queuePos);
+                                }
+                                player.seekToDefaultPosition(queuePos);
+                                player.setPlayWhenReady(true);
+                            } else {
+                                if (pos < queuePos) queuePos--;
+                                setPlaybackState(mSession.getController().getPlaybackState().getState());
+                            }
+                            mSession.setQueue(playingQueue);
                         } else {
+                            queuePos = -1;
                             mSession.setMetadata(null);
+                            mSession.setQueueTitle("");
+                            currentMediaIdOrVideoId = null;
                             setPlaybackState(PlaybackStateCompat.STATE_NONE);
                             stopForeground(true);
-                            player.release();
-                            player = null;
+                            mSession.getController().getTransportControls().stop();
                         }
+
                     }
                     break;
 
                 case Keys.Action.SWAP_QUEUE_ITEM:
                     if (extras != null && extras.containsKey(Keys.FROM_POSITION) && extras.containsKey(Keys.TO_POSITION)) {
+                        mSession.setQueueTitle(Keys.QUEUE_TITLE.CUSTOM);
                         String mediaId = mediaIdLists.get(queuePos);
-                        Log.d(TAG, "onCustomAction: SWAP_QUEUE_ITEM mediaid = "+mediaId+" pos:"+queuePos);
+                        LogHelper.d(TAG, "onCustomAction: SWAP_QUEUE_ITEM mediaid = " + mediaId + " pos:" + queuePos);
                         int fromPosition = extras.getInt(Keys.FROM_POSITION);
                         int toPosition = extras.getInt(Keys.TO_POSITION);
-                        Log.d(TAG, "onCustomAction: from :"+fromPosition + " to :"+toPosition);
+                        LogHelper.d(TAG, "onCustomAction: from :" + fromPosition + " to :" + toPosition);
                         MediaSessionCompat.QueueItem item = playingQueue.remove(fromPosition);
-                        playingQueue.add(toPosition,item);
+                        playingQueue.add(toPosition, item);
                         String id = mediaIdLists.remove(fromPosition);
-                        mediaIdLists.add(toPosition,id);
+                        mediaIdLists.add(toPosition, id);
                         mediaSources.moveMediaSource(fromPosition, toPosition);
                         queuePos = mediaIdLists.indexOf(mediaId);
-                        Log.d(TAG, "onCustomAction: new pos = "+queuePos);
+                        LogHelper.d(TAG, "onCustomAction: new pos = " + queuePos);
+                        setPlaybackState(mSession.getController().getPlaybackState().getState());
                         mSession.setQueue(playingQueue);
-                        setMediaMetadata(playingQueue.get(queuePos));
                     }
                     break;
 
                 case Keys.Action.TOGGLE_FAVOURITE:
-                    String[] parts = playingQueue.get(queuePos).getDescription().getMediaId().split("[/|]");
-                    String mediaId = parts[parts.length - 1];
+                    String mediaId = extractId(playingQueue.get(queuePos).getDescription().getMediaId());
                     if (mSession.getController().getMetadata().getLong(PlayerService.METADATA_KEY_FAVOURITE) == 0) {
-                        Repository.getInstance(PlayerService.this).addToPlaylist(new MediaItem(mediaId, playingQueue.get(queuePos).getDescription().getTitle().toString(), playingQueue.get(queuePos).getDescription().getSubtitle().toString(), playingQueue.get(queuePos).getDescription().getDescription().toString(), Keys.PLAYLISTS.FAVOURITES));
+                        Repository.getInstance(PlayerService.this).addToPlaylist(new MediaItem(mediaId, playingQueue.get(queuePos).getDescription().getTitle().toString(), playingQueue.get(queuePos).getDescription().getSubtitle().toString(), playingQueue.get(queuePos).getDescription().getDescription().toString(), Keys.PLAYLISTS.FAVOURITES, null));
                     } else {
                         Repository.getInstance(PlayerService.this).removeFromPlaylist(mediaId, Keys.PLAYLISTS.FAVOURITES);
                     }
@@ -525,8 +697,75 @@ public class PlayerService extends MediaBrowserServiceCompat implements AudioMan
       Custom Methods
      */
 
+    /**
+     *
+     */
+    void dispatchPlayRequest() {
+        PlaybackStateCompat mState = mSession.getController().getPlaybackState();
+        switch (mState.getState()) {
+            case PlaybackStateCompat.STATE_SKIPPING_TO_QUEUE_ITEM:
+                LogHelper.d(TAG, "dispatchPlayRequest: STATE_SKIPPING_TO_QUEUE_ITEM");
+                player = getSimpleExoPlayer(player);
+                if (player.getPlaybackError() != null) {
+                    handler.removeCallbacks(playNextOnMediaError);
+                    preparePlayer(player);
+                } else seekPlayer(queuePos, C.TIME_UNSET);
+                setPlayWhenReady(true);
+                break;
 
-    private int getPositionInQueue(@NonNull String mediaId) {
+            case PlaybackStateCompat.STATE_BUFFERING:
+            case PlaybackStateCompat.STATE_PLAYING:
+                LogHelper.d(TAG, "dispatchPlayRequest: STATE_BUFFERING or STATE_PLAYING");
+                seekPlayer(queuePos, C.TIME_UNSET);
+                setPlayWhenReady(true);
+                break;
+
+            case PlaybackStateCompat.STATE_PAUSED:
+                LogHelper.d(TAG, "dispatchPlayRequest: STATE_PAUSED");
+                setPlayWhenReady(true);
+                break;
+
+            case PlaybackStateCompat.STATE_STOPPED:
+                LogHelper.d(TAG, "dispatchPlayRequest: STATE_STOPPED");
+                player = getSimpleExoPlayer(player);
+                if (playbackEndedStatus == PlaybackEndedStatus.Interrupted)
+                    seekPlayer(queuePos, savedPlayerPosition);
+                else seekPlayer(queuePos, 0);
+                setPlayWhenReady(true);
+                break;
+            case PlaybackStateCompat.STATE_NONE:
+                LogHelper.d(TAG, "dispatchPlayRequest: STATE_NONE qPos:" + queuePos);
+                player = getSimpleExoPlayer(player);
+                player.seekTo(queuePos, 0);
+                setPlayWhenReady(true);
+                break;
+            default:
+        }
+    }
+
+    @Override
+    public void setOnlinePlayingQueue(String uri) {
+        playingQueue.clear();
+        mediaIdLists.clear();
+        if (player != null && player.isPlaying())
+            player.stop();
+        playingQueue = OnlineYoutubeRepository.getInstance(this).getPlayingQueue(uri);
+        mediaSources.clear();
+        mSession.setQueueTitle(uri.split("[|]")[0]);
+        for (int i = 0; i < playingQueue.size(); i++) {
+            String id = playingQueue.get(i).getDescription().getMediaId();
+            mediaIdLists.add(id);
+            addHttpSourceToMediaSources(id, i);
+            LogHelper.d(TAG, "setOnlinePlayingQueue: video id: " + id);
+        }
+        mSession.setQueue(playingQueue);
+        isQueueChanged = true;
+        if (player != null)
+            player.prepare(mediaSources);
+    }
+
+    @Override
+    public int getPositionInQueue(@NonNull String mediaId) {
         String[] parts = mediaId.split("[/|]");
         String id = parts[parts.length - 1];
         return mediaIdLists.indexOf(id);
@@ -537,13 +776,23 @@ public class PlayerService extends MediaBrowserServiceCompat implements AudioMan
      *
      * @param mediaId the id of current media
      */
-    private void resolveQueuePosition(String mediaId) {
-        String[] parts = mediaId.split("[/|]");
-        String id = parts[parts.length - 1];
-        int pos = mediaIdLists.indexOf(id);
-        if (pos != -1)
+    @Override
+    public void resolveQueuePosition(String mediaId) {
+        int pos = mediaIdLists.indexOf(mediaId);
+        if (pos != -1) {
             queuePos = pos;
-        else Log.d(TAG, "mediaId is not available in Queue");
+            LogHelper.d(TAG, "resolveQueuePosition: pos:" + queuePos);
+        } else {
+            if (!playingQueue.isEmpty()) {
+                queuePos = 0;
+            }
+            LogHelper.d(TAG, "mediaId is not available in Queue");
+        }
+    }
+
+    public String extractId(String mediaId) {
+        String[] parts = mediaId.split("[/|]");
+        return parts[parts.length - 1];
     }
 
     /**
@@ -552,66 +801,89 @@ public class PlayerService extends MediaBrowserServiceCompat implements AudioMan
      *
      * @param mediaId the id of current media
      */
-    void setPlayingQueue(String mediaId, Bundle extras) {
-        mediaIdLists.clear();
-        mediaSources.clear();
-        if (!extras.containsKey(Keys.PLAY_SINGLE)) {
-            playingQueue = Repository.getInstance(PlayerService.this).getCurrentPlayingQueue(mediaId);
-            for (int i = 0; i < playingQueue.size(); i++) {
-                String id = playingQueue.get(i).getDescription().getMediaId();
-                mediaIdLists.add(id);
-                addToMediaSources(id, i);
+    @Override
+    public void setPlayingQueue(@Nullable String mediaId, Bundle extras) {
+        try {
+            boolean playSingle = extras.getBoolean(Keys.PLAY_SINGLE, false);
+            String queueTitle;
+            if (playSingle)
+                queueTitle = mediaId + "_PlaYSinglE";
+            else queueTitle = mediaId.split("[|]")[0];
+            if (mSession.getController().getQueueTitle() != null && queueTitle.contentEquals(mSession.getController().getQueueTitle())) {
+                LogHelper.d(TAG, "setPlayingQueue: .... Queue Already set");
+                isQueueChanged = false;
+                return;
             }
-            mSession.setQueue(playingQueue);
-            mSession.setQueueTitle(mediaId.split("[|]")[0]);
-            Log.d(TAG, "setPlayingQueue: All");
-        } else if (extras.getBoolean(Keys.PLAY_SINGLE)) {
-            playingQueue = Repository.getInstance(PlayerService.this).getOfflineProvider().getSongById(mediaId, 0);
-            for (int i = 0; i < playingQueue.size(); i++) {
-                String id = playingQueue.get(i).getDescription().getMediaId();
-                mediaIdLists.add(id);
-                addToMediaSources(id, i);
-            }
-            mSession.setQueue(playingQueue);
-            mSession.setQueueTitle(mediaId.split("[|]")[0]);
-            Log.d(TAG, "setPlayingQueue: Single");
-        }
+            mSession.setQueueTitle(queueTitle);
 
-    }
+            if (player != null && player.isPlaying())
+                player.stop();
 
-    void handlePlayRequest() {
-        if (currentMediaId == null) {
-            if (preferences.getString("mediaId", null) != null) {
-                mSession.getController().getTransportControls().playFromMediaId(preferences.getString("mediaId", null), null);
+            mediaIdLists.clear();
+            if (!playSingle) {
+                playingQueue = Repository.getInstance(PlayerService.this).getCurrentPlayingQueue(mediaId);
+                mediaSources.clear();
+                for (int i = 0; i < playingQueue.size(); i++) {
+                    String id = playingQueue.get(i).getDescription().getMediaId();
+                    mediaIdLists.add(id);
+                    addHttpSourceToMediaSources(id, i);
+                }
+                mSession.setQueue(playingQueue);
+
+                LogHelper.d(TAG, "setPlayingQueue: All");
+            } else if (extras.getBoolean(Keys.PLAY_SINGLE)) {
+                playingQueue = Repository.getInstance(PlayerService.this).getQueue(AudioProvider.QueueHint.SINGLE_SONG, mediaId);
+                mediaSources.clear();
+                for (int i = 0; i < playingQueue.size(); i++) {
+                    String id = playingQueue.get(i).getDescription().getMediaId();
+                    mediaIdLists.add(id);
+                    addHttpSourceToMediaSources(id, i);
+                }
+                mSession.setQueue(playingQueue);
+                LogHelper.d(TAG, "setPlayingQueue: Single");
             }
-        } else {
-            playRequest();
+        } catch (NullPointerException e) {
+            LogHelper.d(TAG, e.getMessage());
+            if (mediaId == null) {
+                mSession.setQueueTitle("RANDOM");
+                setPlaybackState(PlaybackStateCompat.STATE_NONE);
+                mediaIdLists.clear();
+                playingQueue = Repository.getInstance(PlayerService.this).getRandomQueue();
+                for (int i = 0; i < playingQueue.size(); i++) {
+                    String id = playingQueue.get(i).getDescription().getMediaId();
+                    mediaIdLists.add(id);
+                    addHttpSourceToMediaSources(id, i);
+                }
+                mSession.setQueue(playingQueue);
+            }
         }
+        isQueueChanged = true;
+        if (player != null)
+            player.prepare(mediaSources);
+
     }
 
     /**
-     * Play Media based on PlaybackStates
+     * Initial Builder of PlaybackState
      */
-    void playRequest() {
-        player = getSimpleExoPlayer(player);
-        switch (mSession.getController().getPlaybackState().getState()) {
-            case PlaybackStateCompat.STATE_NONE:
-            case PlaybackStateCompat.STATE_STOPPED:
-            case PlaybackStateCompat.STATE_BUFFERING:
-                preparePlayer(player);
-                Log.d(TAG, "playRequest: window index" + player.getCurrentWindowIndex());
-                player.setPlayWhenReady(true);
-                break;
+    void initPlaybackState() {
+        mPlaybackStateBuilder = new PlaybackStateCompat.Builder()
+                .setActions(PlaybackStateCompat.ACTION_PLAY_FROM_MEDIA_ID
+                        | PlaybackStateCompat.ACTION_PLAY_FROM_URI
+                        | PlaybackStateCompat.ACTION_PLAY
+                        | PlaybackStateCompat.ACTION_PAUSE
+                        | PlaybackStateCompat.ACTION_PLAY_PAUSE
+                        | PlaybackStateCompat.ACTION_SKIP_TO_NEXT
+                        | PlaybackStateCompat.ACTION_SKIP_TO_PREVIOUS
+                        | PlaybackStateCompat.ACTION_SEEK_TO
+                        | PlaybackStateCompat.ACTION_SET_REPEAT_MODE
+                        | PlaybackStateCompat.ACTION_SET_SHUFFLE_MODE)
+                .setState(PlaybackStateCompat.STATE_NONE, player != null ? player.getCurrentPosition() : 0, player != null ? player.getPlaybackParameters().speed : 1.0f)
+                .setBufferedPosition(player != null ? player.getBufferedPosition() : 0)
+                .setActiveQueueItemId(queuePos);
+        mSession.setPlaybackState(mPlaybackStateBuilder.build());
 
-            case PlaybackStateCompat.STATE_PAUSED:
-                player.setPlayWhenReady(true);
-                setPlaybackState(PlaybackStateCompat.STATE_PLAYING);
-                pushNotification(PlaybackStateCompat.STATE_PLAYING);
-                break;
-            default:
-        }
     }
-
 
     /**
      * Build and set playback state to @link MediaSessionCompat
@@ -619,13 +891,43 @@ public class PlayerService extends MediaBrowserServiceCompat implements AudioMan
      * @param state current playbackState
      */
     void setPlaybackState(int state) {
-        mPlaybackStateBuilder = new PlaybackStateCompat.Builder().setActions(PlaybackStateCompat.ACTION_PLAY_FROM_MEDIA_ID | PlaybackStateCompat.ACTION_PLAY_FROM_URI | PlaybackStateCompat.ACTION_PLAY | PlaybackStateCompat.ACTION_PAUSE | PlaybackStateCompat.ACTION_PLAY_PAUSE | PlaybackStateCompat.ACTION_SKIP_TO_NEXT | PlaybackStateCompat.ACTION_SKIP_TO_PREVIOUS | PlaybackStateCompat.ACTION_SEEK_TO)
-                .setState(state, player != null ? player.getCurrentPosition() : 0, player != null ? player.getPlaybackParameters().speed : 1.0f);
+        mPlaybackStateBuilder.setState(state, player != null ? player.getCurrentPosition() : 0, player != null ? player.getPlaybackParameters().speed : 1.0f)
+                .setBufferedPosition(player != null ? player.getBufferedPosition() : 0)
+                .setActiveQueueItemId(queuePos);
         mSession.setPlaybackState(mPlaybackStateBuilder.build());
     }
 
 
-    Bitmap currentBitmap;
+    int retryCount = 0;
+
+    void loadAlbumArtAndPushNotification(Uri uri) {
+        Glide.with(PlayerService.this).asBitmap().load(uri).into(new CustomTarget<Bitmap>() {
+            @Override
+            public void onResourceReady(@NonNull Bitmap resource, @Nullable Transition<? super Bitmap> transition) {
+                currentBitmapUriPair = new Pair<>(resource, uri.toString());
+                setMediaMetadata(playingQueue.get(queuePos));
+                pushNotification(PlaybackStateCompat.STATE_PLAYING);
+            }
+
+            @Override
+            public void onLoadFailed(@Nullable Drawable errorDrawable) {
+                if (isInternetAvailable && retryCount < 3) {
+                    retryCount++;
+                    LogHelper.d(TAG, "onLoadFailed: Retry to load album art: retry:" + retryCount);
+                    loadAlbumArtAndPushNotification(uri);
+                } else {
+                    currentBitmapUriPair = new Pair<>(BitmapFactory.decodeResource(getResources(), R.drawable.album_art_placeholder), "");
+                    pushNotification(mSession.getController().getPlaybackState().getState());
+                }
+            }
+
+            @Override
+            public void onLoadCleared(@Nullable Drawable placeholder) {
+            }
+        });
+    }
+
+    Pair<Bitmap, String> currentBitmapUriPair = new Pair<>(null, "");
 
     /**
      * Build and set mediaMetaData to MediaSessionCompat
@@ -633,26 +935,48 @@ public class PlayerService extends MediaBrowserServiceCompat implements AudioMan
      * @param currentItem current mediaItem playing
      */
     void setMediaMetadata(MediaSessionCompat.QueueItem currentItem) {
+        Uri albumArtUri;
         try {
-            MediaMetadataRetriever retriever = new MediaMetadataRetriever();
-            Uri albumArtUri = ContentUris.withAppendedId(MediaStore.Audio.Media.EXTERNAL_CONTENT_URI, Long.parseLong(currentItem.getDescription().getMediaId()));
-            retriever.setDataSource(this, albumArtUri);
-            byte[] data = retriever.getEmbeddedPicture();
-            if (data != null)
-                currentBitmap = BitmapFactory.decodeByteArray(data, 0, data.length);
-            else
-                currentBitmap = BitmapFactory.decodeResource(getResources(), R.drawable.album_art_placeholder);
+            long playingMediaDuration = 0L;
+
+            try {
+                albumArtUri = ContentUris.withAppendedId(MediaStore.Audio.Media.EXTERNAL_CONTENT_URI, Long.parseLong(currentItem.getDescription().getMediaId()));
+                MediaMetadataRetriever retriever = new MediaMetadataRetriever();
+                retriever.setDataSource(this, albumArtUri);
+                byte[] data = retriever.getEmbeddedPicture();
+                Bitmap bitmap;
+                if (data != null)
+                    bitmap = BitmapFactory.decodeByteArray(data, 0, data.length);
+                else
+                    bitmap = BitmapFactory.decodeResource(getResources(), R.drawable.album_art_placeholder);
+                playingMediaDuration = Long.parseLong(retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_DURATION));
+                currentBitmapUriPair = new Pair<>(bitmap, albumArtUri.toString());
+            } catch (NumberFormatException e) {
+                LogHelper.d(TAG, "setMediaMetadata: Error: " + e.getMessage());
+                albumArtUri = currentItem.getDescription().getIconUri();
+                playingMediaDuration = currentItem.getDescription().getExtras().getLong("duration", 0L);
+                if (!currentBitmapUriPair.second.equals(albumArtUri.toString())) {
+                    retryCount = 0;
+                    loadAlbumArtAndPushNotification(albumArtUri);
+                }
+            }
+//            if (playingMode == Keys.PLAYING_MODE.OFFLINE) {
+//
+//            } else {
+//
+//            }
+            currentMediaIdOrVideoId = currentItem.getDescription().getMediaId();
             mMediaMetadataBuilder = new MediaMetadataCompat.Builder()
-                    .putText(MediaMetadataCompat.METADATA_KEY_MEDIA_ID,currentItem.getDescription().getMediaId())
+                    .putText(MediaMetadataCompat.METADATA_KEY_MEDIA_ID, currentItem.getDescription().getMediaId())
                     .putText(MediaMetadataCompat.METADATA_KEY_TITLE, currentItem.getDescription().getTitle())
                     .putText(MediaMetadataCompat.METADATA_KEY_ARTIST, currentItem.getDescription().getSubtitle())
                     .putText(MediaMetadataCompat.METADATA_KEY_ALBUM, currentItem.getDescription().getDescription())
                     .putString(MediaMetadataCompat.METADATA_KEY_ALBUM_ART_URI, albumArtUri.toString())
                     .putLong(MediaMetadataCompat.METADATA_KEY_TRACK_NUMBER, mediaIdLists.indexOf(currentItem.getDescription().getMediaId()))
                     .putLong(PlayerService.METADATA_KEY_FAVOURITE, Repository.getInstance(this).isAddedTo(currentItem.getDescription().getMediaId(), Keys.PLAYLISTS.FAVOURITES))
-                    .putLong(MediaMetadataCompat.METADATA_KEY_DURATION, Long.parseLong(retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_DURATION)));
+                    .putLong(MediaMetadataCompat.METADATA_KEY_DURATION, playingMediaDuration);
             if (PreferenceManager.getDefaultSharedPreferences(this).getBoolean("albumart_enabled", true))
-                mMediaMetadataBuilder.putBitmap(MediaMetadataCompat.METADATA_KEY_ALBUM_ART, currentBitmap);
+                mMediaMetadataBuilder.putBitmap(MediaMetadataCompat.METADATA_KEY_ALBUM_ART, currentBitmapUriPair.first);
             mSession.setMetadata(mMediaMetadataBuilder.build());
         } catch (Exception e) {
             e.printStackTrace();
@@ -665,15 +989,19 @@ public class PlayerService extends MediaBrowserServiceCompat implements AudioMan
                     .putLong(PlayerService.METADATA_KEY_FAVOURITE, Repository.getInstance(this).isAddedTo(currentItem.getDescription().getMediaId(), Keys.PLAYLISTS.FAVOURITES))
                     .putLong(MediaMetadataCompat.METADATA_KEY_DURATION, 0);
             mSession.setMetadata(mMediaMetadataBuilder.build());
-
         }
 
     }
 
     void pushNotification(long state) {
-        if (currentBitmap == null)
+        LogHelper.d(TAG, "pushNotification: ");
+        if (currentBitmapUriPair.first == null)
             return;
-        Bitmap bitmap = currentBitmap;// mSession.getController().getMetadata().getBitmap(MediaMetadataCompat.METADATA_KEY_ALBUM_ART);
+        MediaMetadataCompat metadata = mSession.getController().getMetadata();
+        if (metadata == null)
+            return;
+
+        Bitmap bitmap = currentBitmapUriPair.first;// mSession.getController().getMetadata().getBitmap(MediaMetadataCompat.METADATA_KEY_ALBUM_ART);
         int minLength = Math.min(bitmap.getWidth(), bitmap.getHeight());
         Intent notificationIntent = new Intent(this, MainActivity.class);
         notificationIntent.addFlags(Intent.FLAG_ACTIVITY_BROUGHT_TO_FRONT | Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_SINGLE_TOP);
@@ -683,9 +1011,9 @@ public class PlayerService extends MediaBrowserServiceCompat implements AudioMan
         Notification notification = new NotificationCompat.Builder(this, CHANNEL_ID)
                 .setSmallIcon(R.drawable.icon_notif)
                 .setStyle(new androidx.media.app.NotificationCompat.MediaStyle().setMediaSession(mSession.getSessionToken()).setShowActionsInCompactView(0, 1, 2))
-                .setContentTitle(mSession.getController().getMetadata().getText(MediaMetadataCompat.METADATA_KEY_TITLE))
-                .setContentText(mSession.getController().getMetadata().getText(MediaMetadataCompat.METADATA_KEY_ARTIST))
-                .setSubText(mSession.getController().getMetadata().getString(MediaMetadataCompat.METADATA_KEY_ALBUM))
+                .setContentTitle(metadata.getText(MediaMetadataCompat.METADATA_KEY_TITLE))
+                .setContentText(metadata.getText(MediaMetadataCompat.METADATA_KEY_ARTIST))
+                .setSubText(metadata.getString(MediaMetadataCompat.METADATA_KEY_ALBUM))
                 .setContentInfo("YM Player")
                 .setLargeIcon(Bitmap.createBitmap(bitmap, (bitmap.getWidth() - minLength) / 2, (bitmap.getHeight() - minLength) / 2, minLength, minLength))
                 .setContentIntent(notificationPendingIntent)
@@ -694,57 +1022,49 @@ public class PlayerService extends MediaBrowserServiceCompat implements AudioMan
                 .addAction(R.drawable.icon_skip_next, PlayerService.this.getString(R.string.next), MediaButtonReceiver.buildMediaButtonPendingIntent(this, PlaybackStateCompat.ACTION_SKIP_TO_NEXT))
                 .build();
         startForeground(10, notification);
-        if (state != PlaybackStateCompat.STATE_PLAYING)
+
+        if (state != PlaybackStateCompat.STATE_PLAYING) {
             stopForeground(false);
+        }
     }
 
-
-    BroadcastReceiver noisyReceiver = new BroadcastReceiver() {
-        @Override
-        public void onReceive(Context context, Intent intent) {
-            if (AudioManager.ACTION_AUDIO_BECOMING_NOISY.equals(intent.getAction())) {
-                mSession.getController().getTransportControls().pause();
-            }
-            if (AudioManager.ACTION_HEADSET_PLUG.equals(intent.getAction())) {
-                mSession.getController().getTransportControls().play();
-            }
-        }
-    };
 
     ExoPlayer.EventListener ExoplayerEventListener = new ExoPlayer.EventListener() {
         @Override
         public void onPositionDiscontinuity(int reason) {
             switch (reason) {
                 case ExoPlayer.DISCONTINUITY_REASON_PERIOD_TRANSITION:
-                    Log.d(TAG, "onPositionDiscontinuity: DISCONTINUITY_REASON_PERIOD_TRANSITION : Window index: " + player.getCurrentWindowIndex());
+                    LogHelper.d(TAG, "onPositionDiscontinuity: DISCONTINUITY_REASON_PERIOD_TRANSITION :");
+                    LogHelper.d(TAG, "onPositionDiscontinuity:  Window index: " + player.getCurrentWindowIndex());
                     if (queuePos != player.getCurrentWindowIndex()) {
                         queuePos = player.getCurrentWindowIndex();
                         setMediaMetadata(playingQueue.get(queuePos));
                     }
-                    setPlaybackState(PlaybackStateCompat.STATE_PLAYING);
-                    pushNotification(PlaybackStateCompat.STATE_PLAYING);
+                    setPlaybackState(player.getPlayWhenReady() ? PlaybackStateCompat.STATE_PLAYING : PlaybackStateCompat.STATE_PAUSED);
+                    pushNotification(player.getPlayWhenReady() ? PlaybackStateCompat.STATE_PLAYING : PlaybackStateCompat.STATE_PAUSED);
                     break;
                 case ExoPlayer.DISCONTINUITY_REASON_SEEK:
-                    Log.d(TAG, "onPositionDiscontinuity: DISCONTINUITY_REASON_SEEK : Window index : " + player.getCurrentWindowIndex() + " Queue Position : " + queuePos);
-                    if (player.getCurrentWindowIndex() == -1) return;
+                    LogHelper.d(TAG, "onPositionDiscontinuity: DISCONTINUITY_REASON_SEEK ");
+                    LogHelper.d(TAG, "onPositionDiscontinuity:  Window index : " + player.getCurrentWindowIndex() + " Play when ready : " + player.getPlayWhenReady());
+                    if (player.getCurrentWindowIndex() == -1 || player.getCurrentWindowIndex() >= playingQueue.size())
+                        return;
                     if (isSeek) {
                         isSeek = false;
                         return;
                     }
                     queuePos = player.getCurrentWindowIndex();
-                    player.setPlayWhenReady(true);
                     setMediaMetadata(playingQueue.get(queuePos));
-                    setPlaybackState(PlaybackStateCompat.STATE_PLAYING);
-                    pushNotification(PlaybackStateCompat.STATE_PLAYING);
+                    pushNotification(player.getPlayWhenReady() ? PlaybackStateCompat.STATE_PLAYING : PlaybackStateCompat.STATE_PAUSED);
                     break;
                 case ExoPlayer.DISCONTINUITY_REASON_INTERNAL:
-                    Log.d(TAG, "onPositionDiscontinuity: DISCONTINUITY_REASON_INTERNAL");
+                    LogHelper.d(TAG, "onPositionDiscontinuity: DISCONTINUITY_REASON_INTERNAL");
                     break;
                 case ExoPlayer.DISCONTINUITY_REASON_AD_INSERTION:
-                    Log.d(TAG, "onPositionDiscontinuity: DISCONTINUITY_REASON_AD_INSERTION");
+                    LogHelper.d(TAG, "onPositionDiscontinuity: DISCONTINUITY_REASON_AD_INSERTION");
                     break;
                 case ExoPlayer.DISCONTINUITY_REASON_SEEK_ADJUSTMENT:
-                    Log.d(TAG, "onPositionDiscontinuity: DISCONTINUITY_REASON_SEEK_ADJUSTMENT");
+                    LogHelper.d(TAG, "onPositionDiscontinuity: DISCONTINUITY_REASON_SEEK_ADJUSTMENT");
+                    LogHelper.d(TAG, "onPositionDiscontinuity: DISCONTINUITY_REASON_SEEK_ADJUSTMENT: quePos: " + player.getCurrentWindowIndex());
                     break;
                 default:
 
@@ -753,15 +1073,34 @@ public class PlayerService extends MediaBrowserServiceCompat implements AudioMan
 
         @Override
         public void onLoadingChanged(boolean isLoading) {
-            Log.d(TAG, "onLoadingChanged: loading:" + isLoading);
-            Log.d(TAG, "onLoadingChanged: Duration: " + TimeUnit.MILLISECONDS.toSeconds(player.getBufferedPosition()) + "s");
+            LogHelper.d(TAG, "onLoadingChanged: loading:" + isLoading);
+            if (!isLoading)
+                setPlaybackState(mSession.getController().getPlaybackState().getState());
+            LogHelper.d(TAG, "onLoadingChanged: Duration: " + TimeUnit.MILLISECONDS.toSeconds(player.getBufferedPosition()) + "s");
 
         }
 
         @Override
         public void onIsPlayingChanged(boolean isPlaying) {
-            Log.d(TAG, "onIsPlayingChanged: Playing: " + isPlaying);
+            LogHelper.d(TAG, "IsPlayingChanged Playing: isPlaying - " + isPlaying);
 
+            if (isPlaying) {
+                LogHelper.d(TAG, "onIsPlayingChanged: Playing");
+                setPlaybackState(PlaybackStateCompat.STATE_PLAYING);
+                pushNotification(PlaybackStateCompat.STATE_PLAYING);
+            } else {
+                if (player != null) {
+                    if (player.getPlaybackState() == ExoPlayer.STATE_BUFFERING) {
+                        LogHelper.d(TAG, "onIsPlayingChanged: Buffering");
+                        setPlaybackState(PlaybackStateCompat.STATE_BUFFERING);
+                        pushNotification(PlaybackStateCompat.STATE_PLAYING);
+                    } else {
+                        LogHelper.d(TAG, "onIsPlayingChanged: Paused");
+                        setPlaybackState(PlaybackStateCompat.STATE_PAUSED);
+                        pushNotification(PlaybackStateCompat.STATE_PAUSED);
+                    }
+                }
+            }
         }
 
         @Override
@@ -769,44 +1108,62 @@ public class PlayerService extends MediaBrowserServiceCompat implements AudioMan
             switch (error.type) {
 
                 case ExoPlaybackException.TYPE_OUT_OF_MEMORY:
-                    Log.d(TAG, "onPlayerError: TYPE_OUT_OF_MEMORY");
+                    LogHelper.d(TAG, "PlayerError: TYPE_OUT_OF_MEMORY");
                     break;
                 case ExoPlaybackException.TYPE_REMOTE:
-                    Log.d(TAG, "onPlayerError: TYPE_REMOTE");
+                    LogHelper.d(TAG, "PlayerError: TYPE_REMOTE");
                     break;
                 case ExoPlaybackException.TYPE_RENDERER:
-                    Log.d(TAG, "onPlayerError: TYPE_RENDERER");
+                    LogHelper.d(TAG, "PlayerError: TYPE_RENDERER");
                     break;
                 case ExoPlaybackException.TYPE_SOURCE:
-                    Log.d(TAG, "onPlayerError: TYPE_SOURCE");
-                    Toast.makeText(PlayerService.this, "Unable to play! Skipping next", Toast.LENGTH_SHORT).show();
-                    Log.d(TAG, "onPlayerError: curr indx = " + player.getCurrentWindowIndex() + " next indx = " + player.getNextWindowIndex());
-                    handler.postDelayed(playNextOnMediaError, 2000);
-
-//                    mSession.getController().getTransportControls().skipToNext();
+                    LogHelper.d(TAG, "PlayerError: TYPE_SOURCE");
+                    if (playingMode == Keys.PLAYING_MODE.OFFLINE) {
+                        Toast.makeText(PlayerService.this, "Unable to play! Skipping next", Toast.LENGTH_SHORT).show();
+                        handler.postDelayed(playNextOnMediaError, 2000);
+                    } else {
+                        if (!isInternetAvailable) {
+                            playbackEndedStatus = PlaybackEndedStatus.Interrupted;
+                            Toast.makeText(PlayerService.this, "No Internet Access", Toast.LENGTH_SHORT).show();
+                            mSession.getController().getTransportControls().stop();
+                        } else {
+                            Toast.makeText(PlayerService.this, "Unable to play! Skipping next", Toast.LENGTH_SHORT).show();
+                            handler.postDelayed(playNextOnMediaError, 2000);
+                        }
+                    }
+                    LogHelper.d(TAG, "PlayerError: curr indx = " + player.getCurrentWindowIndex() + " next indx = " + player.getNextWindowIndex());
                     break;
                 case ExoPlaybackException.TYPE_UNEXPECTED:
-                    Log.d(TAG, "onPlayerError: TYPE_UNEXPECTED");
+                    LogHelper.d(TAG, "PlayerError: TYPE_UNEXPECTED");
                     break;
             }
         }
 
         @Override
+        public void onTimelineChanged(Timeline timeline, int reason) {
+            LogHelper.d(TAG, "TimelineChanged: period_count: " + timeline.getPeriodCount());
+        }
+
+        @Override
         public void onPlayerStateChanged(boolean playWhenReady, int playbackState) {
+            LogHelper.d(TAG, "ExoPlayer playWhenReady: " + playWhenReady);
             switch (playbackState) {
                 case Player.STATE_BUFFERING:
-                    Log.d(TAG, "onPlayerStateChanged: STATE_BUFFERING");
+                    LogHelper.d(TAG, "ExoPlayer PlaybackState : STATE_BUFFERING");
+                    setPlaybackState(playWhenReady ? PlaybackStateCompat.STATE_BUFFERING : PlaybackStateCompat.STATE_PAUSED);
                     break;
                 case Player.STATE_ENDED:
-                    Log.d(TAG, "onPlayerStateChanged: STATE_ENDED");
-                    setPlaybackState(PlaybackStateCompat.STATE_STOPPED);
+                    LogHelper.d(TAG, "ExoPlayer PlaybackState: STATE_ENDED");
+                    playbackEndedStatus = PlaybackEndedStatus.Finished;
                     mSession.getController().getTransportControls().stop();
                     break;
                 case Player.STATE_IDLE:
-                    Log.d(TAG, "onPlayerStateChanged: STATE_IDLE");
+                    LogHelper.d(TAG, "ExoPlayer PlaybackState: STATE_IDLE");
+                    setPlaybackState(PlaybackStateCompat.STATE_STOPPED);
+                    pushNotification(PlaybackStateCompat.STATE_STOPPED);
                     break;
                 case Player.STATE_READY:
-                    Log.d(TAG, "onPlayerStateChanged: STATE_READY");
+                    LogHelper.d(TAG, "ExoPlayer PlaybackState: STATE_READY");
                     break;
             }
 
@@ -814,16 +1171,64 @@ public class PlayerService extends MediaBrowserServiceCompat implements AudioMan
 
     };
 
-    MediaSource getMediaSource(String mediaId) {
-        Log.d(TAG, "MediaSource Media ID:" + mediaId);
-        String[] parts = mediaId.split("[/|]");
-        String id = parts[parts.length - 1];
-        Uri contentUri = ContentUris.withAppendedId(MediaStore.Audio.Media.EXTERNAL_CONTENT_URI, Long.parseLong(id));
-        DataSource.Factory factory = new DefaultDataSourceFactory(PlayerService.this, Util.getUserAgent(getApplicationContext(), "YM Player"));
-        return new ProgressiveMediaSource.Factory(factory).setTag(id).createMediaSource(contentUri);
+//    MediaSource getMediaSource(String mediaId) {
+//        LogHelper.d(TAG, "MediaSource Media ID:" + mediaId);
+//        String[] parts = mediaId.split("[/|]");
+//        String id = parts[parts.length - 1];
+//        Uri contentUri = ContentUris.withAppendedId(MediaStore.Audio.Media.EXTERNAL_CONTENT_URI, Long.parseLong(id));
+//        DataSource.Factory factory = new DefaultDataSourceFactory(PlayerService.this, Util.getUserAgent(getApplicationContext(), "YM Player"));
+//        return new ProgressiveMediaSource.Factory(factory).setTag(id).createMediaSource(contentUri);
+//    }
+
+    Pair<String, Uri> tempAudioUriCache = new Pair<>("", null);
+    Pattern pattern = Pattern.compile("[0-9]+");
+
+    void initDataSourceFactory() {
+        factory = new ResolvingDataSource.Factory(new DefaultDataSourceFactory(this, Util.getUserAgent(PlayerService.this, "YM Player")), new ResolvingDataSource.Resolver() {
+            @Override
+            public DataSpec resolveDataSpec(DataSpec dataSpec) throws IOException {
+                LogHelper.d(TAG, "resolveDataSpec: " + dataSpec.uri);
+                LogHelper.d(TAG, "resolveDataSpec: in cache: " + tempAudioUriCache.first);
+                boolean isMatch = pattern.matcher(dataSpec.uri.toString()).matches();
+                String uriId = dataSpec.uri.toString();
+                LogHelper.d(TAG, "resolveDataSpec: pattern media id: matches: " + isMatch);
+                if (isMatch)
+                    return dataSpec.withUri(ContentUris.withAppendedId(MediaStore.Audio.Media.EXTERNAL_CONTENT_URI, Long.parseLong(uriId)));
+
+                Uri audioUri = null;
+                if (uriCache.isInCache(uriId)) {
+                    LogHelper.d(TAG, "resolveDataSpec: In Cache no need of loading");
+                    return dataSpec.withUri(uriCache.getUri(uriId));
+                } else {
+                    try {
+                        YoutubeJExtractor youtubeJExtractor = new YoutubeJExtractor();
+                        YoutubeVideoData videoData = youtubeJExtractor.extract(uriId);
+                        if (!videoData.getStreamingData().getAdaptiveAudioStreams().isEmpty()) {
+                            List<AdaptiveAudioStream> audioStreams = videoData.getStreamingData().getAdaptiveAudioStreams();
+                            audioUri = Uri.parse(audioStreams.get(audioStreams.size() - 1).getUrl());
+                            uriCache.pushUri(dataSpec.uri.toString(), audioUri);
+                            LogHelper.d(TAG, "resolveDataSpec: new uri:" + audioUri);
+                            for (AdaptiveAudioStream stream : videoData.getStreamingData().getAdaptiveAudioStreams()) {
+                                LogHelper.d(TAG, "resolveDataSpec: audio sample rate:" + stream.getAudioSampleRate() + " bit rate" + stream.getAverageBitrate());
+                            }
+                        }
+                    } catch (ExtractionException | YoutubeRequestException e) {
+                        e.printStackTrace();
+                    }
+                }
+                return dataSpec.withUri(audioUri);
+            }
+        });
     }
 
-    void addToMediaSources(@Nullable String mediaId, int pos) {
+    @Override
+    public void addHttpSourceToMediaSources(String videoId, int pos) {
+        mediaSources.addMediaSource(pos, new ProgressiveMediaSource.Factory(factory).createMediaSource(Uri.parse(videoId)));
+
+    }
+
+    @Override
+    public void addToMediaSources(@Nullable String mediaId, int pos) {
         if (mediaId == null) return;
         String[] parts = mediaId.split("[/|]");
         String id = parts[parts.length - 1];
@@ -835,78 +1240,51 @@ public class PlayerService extends MediaBrowserServiceCompat implements AudioMan
     /**
      * @param player current instance of EXOPLAYER
      */
-    void preparePlayer(SimpleExoPlayer player) {
+    @Override
+    public void preparePlayer(SimpleExoPlayer player) {
         player.prepare(mediaSources, true, true);
         player.seekToDefaultPosition(queuePos);
     }
 
+    @Override
+    public void preparePlayer(SimpleExoPlayer player, long seekPosition) {
+        player.prepare(mediaSources, true, true);
+        player.seekTo(queuePos, seekPosition);
+    }
+
+    public void seekPlayer(int windowIndex, long seekPosition) {
+        if (player == null) return;
+        boolean isNoSeek = (!isQueueChanged && windowIndex == player.getCurrentWindowIndex() && player.getCurrentPosition() == C.TIME_UNSET);
+        boolean isOnlySeek = (!isQueueChanged && windowIndex == player.getCurrentWindowIndex());
+        LogHelper.d(TAG, "seekPlayer: seek : " + !isNoSeek + " only seek: " + isOnlySeek);
+        if (isNoSeek) return;
+        if (isOnlySeek)
+            mSession.getController().getTransportControls().seekTo(seekPosition);
+        else player.seekTo(windowIndex, seekPosition);
+    }
 
     @Override
-    public void onTaskRemoved(Intent rootIntent) {
-        Log.d(TAG, "onTaskRemoved: ");
-        SharedPreferences.Editor editor = preferences.edit();
-        editor.putString("mediaId", currentMediaId);
-        editor.apply();
-        super.onTaskRemoved(rootIntent);
+    public void setPlayWhenReady(boolean playWhenReady) {
+        player.setPlayWhenReady(playWhenReady);
     }
+
 
     @Override
-    public void onAudioFocusChange(int focusChange) {
-        Log.d(TAG, "onAudioFocusChange: ");
-        if (focusChange == AudioManager.AUDIOFOCUS_LOSS) {
-            // Permanent loss of audio focus
-            // Pause playback immediately
-            mSession.getController().getTransportControls().stop();
-            // Wait 30 seconds before stopping playback
-            handler.postDelayed(delayDeregisterAudioFocus,
-                    TimeUnit.SECONDS.toMillis(30));
-        } else if (focusChange == AUDIOFOCUS_LOSS_TRANSIENT) {
-            mSession.getController().getTransportControls().pause();
-            // Pause playback
-        } else if (focusChange == AUDIOFOCUS_LOSS_TRANSIENT_CAN_DUCK) {
-            player.setVolume(0.4f);
-            // Lower the volume, keep playing
-        } else if (focusChange == AudioManager.AUDIOFOCUS_GAIN) {
-            // Your app has been granted audio focus again
-            // Raise volume to normal, restart playback if necessary
-            handler.removeCallbacks(delayDeregisterAudioFocus);
-            player.setVolume(1.0f);
-            //handlePlayRequest();
-        }
-    }
-
-    @SuppressWarnings("deprecation")
-    Runnable delayDeregisterAudioFocus = new Runnable() {
-        @Override
-        public void run() {
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                audioManager.abandonAudioFocusRequest(audioFocusRequest);
-            } else {
-                audioManager.abandonAudioFocus(PlayerService.this);
-            }
-        }
-    };
-
-    @SuppressWarnings("deprecation")
-    boolean isAudioFocusGranted() {
-        int result;
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            audioFocusRequest = new AudioFocusRequest.Builder(AudioManager.AUDIOFOCUS_GAIN).setOnAudioFocusChangeListener(PlayerService.this).setAudioAttributes(new AudioAttributes.Builder().setUsage(AudioAttributes.USAGE_MEDIA).setContentType(AudioAttributes.CONTENT_TYPE_MUSIC).build()).build();
-            result = audioManager.requestAudioFocus(audioFocusRequest);
-        } else {
-            result = audioManager.requestAudioFocus(PlayerService.this, STREAM_MUSIC, AudioManager.AUDIOFOCUS_GAIN);
-        }
-        Log.d(TAG, "isAudioFocusGranted: " + (result == AudioManager.AUDIOFOCUS_REQUEST_GRANTED));
-        return result == AudioManager.AUDIOFOCUS_REQUEST_GRANTED;
-    }
-
-    SimpleExoPlayer getSimpleExoPlayer(SimpleExoPlayer player) {
+    public SimpleExoPlayer getSimpleExoPlayer(SimpleExoPlayer player) {
         if (player == null) {
-            player = new SimpleExoPlayer.Builder(this).build();
+            player = new SimpleExoPlayer.Builder(this)
+                    .setTrackSelector(new DefaultTrackSelector(this))
+                    .build();
             player.addListener(ExoplayerEventListener);
             player.setRepeatMode(repeatMode);
-            player.setShuffleModeEnabled(isShuffleModeEnabled);
             player.prepare(mediaSources);
+            player.setPlayWhenReady(false);
+            player.setShuffleModeEnabled(isShuffleModeEnabled);
+            player.setHandleAudioBecomingNoisy(true);
+            player.setAudioAttributes(new com.google.android.exoplayer2.audio.AudioAttributes.Builder().setUsage(C.USAGE_MEDIA)
+                    .setContentType(C.CONTENT_TYPE_MUSIC).build(), true);
+            player.setWakeMode(C.WAKE_MODE_NETWORK);
+
         }
         return player;
     }
@@ -914,16 +1292,44 @@ public class PlayerService extends MediaBrowserServiceCompat implements AudioMan
     Runnable playNextOnMediaError = new Runnable() {
         @Override
         public void run() {
-            Log.d(TAG, "run: Executed playNextOnMediaError");
+            LogHelper.d(TAG, "playNextOnMediaError : Executed playNextOnMediaError");
             if (player.getNextWindowIndex() == -1)
                 mSession.getController().getTransportControls().stop();
             else {
                 queuePos = player.getNextWindowIndex();
                 preparePlayer(player);
                 player.setPlayWhenReady(true);
-                Log.d(TAG, "onPlayerError: Next");
+                LogHelper.d(TAG, "onPlayerError: Next");
             }
         }
     };
+
+    NetworkRequest networkRequest = new NetworkRequest.Builder().addCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET)
+            .addTransportType(NetworkCapabilities.TRANSPORT_ETHERNET)
+            .addTransportType(NetworkCapabilities.TRANSPORT_CELLULAR)
+            .addTransportType(NetworkCapabilities.TRANSPORT_BLUETOOTH)
+            .addTransportType(NetworkCapabilities.TRANSPORT_VPN)
+            .build();
+
+    NetworkCallback networkCallback = new NetworkCallback() {
+        @Override
+        public void onAvailable(@NonNull Network network) {
+            isInternetAvailable = true;
+        }
+
+        @Override
+        public void onLost(@NonNull Network network) {
+            isInternetAvailable = false;
+        }
+    };
+
+    interface PlaybackEndedStatus {
+        int Invalid = 0;
+        int Finished = 1;
+        int Interrupted = 2;
+    }
+
 }
+
+
 

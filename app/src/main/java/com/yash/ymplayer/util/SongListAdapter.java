@@ -29,6 +29,7 @@ import com.yash.ymplayer.databinding.ItemMusicBinding;
 import com.yash.ymplayer.databinding.ItemPlayingQueueBinding;
 import com.yash.ymplayer.databinding.ItemPlaylistBinding;
 import com.yash.ymplayer.repository.Repository;
+import com.yash.ymplayer.ui.main.AlbumOrArtistContextMenuListener;
 import com.yash.ymplayer.ui.main.SongContextMenuListener;
 
 import java.util.ArrayList;
@@ -37,7 +38,9 @@ import java.util.List;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadPoolExecutor;
 
-public class SongListAdapter extends RecyclerView.Adapter<SongListAdapter.SongViewHolder> implements Filterable {
+import static com.yash.ymplayer.ui.main.AlbumOrArtistContextMenuListener.*;
+
+public class SongListAdapter extends RecyclerView.Adapter<SongListAdapter.SongViewHolder> {
     private static final String TAG = "debug";
 
     List<MediaBrowserCompat.MediaItem> songs;
@@ -47,14 +50,14 @@ public class SongListAdapter extends RecyclerView.Adapter<SongListAdapter.SongVi
     private Context context;
     ThreadPoolExecutor executor = (ThreadPoolExecutor) Executors.newFixedThreadPool(4);
     Handler handler = new Handler();
-    SongContextMenuListener songContextMenuListener;
+    AlbumOrArtistContextMenuListener albumOrArtistContextMenuListener;
 
-    public SongListAdapter(Context context, List<MediaBrowserCompat.MediaItem> songs, OnItemClickListener listener, SongContextMenuListener songContextMenuListener, int mode) {
+    public SongListAdapter(Context context, List<MediaBrowserCompat.MediaItem> songs, OnItemClickListener listener, AlbumOrArtistContextMenuListener albumOrArtistContextMenuListener, int mode) {
         this.songs = songs;
         this.listener = listener;
         this.mode = mode;
         this.context = context;
-        this.songContextMenuListener = songContextMenuListener;
+        this.albumOrArtistContextMenuListener = albumOrArtistContextMenuListener;
     }
 
     @NonNull
@@ -78,7 +81,7 @@ public class SongListAdapter extends RecyclerView.Adapter<SongListAdapter.SongVi
         if (mode == 0)
             ((ItemViewHolder) holder).bindSongs(songs.get(position), listener);
         else if (mode == 1)
-            ((ItemViewHolder) holder).bindArtists(songs.get(position), listener,songContextMenuListener);
+            ((ItemViewHolder) holder).bindArtists(songs.get(position), listener, albumOrArtistContextMenuListener);
         else if (mode == 2)
             ((PlaylistViewHolder) holder).bindPlaylist(songs.get(position), listener);
         else
@@ -136,6 +139,8 @@ public class SongListAdapter extends RecyclerView.Adapter<SongListAdapter.SongVi
         void bindPlaylist(MediaBrowserCompat.MediaItem song, OnItemClickListener listener) {
             if ((Keys.PLAYLISTS.FAVOURITES).equals(song.getDescription().getTitle() + ""))
                 binding.iconPlaylist.setImageResource(R.drawable.icon_favourite);
+            else if("Last Added".equals(song.getDescription().getTitle()+""))
+                binding.iconPlaylist.setImageResource(R.drawable.icon_last_added);
             binding.playlistTitle.setText(song.getDescription().getTitle());
             itemView.setOnClickListener(new View.OnClickListener() {
                 @Override
@@ -192,51 +197,49 @@ public class SongListAdapter extends RecyclerView.Adapter<SongListAdapter.SongVi
 
         }
 
-        void bindArtists(MediaBrowserCompat.MediaItem song, OnItemClickListener listener,SongContextMenuListener songContextMenuListener) {
-           executor.execute(new Runnable() {
-               @Override
-               public void run() {
-                   PopupMenu menu = new PopupMenu(context, binding.more);
-                   menu.getMenuInflater().inflate(R.menu.artists_context_menu, menu.getMenu());
-                   menu.setOnMenuItemClickListener(new PopupMenu.OnMenuItemClickListener() {
-                       @Override
-                       public boolean onMenuItemClick(MenuItem item) {
-                           switch (item.getItemId()) {
-                               case R.id.play:
-                                   return true;
-                               case R.id.queue_next:
-                                   songContextMenuListener.queueNext(song);
-                                   return true;
-                               case R.id.add_to_playlist:
-                                   AlertDialog.Builder builder = new AlertDialog.Builder(context);
-                                   builder.setTitle("Choose Playlist");
-                                   List<MediaBrowserCompat.MediaItem> lists = Repository.getInstance(context).getAllPlaylists();
-                                   String[] list = new String[lists.size()];
-                                   for (int i = 0; i < lists.size(); i++) {
-                                       list[i] = lists.get(i).getDescription().getTitle().toString();
-                                   }
-                                   builder.setItems(list, (dialog, which) -> songContextMenuListener.addToPlaylist(song, list[which]));
-                                   AlertDialog dialog = builder.create();
-                                   dialog.show();
-                                   return true;
-                               default:
-                                   return false;
-                           }
-                       }
-                   });
-                   handler.post(()->binding.more.setOnClickListener(v -> menu.show()));
-               }
-           });
+        void bindArtists(MediaBrowserCompat.MediaItem song, OnItemClickListener listener, AlbumOrArtistContextMenuListener albumOrArtistContextMenuListener) {
+            executor.execute(new Runnable() {
+                @Override
+                public void run() {
+                    PopupMenu menu = new PopupMenu(context, binding.more);
+                    menu.inflate(R.menu.artists_context_menu);
+                    menu.setOnMenuItemClickListener(new PopupMenu.OnMenuItemClickListener() {
+                        @Override
+                        public boolean onMenuItemClick(MenuItem item) {
+                            switch (item.getItemId()) {
+                                case R.id.play:
+                                    albumOrArtistContextMenuListener.play(song, ITEM_TYPE.ARTISTS);
+                                    return true;
+                                case R.id.queue_next:
+                                    albumOrArtistContextMenuListener.queueNext(song, ITEM_TYPE.ARTISTS);
+                                    return true;
+                                case R.id.add_to_playlist:
+                                    AlertDialog.Builder builder = new AlertDialog.Builder(context);
+                                    builder.setTitle("Choose Playlist");
+                                    List<MediaBrowserCompat.MediaItem> lists = Repository.getInstance(context).getAllPlaylists();
+                                    String[] list = new String[lists.size()];
+                                    for (int i = 0; i < lists.size(); i++) {
+                                        list[i] = lists.get(i).getDescription().getTitle() + "";
+                                    }
+                                    builder.setItems(list, (dialog, which) -> albumOrArtistContextMenuListener.addToPlaylist(song, list[which], ITEM_TYPE.ARTISTS));
+                                    AlertDialog dialog = builder.create();
+                                    dialog.show();
+                                    return true;
+                                default:
+                                    return false;
+                            }
+                        }
+                    });
+                    handler.post(() -> binding.more.setOnClickListener(v -> {
+                        menu.show();
+                    }));
+                }
+            });
 
             binding.art.setVisibility(View.GONE);
             binding.title.setText(song.getDescription().getTitle());
             binding.subTitle.setText(song.getDescription().getSubtitle());
-            itemView.setOnClickListener(new View.OnClickListener() {
-                @Override
-                public void onClick(View v) {
-                    listener.onClick(song);
-                }
-            });
+            itemView.setOnClickListener(v -> listener.onClick(song));
         }
     }
 
@@ -245,40 +248,6 @@ public class SongListAdapter extends RecyclerView.Adapter<SongListAdapter.SongVi
         allSongs.addAll(songs);
     }
 
-    @Override
-    public Filter getFilter() {
-        return filter;
-    }
-
-    Filter filter = new Filter() {
-
-        @Override
-        protected FilterResults performFiltering(CharSequence constraint) {
-            List<MediaBrowserCompat.MediaItem> filteredList = new ArrayList<>();
-            Log.d(TAG, "performFiltering: allsongs size:" + songs.size());
-            if (constraint == null || constraint.length() == 0) {
-                filteredList.addAll(allSongs);
-                Log.d(TAG, "performFiltering: All list return");
-            } else {
-                for (MediaBrowserCompat.MediaItem item : allSongs) {
-                    if (item.getDescription().getTitle().toString().toLowerCase().contains(constraint.toString().toLowerCase())) {
-                        filteredList.add(item);
-                    }
-                }
-            }
-            FilterResults filterResults = new FilterResults();
-            filterResults.values = filteredList;
-            return filterResults;
-        }
-
-        @Override
-        protected void publishResults(CharSequence constraint, FilterResults results) {
-            Log.d(TAG, "publishResults: new size :");
-            songs.clear();
-            songs.addAll((Collection<? extends MediaBrowserCompat.MediaItem>) results.values);
-            notifyDataSetChanged();
-        }
-    };
 
     public interface OnItemClickListener {
         void onClick(MediaBrowserCompat.MediaItem song);

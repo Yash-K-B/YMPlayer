@@ -13,6 +13,7 @@ import android.support.v4.media.session.MediaControllerCompat;
 import android.support.v4.media.session.PlaybackStateCompat;
 import android.util.Log;
 import android.view.MenuItem;
+import android.view.View;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -41,7 +42,7 @@ public class ListExpandActivity extends BaseActivity {
     MediaControllerCompat mMediaController;
     String type = null;
     String parentId;
-    long albumId;
+    String title;
     Context context;
 
     @Override
@@ -52,11 +53,12 @@ public class ListExpandActivity extends BaseActivity {
         viewModel = new ViewModelProvider(ListExpandActivity.this).get(LocalViewModel.class);
         mMediaBrowser = new MediaBrowserCompat(this, new ComponentName(this, PlayerService.class), mConnectionCallbacks, null);
         mMediaBrowser.connect();
-        parentId = getIntent().getStringExtra("parent_id");
-        type = getIntent().getStringExtra("type");
-        albumId = getIntent().getLongExtra("imageId", 0);
+        Intent intent = getIntent();
+        parentId = intent.getStringExtra(Keys.EXTRA_PARENT_ID);
+        type = intent.getStringExtra(Keys.EXTRA_TYPE);
+        title = intent.getStringExtra(Keys.EXTRA_TITLE);
         setSupportActionBar(binding.toolbar);
-        getSupportActionBar().setTitle(parentId);
+        getSupportActionBar().setTitle(title);
         getSupportActionBar().setDisplayHomeAsUpEnabled(true);
         context = this;
     }
@@ -103,6 +105,7 @@ public class ListExpandActivity extends BaseActivity {
         viewModel.allArtists.observe(ListExpandActivity.this, new Observer<List<MediaBrowserCompat.MediaItem>>() {
             @Override
             public void onChanged(List<MediaBrowserCompat.MediaItem> songs) {
+                binding.listProgress.setVisibility(View.GONE);
                 SongsListAdapter adapter = new SongsListAdapter(context, songs, new SongListAdapter.OnItemClickListener() {
                     @Override
                     public void onClick(MediaBrowserCompat.MediaItem song) {
@@ -120,11 +123,13 @@ public class ListExpandActivity extends BaseActivity {
     }
 
     void albumTracks() {
-        Glide.with(context).load(ContentUris.withAppendedId(Uri.parse("content://media/external/audio/albumart"), albumId)).placeholder(R.drawable.album_art_placeholder).into(binding.appBarImage);
+        String[] parts = parentId.split("[/]");
+        Glide.with(context).load(ContentUris.withAppendedId(Uri.parse("content://media/external/audio/albumart"), Long.parseLong(parts[parts.length - 1]))).placeholder(R.drawable.album_art_placeholder).into(binding.appBarImage);
         viewModel.getAllAlbums(mMediaBrowser, parentId);
         viewModel.allAlbums.observe(ListExpandActivity.this, new Observer<List<MediaBrowserCompat.MediaItem>>() {
             @Override
             public void onChanged(List<MediaBrowserCompat.MediaItem> songs) {
+                binding.listProgress.setVisibility(View.GONE);
                 SongsListAdapter adapter = new SongsListAdapter(context, songs, new SongListAdapter.OnItemClickListener() {
                     @Override
                     public void onClick(MediaBrowserCompat.MediaItem song) {
@@ -147,6 +152,7 @@ public class ListExpandActivity extends BaseActivity {
         viewModel.allPlaylists.observe(ListExpandActivity.this, new Observer<List<MediaBrowserCompat.MediaItem>>() {
             @Override
             public void onChanged(List<MediaBrowserCompat.MediaItem> songs) {
+                binding.listProgress.setVisibility(View.GONE);
                 SongsListAdapter adapter = new SongsListAdapter(context, songs, new SongListAdapter.OnItemClickListener() {
                     @Override
                     public void onClick(MediaBrowserCompat.MediaItem song) {
