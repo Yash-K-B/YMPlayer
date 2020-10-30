@@ -53,4 +53,6 @@
     <string name="artists">Artists</string>
     <string name="songs">Songs</string>
     <string name="youtube_songs">Youtube Songs</string>
+    <string name="eq">Equalizer</string>
+    <string name="downloads">Downloads</string>
 </resources>

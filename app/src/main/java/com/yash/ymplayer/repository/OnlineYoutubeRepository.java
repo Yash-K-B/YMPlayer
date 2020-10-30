@@ -40,7 +40,7 @@ import java.util.concurrent.Executors;
 import static com.android.volley.Request.Method.GET;
 
 public class OnlineYoutubeRepository {
-    private static final String TAG = "debug";
+    private static final String TAG = "OnlineYoutubeRepository";
     Map<String, TopTracksYoutubeSongsCache> topTracksCache;
     Map<String, List<YoutubeSong>> loadedTracksMap;
     Context context;
@@ -80,13 +80,14 @@ public class OnlineYoutubeRepository {
                 List<YoutubeSong> tracks = new ArrayList<>();
                 LogHelper.d(TAG, "onResponse: prevPageToken : " + playlist.getPrevPageToken());
                 for (int i = 0; i < playlist.getItems().size(); i++) {
-                    LogHelper.d(TAG, "onResponse: " + playlist.getItems().get(i).getSnippet().getTitle());
+                    //LogHelper.d(TAG, "onResponse: " + playlist.getItems().get(i).getSnippet().getTitle());
                     String title = playlist.getItems().get(i).getSnippet().getTitle();
                     String videoId = playlist.getItems().get(i).getSnippet().getResourceId().getVideoId();
                     String channelName = playlist.getItems().get(i).getSnippet().getChannelTitle();
                     String art_small = playlist.getItems().get(i).getSnippet().getThumbnails().getDefault().getUrl();
                     String art_medium = playlist.getItems().get(i).getSnippet().getThumbnails().getMedium().getUrl();
                     YoutubeSong song = new YoutubeSong(title, videoId, channelName, art_small, art_medium);
+                    song.setChannelDesc("Top Tracks");
                     tracks.add(song);
                 }
                 loadSongDuration(tracks, callback, pageToken, playlist.getPrevPageToken(), playlist.getNextPageToken());
@@ -137,7 +138,7 @@ public class OnlineYoutubeRepository {
             ids.deleteCharAt(ids.length() - 1);
         String url = "https://www.googleapis.com/youtube/v3/videos?part=contentDetails,snippet&maxResults=50&fields=items(snippet(channelTitle),contentDetails(duration))&key=AIzaSyAdfvLnL55J-5dOwiL_IDF5PydkF3r2jQA" + "&id=" + ids;
         JsonObjectRequest jsonObjectRequest = new JsonObjectRequest(GET, url, null, response -> {
-            LogHelper.d(TAG, "onResponse: " + response);
+            //LogHelper.d(TAG, "onResponse: " + response);
             try {
                 JSONArray jsonArray = response.getJSONArray("items");
                 for (int i = 0; i < jsonArray.length(); i++) {
@@ -154,7 +155,7 @@ public class OnlineYoutubeRepository {
                     }
                     songs.get(i).setDurationMillis(song_duration * 1000);
                     songs.get(i).setChannelTitle(channelName);
-                    LogHelper.d(TAG, "onResponse: duration in secs: " + song_duration + " s");
+                    //LogHelper.d(TAG, "onResponse: duration in secs: " + song_duration + " s");
                 }
                 topTracksCache.put(pageToken, new TopTracksYoutubeSongsCache(prevToken, nextToken, songs));
                 LogHelper.d(TAG, "loadSongDuration: " + (this.callback == callback));
@@ -214,7 +215,7 @@ public class OnlineYoutubeRepository {
                             .setMediaId(song.getVideoId())
                             .setTitle(song.getTitle())
                             .setSubtitle(song.getChannelTitle())
-                            .setDescription("Top Tracks")
+                            .setDescription(song.getChannelDesc())
                             .setIconUri(Uri.parse(song.getArt_url_medium()))
                             .setExtras(extras)
                             .build()
@@ -361,7 +362,7 @@ public class OnlineYoutubeRepository {
     }
 
 
-    public void getTracks(String id, String pageToken, TracksLoadedCallback callback) {
+    public void getTracks(String id,String desc, String pageToken, TracksLoadedCallback callback) {
         LogHelper.d(TAG, "topTracks: Extraction");
         String url = "https://www.googleapis.com/youtube/v3/playlistItems?part=snippet&fields=prevPageToken,nextPageToken,items(snippet(title,thumbnails(default,medium,high),channelTitle,resourceId))&playlistId=" + id + "&maxResults=50&key=AIzaSyAdfvLnL55J-5dOwiL_IDF5PydkF3r2jQA";
         if (!pageToken.equals("-1"))
@@ -373,13 +374,14 @@ public class OnlineYoutubeRepository {
             List<YoutubeSong> tracks = new ArrayList<>();
             LogHelper.d(TAG, "onResponse: prevPageToken : " + playlist.getPrevPageToken());
             for (int i = 0; i < playlist.getItems().size(); i++) {
-                LogHelper.d(TAG, "onResponse: " + playlist.getItems().get(i).getSnippet().getTitle());
+                //LogHelper.d(TAG, "onResponse: " + playlist.getItems().get(i).getSnippet().getTitle());
                 String title = playlist.getItems().get(i).getSnippet().getTitle();
                 String videoId = playlist.getItems().get(i).getSnippet().getResourceId().getVideoId();
                 String channelName = playlist.getItems().get(i).getSnippet().getChannelTitle();
                 String art_small = playlist.getItems().get(i).getSnippet().getThumbnails().getDefault().getUrl();
                 String art_medium = playlist.getItems().get(i).getSnippet().getThumbnails().getMedium().getUrl();
                 YoutubeSong song = new YoutubeSong(title, videoId, channelName, art_small, art_medium);
+                song.setChannelDesc(desc);
                 tracks.add(song);
             }
             loadTracksDuration(tracks, id, callback);
@@ -432,7 +434,7 @@ public class OnlineYoutubeRepository {
             ids.deleteCharAt(ids.length() - 1);
         String url = "https://www.googleapis.com/youtube/v3/videos?part=contentDetails,snippet&maxResults=50&fields=items(snippet(channelTitle),contentDetails(duration))&key=AIzaSyAdfvLnL55J-5dOwiL_IDF5PydkF3r2jQA" + "&id=" + ids;
         JsonObjectRequest jsonObjectRequest = new JsonObjectRequest(GET, url, null, response -> {
-            LogHelper.d(TAG, "onResponse: " + response);
+            //LogHelper.d(TAG, "onResponse: " + response);
             try {
                 JSONArray jsonArray = response.getJSONArray("items");
                 for (int i = 0; i < jsonArray.length(); i++) {
@@ -449,7 +451,7 @@ public class OnlineYoutubeRepository {
                     }
                     songs.get(i).setDurationMillis(song_duration * 1000);
                     songs.get(i).setChannelTitle(channelName);
-                    LogHelper.d(TAG, "onResponse: duration in secs: " + song_duration + " s");
+                    //LogHelper.d(TAG, "onResponse: duration in secs: " + song_duration + " s");
                 }
                 loadedTracksMap.put(id, songs);
                 callback.onLoaded(songs);
@@ -521,7 +523,7 @@ public class OnlineYoutubeRepository {
                                 .setMediaId(song.getVideoId())
                                 .setTitle(song.getTitle())
                                 .setSubtitle(song.getChannelTitle())
-                                .setDescription("Top Tracks")
+                                .setDescription(song.getChannelDesc())
                                 .setIconUri(Uri.parse(song.getArt_url_medium()))
                                 .setExtras(extras)
                                 .build()

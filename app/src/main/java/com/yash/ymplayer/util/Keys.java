@@ -21,6 +21,9 @@ public interface Keys {
     String EXTRA_ARTIST_ID ="artistId";
     String QUEUE_HINT = "queueHint";
     String EXTRA_ART_URL = "EXTRA_ART_URL";
+    String VIDEO_ID = "videoId";
+    String AUDIO_SESSION_ID = "audioSessionId";
+    String EXTRA_EQUALIZER_STATE = "equalizerState";
 
     interface Action {
         String ADD_TO_PLAYLIST = "addToPlaylist";
@@ -29,23 +32,28 @@ public interface Keys {
         String REMOVE_FROM_QUEUE = "removeFromQueue";
         String SWAP_QUEUE_ITEM = "swapQueueItem";
         String TOGGLE_FAVOURITE = "favourite";
+        String DOWNLOAD = "download";
+        String AUDIO_SESSION_CHANGED = "audioSessionChanged";
+        String TOGGLE_EQUALIZER_STATE = "toggleEqualizerState";
     }
 
     interface Fragments {
         String LOCAL_SONGS = "localSongs";
         String SETTINGS = "settings";
         String ABOUT = "about";
-        String SPOTIFY_SONGS = "spotifySongs";
         String YOUTUBE_SONGS = "youtubeSongs";
+        String DOWNLOADS = "downloads";
     }
 
     interface SHARED_PREFERENCES {
-        String SPOTIFY = "SPOTIFY";
-        String AUDIO_URL_MAPPING = "AUDIO_URL_MAPPING";
+        String DOWNLOADS = "downloads";
     }
 
     interface PREFERENCE_KEYS {
         String TOKEN = "token";
+        String BUILTIN_EQUALIZER = "builtin_equalizer";
+        String DOWNLOADS = "downloads";
+        String TOTAL_DOWNLOADS = "totalDownloads";
     }
 
     interface PLAYLISTS {
@@ -66,5 +74,18 @@ public interface Keys {
         String ALL_SONGS = "ALL_SONGS";
         String ARTISTS = "ARTISTS";
         String ALBUMS = "ALBUMS";
+    }
+
+    interface COMMAND {
+        String AUDIO_SESSION_ID = "audioSessionId";
+        String GET_AUDIO_SESSION_ID = "getAudioSessionId";
+        String UPDATE_EQUALIZER = "updateEqualizer";
+        String ON_AUDIO_SESSION_ID_CHANGE = "onAudioSessionIdChange";
+    }
+
+    interface OBJECT {
+        String EQUALIZER = "equalizer";
+        String BASSBOOST = "bassBoost";
+        String PRESETREVERB = "presetReverb";
     }
 }

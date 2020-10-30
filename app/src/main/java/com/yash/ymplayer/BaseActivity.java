@@ -1,11 +1,16 @@
 package com.yash.ymplayer;
 
+import android.content.Context;
 import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.util.Log;
+import android.util.TypedValue;
+
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.preference.PreferenceManager;
+
+import org.jetbrains.annotations.NotNull;
 
 public abstract class BaseActivity extends AppCompatActivity {
     private static final String TAG = "debug";
@@ -52,6 +57,12 @@ public abstract class BaseActivity extends AppCompatActivity {
      *
      */
     abstract public void refresh();
+
+    public static int getAttributeColor(@NotNull Context context, int resId) {
+        TypedValue value = new TypedValue();
+        context.getTheme().resolveAttribute(resId, value, true);
+        return value.data;
+    }
 
 
 }

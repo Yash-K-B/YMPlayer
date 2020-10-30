@@ -1,5 +1,7 @@
 package com.yash.ymplayer;
 
+import android.os.Bundle;
+
 import androidx.annotation.Nullable;
 import androidx.appcompat.widget.Toolbar;
 
@@ -16,4 +18,13 @@ public interface ActivityActionProvider {
      * @param name name of the user
      */
     void setUserName(String name);
+
+    /**
+     * This method sends the custom action to the MediaSession through
+     * MediaController.
+     *
+     * @param action the action to be done
+     * @param extras the arguments if any, null for no arguments
+     */
+    void sendActionToMediaSession(String action, Bundle extras);
 }

@@ -12,18 +12,19 @@ import android.content.pm.PackageManager;
 import android.graphics.Color;
 import android.graphics.drawable.Drawable;
 import android.media.MediaMetadataRetriever;
+import android.media.audiofx.AudioEffect;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.RemoteException;
+import android.os.ResultReceiver;
 import android.provider.MediaStore;
 import android.support.v4.media.MediaBrowserCompat;
 import android.support.v4.media.MediaMetadataCompat;
 import android.support.v4.media.session.MediaControllerCompat;
 import android.support.v4.media.session.MediaSessionCompat;
 import android.support.v4.media.session.PlaybackStateCompat;
-import android.util.TypedValue;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
@@ -54,10 +55,11 @@ import com.bumptech.glide.request.target.Target;
 import com.bumptech.glide.request.transition.Transition;
 import com.google.android.material.bottomsheet.BottomSheetBehavior;
 import com.google.android.material.navigation.NavigationView;
+import com.naman14.androidlame.AndroidLame;
+import com.naman14.androidlame.LameBuilder;
 import com.sothree.slidinguppanel.SlidingUpPanelLayout;
-import com.spotify.sdk.android.auth.AuthorizationClient;
-import com.spotify.sdk.android.auth.AuthorizationResponse;
 import com.yash.ymplayer.databinding.ActivityMainBinding;
+import com.yash.ymplayer.equaliser.DialogEqualizerFragment;
 import com.yash.ymplayer.helper.LogHelper;
 import com.yash.ymplayer.ui.main.AboutFragment;
 import com.yash.ymplayer.ui.main.LocalSongs;
@@ -87,8 +89,8 @@ import java.util.concurrent.TimeUnit;
 public class MainActivity extends BaseActivity implements ActivityActionProvider {
     public static final String STATE_PREF = "PlayerState";
     private static final String TAG = "MainActivity";
-    private static final String CHANNEL_ID = "channelOne";
-    private static final CharSequence CHANNEL_NAME = "Default Channel";
+    public static final String CHANNEL_ID = "channelOne";
+    public static final CharSequence CHANNEL_NAME = "Default Channel";
     public static final String EXTRA_CURRENT_FRAGMENT = "fragment";
     public static final String EXTRA_IS_PANEL_ACTIVE = "isPanelActive";
     public ActivityMainBinding activityMainBinding;
@@ -116,6 +118,7 @@ public class MainActivity extends BaseActivity implements ActivityActionProvider
     int navigationItemId = -1;
     boolean isQueueItemArranging;
     String queueTitle;
+    DialogEqualizerFragment dialogEqualizerFragment;
 
 
     @Override
@@ -198,6 +201,11 @@ public class MainActivity extends BaseActivity implements ActivityActionProvider
                         currentFragment = Keys.Fragments.LOCAL_SONGS;
                         getSupportFragmentManager().beginTransaction().replace(activityMainBinding.container.getId(), new LocalSongs(), Keys.Fragments.LOCAL_SONGS).commit();
                         return;
+                        case R.id.downloads:
+                        if (currentFragment.equals(Keys.Fragments.DOWNLOADS)) return;
+                        currentFragment = Keys.Fragments.DOWNLOADS;
+                        getSupportFragmentManager().beginTransaction().replace(activityMainBinding.container.getId(), new DownloadFragment(), Keys.Fragments.DOWNLOADS).commit();
+                        return;
                     case R.id.settings:
                         if (currentFragment.equals(Keys.Fragments.SETTINGS)) return;
                         currentFragment = Keys.Fragments.SETTINGS;
@@ -221,9 +229,8 @@ public class MainActivity extends BaseActivity implements ActivityActionProvider
             }
         });
 
-
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-            if (checkSelfPermission(Manifest.permission.WRITE_EXTERNAL_STORAGE) == PackageManager.PERMISSION_GRANTED) {
+            if (checkSelfPermission(Manifest.permission.WRITE_EXTERNAL_STORAGE) == PackageManager.PERMISSION_GRANTED && checkSelfPermission(Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED) {
                 LogHelper.d(TAG, "onCreate: Fragment Transaction:");
                 switch (currentFragment) {
                     case Keys.Fragments.SETTINGS:
@@ -241,7 +248,7 @@ public class MainActivity extends BaseActivity implements ActivityActionProvider
                 }
 
             } else {
-                requestPermissions(new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE}, 100);
+                requestPermissions(new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE, Manifest.permission.RECORD_AUDIO}, 100);
             }
         } else {
 
@@ -325,9 +332,9 @@ public class MainActivity extends BaseActivity implements ActivityActionProvider
         LogHelper.d(TAG, "onRequestPermissionsResult: ");
         if (requestCode == 100) {
             for (int i = 0; i < permissions.length; i++)
-                if (permissions[i].equals(Manifest.permission.WRITE_EXTERNAL_STORAGE) && grantResults[i] == PackageManager.PERMISSION_GRANTED)
-                    getSupportFragmentManager().beginTransaction().replace(activityMainBinding.container.getId(), new LocalSongs()).commitAllowingStateLoss();
-                else finish();
+                if (grantResults[i] != PackageManager.PERMISSION_GRANTED)
+                    finish();
+            getSupportFragmentManager().beginTransaction().replace(activityMainBinding.container.getId(), new LocalSongs()).commitAllowingStateLoss();
         }
     }
 
@@ -346,6 +353,7 @@ public class MainActivity extends BaseActivity implements ActivityActionProvider
         }
     };
     MediaControllerCompat.Callback mediaControllerCallback = new MediaControllerCompat.Callback() {
+
         @Override
         public void onQueueTitleChanged(CharSequence title) {
             queueTitle = title.toString();
@@ -381,13 +389,13 @@ public class MainActivity extends BaseActivity implements ActivityActionProvider
 
         @Override
         public void onQueueChanged(List<MediaSessionCompat.QueueItem> queue) {
-            int color = getAttributeColor(R.attr.listTitleTextColor);
-            LogHelper.d(TAG, "onQueueChanged: queue size:" + queue.size() + " song size:" + songs.size() + " QueueUpdated: " + !(queueTitle != null && queueTitle.equals(Keys.QUEUE_TITLE.CUSTOM)));
+            int color = getAttributeColor(MainActivity.this,R.attr.listTitleTextColor);
+            //LogHelper.d(TAG, "onQueueChanged: queue size:" + queue.size() + " song size:" + songs.size() + " QueueUpdated: " + !(queueTitle != null && queueTitle.equals(Keys.QUEUE_TITLE.CUSTOM)));
             if (queueTitle != null && queueTitle.equals(Keys.QUEUE_TITLE.CUSTOM))
                 return;
             songs.clear();
             for (int i = 0; i < queue.size(); i++) {
-                LogHelper.d(TAG, "QueueIem : " + queue.get(i).getDescription().getTitle());
+                //LogHelper.d(TAG, "QueueIem : " + queue.get(i).getDescription().getTitle());
                 Song song = new Song(
                         queue.get(i).getDescription().getMediaId(),
                         queue.get(i).getDescription().getTitle() + "",
@@ -475,7 +483,6 @@ public class MainActivity extends BaseActivity implements ActivityActionProvider
                     activityMainBinding.musicProgress.setSecondaryProgress((int) currentBufferedPosition);
                     scheduledFutureUpdate();
                     LogHelper.d(TAG, "onPlaybackStateChanged: STATE_PLAYING MainActivity");
-
                     break;
                 case PlaybackStateCompat.STATE_STOPPED:
                     LogHelper.d(TAG, "onPlaybackStateChanged: STATE_STOPPED MainActivity");
@@ -562,6 +569,9 @@ public class MainActivity extends BaseActivity implements ActivityActionProvider
             case android.R.id.home:
                 activityMainBinding.drawerLayout.openDrawer(GravityCompat.START);
                 return true;
+            case R.id.test:
+                encodeToMP3();
+                return true;
             case R.id.exit:
                 LogHelper.d(TAG, "onOptionsItemSelected: Exit");
                 Intent intent = new Intent(this.getApplicationContext(), PlayerService.class);
@@ -621,6 +631,10 @@ public class MainActivity extends BaseActivity implements ActivityActionProvider
         userName.setText(name);
     }
 
+    @Override
+    public void sendActionToMediaSession(String action, Bundle extras) {
+        mediaController.getTransportControls().sendCustomAction(action,extras);
+    }
 
     void scheduledFutureUpdate() {
         stopScheduledFutureUpdate();
@@ -639,13 +653,15 @@ public class MainActivity extends BaseActivity implements ActivityActionProvider
 
     String formatMillis(long milli) {
         milli = milli / 1000;
-        String hr = milli / (3600) > 9 ? String.valueOf(milli / (3600)) : "0" + milli / (3600);
+        String hr = String.valueOf(milli / (3600));
         milli %= 3600;
         String min = milli / (60) > 9 ? String.valueOf(milli / (60)) : "0" + milli / (60);
         milli %= 60;
         String sec = milli > 9 ? String.valueOf(milli) : "0" + milli;
 
-        return min + ":" + sec;
+        if (hr.equals("0"))
+            return min + ":" + sec;
+        return hr + ":" + min + ":" + sec;
     }
 
     //Click listeners
@@ -727,6 +743,39 @@ public class MainActivity extends BaseActivity implements ActivityActionProvider
             }
         }
     };
+    View.OnClickListener openEqualizerListener = new View.OnClickListener() {
+        @Override
+        public void onClick(View v) {
+            boolean isSystemEQ = !defaultSharedPreferences.getBoolean(Keys.PREFERENCE_KEYS.BUILTIN_EQUALIZER, false);
+            Intent openEQIntent = new Intent();
+            if (isSystemEQ) {
+                openEQIntent.setAction(AudioEffect.ACTION_DISPLAY_AUDIO_EFFECT_CONTROL_PANEL);
+                openEQIntent.resolveActivity(getPackageManager());
+                startActivity(openEQIntent);
+
+            } else{
+                mediaController.sendCommand(Keys.COMMAND.ON_AUDIO_SESSION_ID_CHANGE,null,new ResultReceiver(handler){
+                    @Override
+                    protected void onReceiveResult(int resultCode, Bundle resultData) {
+                        if(dialogEqualizerFragment != null)
+                            dialogEqualizerFragment.updateAudioSessionId(resultData.getInt(Keys.AUDIO_SESSION_ID));
+                    }
+                });
+                mediaController.sendCommand(Keys.COMMAND.GET_AUDIO_SESSION_ID,null,new ResultReceiver(handler) {
+                    @Override
+                    protected void onReceiveResult(int resultCode, Bundle resultData) {
+                        dialogEqualizerFragment = DialogEqualizerFragment.newBuilder()
+                                .setAccentColor(BaseActivity.getAttributeColor(MainActivity.this,R.attr.colorAccent))  //Color.parseColor("#4caf50")
+                                .setAudioSessionId(resultData.getInt(Keys.AUDIO_SESSION_ID))
+                                .build();
+                        dialogEqualizerFragment.show(getSupportFragmentManager(),"eq");
+                    }
+                });
+            }
+
+
+        }
+    };
     SeekBar.OnSeekBarChangeListener progressListener = new SeekBar.OnSeekBarChangeListener() {
         @Override
         public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
@@ -747,6 +796,8 @@ public class MainActivity extends BaseActivity implements ActivityActionProvider
 
     //Initialise
     void initialise() {
+
+        mediaController.sendCommand(Keys.COMMAND.AUDIO_SESSION_ID, null, resultReceiver);
 
         switch (mediaController.getShuffleMode()) {
             case PlaybackStateCompat.SHUFFLE_MODE_NONE:
@@ -771,7 +822,7 @@ public class MainActivity extends BaseActivity implements ActivityActionProvider
         if (mediaController.getQueue() != null) {
             List<MediaSessionCompat.QueueItem> queue = mediaController.getQueue();
             songs.clear();
-            int color = getAttributeColor(R.attr.listTitleTextColor);
+            int color = getAttributeColor(MainActivity.this,R.attr.listTitleTextColor);
             for (int i = 0; i < queue.size(); i++) {
 
                 LogHelper.d(TAG, "QueueIem : " + queue.get(i).getDescription().getTitle());
@@ -865,13 +916,9 @@ public class MainActivity extends BaseActivity implements ActivityActionProvider
         activityMainBinding.closeBottomSheet.setOnClickListener(closeBottomSheetListener);
         activityMainBinding.minimize.setOnClickListener(v -> activityMainBinding.slidingLayout.setPanelState(SlidingUpPanelLayout.PanelState.COLLAPSED));
         activityMainBinding.shareThis.setOnClickListener(shareSongListener);
+        activityMainBinding.equalizer.setOnClickListener(openEqualizerListener);
     }
 
-    public int getAttributeColor(int resId) {
-        TypedValue value = new TypedValue();
-        getTheme().resolveAttribute(resId, value, true);
-        return value.data;
-    }
 
     private void shareMyApp() {
         ApplicationInfo app = getApplicationContext().getApplicationInfo();
@@ -994,5 +1041,202 @@ public class MainActivity extends BaseActivity implements ActivityActionProvider
             adapter.notifyDataSetChanged();
         }
     };
+
+    ResultReceiver resultReceiver = new ResultReceiver(handler) {
+        @Override
+        protected void onReceiveResult(int resultCode, Bundle resultData) {
+            super.onReceiveResult(resultCode, resultData);
+            LogHelper.d(TAG, "onReceiveResult: audioSessionId" + resultData.getInt(Keys.AUDIO_SESSION_ID));
+//            activityMainBinding.visualizer.setColor(Color.GREEN);
+//            activityMainBinding.visualizer.setPlayer(resultData.getInt(Keys.AUDIO_SESSION_ID));
+        }
+    };
+
+
+    public static final int CHUNK_SIZE = 8192;
+
+    void encodeToMP3() {
+//        extractID3Tags("/storage/emulated/0/Test/soja.mp3");
+//        try {
+//            MediaExtractor extractor = new MediaExtractor();
+//            extractor.setDataSource("/storage/emulated/0/Test/soja.mp3");
+//            LogHelper.d(TAG, "encodeToMP3: " + extractor.getTrackCount());
+//
+//            for (int i = 0; i < extractor.getTrackCount(); i++) {
+//                MediaFormat format = extractor.getTrackFormat(i);
+//                extractor.selectTrack(i);
+//                LogHelper.d(TAG, "encodeToMP3: " + format.toString());
+//            }
+//
+//
+//            File file = new File("/storage/emulated/0/Test/soja_zara.pcm");
+//            FileOutputStream outfile = new FileOutputStream(file);
+//            // WritableByteChannel channel = Channels.newChannel(outfile);
+//            //format.setInteger(MediaFormat.);
+//            MediaFormat format = MediaFormat.createAudioFormat(MediaFormat.MIMETYPE_AUDIO_MPEG, 48000, 2);
+//            format.setInteger(MediaFormat.KEY_BIT_RATE, 128000);
+//            MediaCodec decoder = MediaCodec.createDecoderByType(MediaFormat.MIMETYPE_AUDIO_MPEG);
+//            decoder.configure(format, null, null, 0);
+//            decoder.setCallback(new MediaCodec.Callback() {
+//                @Override
+//                public void onInputBufferAvailable(@NonNull MediaCodec codec, int index) {
+//                    LogHelper.d(TAG, "onInputBufferAvailable: index:" + index);
+//                    ByteBuffer buffer = codec.getInputBuffer(index);
+//                    // LogHelper.d(TAG, "onInputBufferAvailable: Buffer:" + buffer);
+//                    int size = extractor.readSampleData(buffer, 0);
+//                    LogHelper.d(TAG, "onInputBufferAvailable: x:" + size + " time :" + extractor.getSampleTime());
+//                    if (size > 0) {
+//                        codec.queueInputBuffer(index, 0, size, extractor.getSampleTime(), 0);
+//                        extractor.advance();
+//                    } else {
+//                        codec.queueInputBuffer(index, 0, 0, 0, MediaCodec.BUFFER_FLAG_END_OF_STREAM);
+//                        LogHelper.d(TAG, "onInputBufferAvailable: End Of Stream");
+//                    }
+//
+//                }
+//
+//                @Override
+//                public void onOutputBufferAvailable(@NonNull MediaCodec codec, int index, @NonNull MediaCodec.BufferInfo info) {
+//                    LogHelper.d(TAG, "------------------------------------------onOutputBufferAvailable: " + index);
+//                    ByteBuffer buffer = codec.getOutputBuffer(index);
+//                    byte[] bytes = new byte[info.size - info.offset];
+//                    int position = buffer.position();
+//                    buffer.get(bytes);
+//                    buffer.position(position);
+//                    try {
+//
+//                        codec.releaseOutputBuffer(index, info.presentationTimeUs);
+//                        outfile.write(bytes, 0, info.size - info.offset);
+//                        LogHelper.d(TAG, "onOutputBufferAvailable: content: " + Arrays.toString(bytes));
+//                    } catch (IOException e) {
+//                        e.printStackTrace();
+//                    }
+//
+//                }
+//
+//                @Override
+//                public void onError(@NonNull MediaCodec codec, @NonNull MediaCodec.CodecException e) {
+//                    LogHelper.d(TAG, "onError: ");
+//                }
+//
+//                @Override
+//                public void onOutputFormatChanged(@NonNull MediaCodec codec, @NonNull MediaFormat format) {
+//                    LogHelper.d(TAG, "onOutputFormatChanged: ");
+//                    LogHelper.d(TAG, "OutputFormat: " + format);
+//                    executor.execute(encodeToMP3);
+//                }
+//            });
+//            decoder.start();
+//
+//            LogHelper.d(TAG, "encodeToMP3:" + decoder.getOutputFormat().toString());
+//        } catch (IOException e) {
+//            e.printStackTrace();
+//        }
+
+        //
+        //executor.execute(encodeToMP3);
+    }
+
+
+    Runnable encodeToMP3 = () -> {
+//        MediaExtractor extractor = new MediaExtractor();
+//        try {
+//            extractor.setDataSource("/storage/emulated/0/Test/soja.mp3");
+//        } catch (IOException e) {
+//            e.printStackTrace();
+//        }
+//        extractor.selectTrack(0);
+//        MediaFormat format = extractor.getTrackFormat(0);
+        LogHelper.d(TAG, "encodeToMP3: starting mp3 encode");
+        String title = "Kanha Soja Zara (2017)";
+        String artist = "Madhushree";
+        String album = "Baahubali 2 - The Conclusion";
+
+
+        LameBuilder builder = new LameBuilder()
+                .setOutBitrate(320)
+                .setOutChannels(2)
+                .setOutSampleRate(48000)
+                .setQuality(1)
+                .setMode(LameBuilder.Mode.STEREO)
+                .setId3tagTitle(title)
+                .setId3tagArtist(artist)
+                .setId3tagAlbum(album)
+                .setId3tagYear("2017")
+                .setId3tagComment(" extra ");
+        AndroidLame androidLame = new AndroidLame(builder);
+
+        byte[] mp3buff = new byte[CHUNK_SIZE * 8];
+        short[] left = new short[CHUNK_SIZE * 8];
+        short[] right = new short[CHUNK_SIZE * 8];
+        try {
+            File inFile = new File("/storage/emulated/0/Test/soja_zara.pcm");
+            LogHelper.d(TAG, "encodeToMP3: File length : " + inFile.length());
+            FileInputStream inputStream = new FileInputStream(inFile);
+            File outfile = new File("/storage/emulated/0/Test/soja_zara.mp3");
+            FileOutputStream outputStream = new FileOutputStream(outfile);
+            while (true) {
+                int byteRead = read(inputStream, left, right, CHUNK_SIZE * 8);
+                LogHelper.d(TAG, "encodeToMP3: byteRead: " + byteRead);
+                if (byteRead > 0) {
+                    int byteEncode = androidLame.encode(left, right, byteRead, mp3buff);
+                    outputStream.write(mp3buff, 0, byteEncode);
+                    LogHelper.d(TAG, "encodeToMP3: byteEncode:" + byteEncode);
+                } else break;
+            }
+            int outputMp3buf = androidLame.flush(mp3buff);
+            if (outputMp3buf > 0) {
+                outputStream.write(mp3buff, 0, outputMp3buf);
+            }
+
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    };
+
+    private static short byteToShortLE(byte b1, byte b2) {
+        return (short) (b1 & 0xFF | ((b2 & 0xFF) << 8));
+    }
+
+    public int read(InputStream stream, short[] left, short[] right, int numSamples) throws IOException {
+
+        byte[] buf = new byte[numSamples * 4];
+        int index = 0;
+        int bytesRead = stream.read(buf, 0, numSamples * 4);
+
+        for (int i = 0; i < bytesRead; i += 2) {
+            short val = byteToShortLE(buf[i], buf[i + 1]);
+            if (i % 4 == 0) {
+                left[index] = val;
+            } else {
+                right[index] = val;
+                index++;
+            }
+        }
+
+        return index;
+    }
+
+
+//    void extractID3Tags(String path) {
+//        try {
+//            File inpFile = new File(path);
+//            FileInputStream iStream = new FileInputStream(inpFile);
+//            byte[] bytes = new byte[128];
+//            iStream.skip(inpFile.length()-128);
+//            iStream.read(bytes);
+//            LogHelper.d(TAG, "extractID3Tags: " + Arrays.toString(bytes));
+//            if (bytes[0] == 'T' && bytes[1] == 'A' && bytes[2] == 'G') {
+//                LogHelper.d(TAG, "Tag exists: ");
+//                StringBuilder builder = new StringBuilder();
+//                for (int i = 0; i < 30; i++) {
+//                    builder.append((char) bytes[2+i]);
+//                }
+//                LogHelper.d(TAG, "Title: "+ builder.toString());
+//            }
+//        } catch (IOException e) {
+//            e.printStackTrace();
+//        }
+//    }
 
 }

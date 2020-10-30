@@ -30,6 +30,7 @@ import androidx.recyclerview.widget.DividerItemDecoration;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.swiperefreshlayout.widget.SwipeRefreshLayout;
 
+import com.yash.ymplayer.BaseActivity;
 import com.yash.ymplayer.MainActivity;
 import com.yash.ymplayer.PlayerService;
 import com.yash.ymplayer.R;
@@ -131,7 +132,7 @@ public class AllSongs extends Fragment {
                 }, new SongsContextMenuClickListener(context, mMediaController), SongsListAdapter.MODE.ALL);
                 songsAdapter.setViewModel(viewModel);
                 allSongsBinding.allSongsView.setAdapter(songsAdapter);
-                allSongsBinding.allSongsRefresh.setColorSchemeColors(((MainActivity) activity).getAttributeColor(R.attr.colorPrimary));
+                allSongsBinding.allSongsRefresh.setColorSchemeColors(BaseActivity.getAttributeColor(context, R.attr.colorPrimary));
                 allSongsBinding.allSongsRefresh.setOnRefreshListener(new SwipeRefreshLayout.OnRefreshListener() {
                     @Override
                     public void onRefresh() {

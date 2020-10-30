@@ -73,16 +73,6 @@ public class TopTracks extends Fragment {
         activity = getActivity();
         context = getContext();
         connectivityManager = (ConnectivityManager) context.getSystemService(Context.CONNECTIVITY_SERVICE);
-        adapter = new TopTracksAdapter(context, new TopTracksAdapter.OnClickListener() {
-            @Override
-            public void onClick(YoutubeSong song) {
-                Uri audioUri = Uri.parse("TOP_TRACKS|" + song.getVideoId());
-                if (audioUri != null)
-                    mediaController.getTransportControls().playFromUri(audioUri, null);
-                else LogHelper.d(TAG, "Click Track: No Audio Uri Found");
-            }
-        });
-        topTracksBinding.topTracksContainer.setAdapter(adapter);
         topTracksBinding.topTracksContainer.setLayoutManager(new LinearLayoutManager(context));
         topTracksBinding.topTracksContainer.setHasFixedSize(true);
         mediaBrowser = new MediaBrowserCompat(context, new ComponentName(context, PlayerService.class), connectionCallback, null);
@@ -108,6 +98,16 @@ public class TopTracks extends Fragment {
                 LogHelper.d(TAG, "onConnected: TopTracks");
                 handler.postDelayed(noInternet, 1000);
                 connectivityManager.registerNetworkCallback(networkRequest, networkCallback);
+                adapter = new TopTracksAdapter(context, new TopTracksAdapter.OnClickListener() {
+                    @Override
+                    public void onClick(YoutubeSong song) {
+                        Uri audioUri = Uri.parse("TOP_TRACKS|" + song.getVideoId());
+                        if (audioUri != null)
+                            mediaController.getTransportControls().playFromUri(audioUri, null);
+                        else LogHelper.d(TAG, "Click Track: No Audio Uri Found");
+                    }
+                },mediaController);
+                topTracksBinding.topTracksContainer.setAdapter(adapter);
 
             } catch (RemoteException e) {
                 e.printStackTrace();

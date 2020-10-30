@@ -1,11 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
-<menu xmlns:app="http://schemas.android.com/apk/res-auto"
-    xmlns:android="http://schemas.android.com/apk/res/android">
+<menu xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto">
     <group android:checkableBehavior="single">
-       <!-- <item
-            android:id="@+id/spotifySongs"
-            android:icon="@drawable/ic_spotify"
-            android:title="@string/spotify_songs" />-->
+        <!-- <item
+             android:id="@+id/spotifySongs"
+             android:icon="@drawable/ic_spotify"
+             android:title="@string/spotify_songs" />-->
         <item
             android:id="@+id/youtubeLibSongs"
             android:icon="@drawable/youtube_video_library_24"
@@ -14,6 +14,10 @@
             android:id="@+id/localSongs"
             android:icon="@drawable/ic_library_music_24"
             android:title="@string/local_songs" />
+        <item
+            android:id="@+id/downloads"
+            android:icon="@drawable/ic_download"
+            android:title="@string/downloads" />
         <item
             android:id="@+id/settings"
             android:icon="@drawable/icon_settings"

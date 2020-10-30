@@ -150,11 +150,11 @@
 
                     <TextView
                         android:id="@+id/currentPos"
-                        android:layout_width="40dp"
+                        android:layout_width="60dp"
                         android:layout_height="wrap_content"
                         android:layout_marginStart="20dp"
                         android:gravity="end"
-                        android:text="0:00"
+                        android:text="0:00:00"
                         android:textColor="@android:color/white"
                         app:layout_constraintEnd_toStartOf="@+id/music_progress"
                         app:layout_constraintHorizontal_bias="0.5"
@@ -164,10 +164,10 @@
 
                     <TextView
                         android:id="@+id/maxDuration"
-                        android:layout_width="40dp"
+                        android:layout_width="60dp"
                         android:layout_height="wrap_content"
                         android:layout_marginEnd="20dp"
-                        android:text="4:00"
+                        android:text="0:00:00"
                         android:textColor="@android:color/white"
                         app:layout_constraintEnd_toEndOf="parent"
                         app:layout_constraintHorizontal_bias="0.5"
@@ -194,11 +194,11 @@
                         android:id="@+id/player_loading"
                         android:layout_width="60dp"
                         android:layout_height="60dp"
+                        android:visibility="invisible"
                         app:layout_constraintBottom_toBottomOf="@+id/play_pause_btn"
                         app:layout_constraintEnd_toEndOf="@+id/play_pause_btn"
-                        app:layout_constraintStart_toStartOf ="@+id/play_pause_btn"
-                        app:layout_constraintTop_toTopOf="@+id/play_pause_btn"
-                        android:visibility="invisible"/>
+                        app:layout_constraintStart_toStartOf="@+id/play_pause_btn"
+                        app:layout_constraintTop_toTopOf="@+id/play_pause_btn" />
 
                     <ImageButton
                         android:id="@+id/skip_next_btn"
@@ -346,19 +346,30 @@
                         android:layout_centerVertical="true"
                         android:layout_marginStart="10dp"
                         android:background="?attr/selectableItemBackgroundBorderless"
-                        android:src="@drawable/icon_back" />
+                        android:tint="@android:color/white"
+                        android:src="@drawable/ic_minimize" />
 
                     <TextView
                         android:layout_width="match_parent"
                         android:layout_height="match_parent"
                         android:layout_marginStart="5dp"
-                        android:layout_toStartOf="@+id/shareThis"
+                        android:layout_toStartOf="@+id/equalizer"
                         android:layout_toEndOf="@+id/minimize"
                         android:gravity="center_vertical"
-                        android:text="Player"
+                        android:text="Now Playing"
                         android:textColor="@android:color/white"
                         android:textSize="20sp"
                         android:textStyle="bold" />
+                    <ImageButton
+                        android:id="@+id/equalizer"
+                        android:layout_width="40dp"
+                        android:layout_height="40dp"
+                        android:layout_centerVertical="true"
+                        android:layout_marginStart="10dp"
+                        android:background="?attr/selectableItemBackgroundBorderless"
+                        android:layout_toStartOf="@+id/shareThis"
+                        android:src="@drawable/ic_equalizer"
+                        android:tint="@android:color/white" />
 
                     <ImageButton
                         android:id="@+id/shareThis"
@@ -366,7 +377,7 @@
                         android:layout_height="40dp"
                         android:layout_alignParentEnd="true"
                         android:layout_centerVertical="true"
-                        android:layout_marginStart="10dp"
+                        android:layout_marginStart="5dp"
                         android:layout_marginEnd="10dp"
                         android:background="?attr/selectableItemBackgroundBorderless"
                         android:src="@drawable/ic_share_black_24dp"

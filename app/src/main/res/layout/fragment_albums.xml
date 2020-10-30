@@ -14,6 +14,7 @@
             android:id="@+id/allAlbums"
             android:layout_width="match_parent"
             android:layout_height="match_parent"
+            android:clipChildren="true"
             tools:itemCount="10"
             tools:listitem="@layout/item_album" />
     </androidx.swiperefreshlayout.widget.SwipeRefreshLayout>

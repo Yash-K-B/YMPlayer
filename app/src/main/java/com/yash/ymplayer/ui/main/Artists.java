@@ -29,6 +29,7 @@ import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
 
+import com.yash.ymplayer.BaseActivity;
 import com.yash.ymplayer.ListExpandActivity;
 import com.yash.ymplayer.MainActivity;
 import com.yash.ymplayer.PlayerService;
@@ -118,7 +119,7 @@ public class Artists extends Fragment {
                 }, new AlbumOrArtistContextMenuClickListener(context,mMediaController),1);
                 artistsBinding.allArtists.setAdapter(artistsAdapter);
                 mMediaController.registerCallback(mMediaControllerCallbacks);
-                artistsBinding.artistsRefresh.setColorSchemeColors(((MainActivity) getActivity()).getAttributeColor(R.attr.colorPrimary));
+                artistsBinding.artistsRefresh.setColorSchemeColors(BaseActivity.getAttributeColor(context,R.attr.colorPrimary));
                 artistsBinding.artistsRefresh.setOnRefreshListener(new SwipeRefreshLayout.OnRefreshListener() {
                     @Override
                     public void onRefresh() {

@@ -29,6 +29,7 @@ import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
 
+import com.yash.ymplayer.BaseActivity;
 import com.yash.ymplayer.ListExpandActivity;
 import com.yash.ymplayer.MainActivity;
 import com.yash.ymplayer.PlayerService;
@@ -85,7 +86,7 @@ public class Albums extends Fragment {
         albumsBinding.allAlbums.setHasFixedSize(true);
         albumsBinding.allAlbums.setItemViewCacheSize(20);
         albumsBinding.allAlbums.addItemDecoration(new MarginItemDecoration(10));
-        albumsBinding.allAlbums.setLayoutManager(new GridLayoutManager(context,2));
+        albumsBinding.allAlbums.setLayoutManager(new GridLayoutManager(context,3));
 
         mMediaBrowser = new MediaBrowserCompat(context, new ComponentName(context, PlayerService.class), mConnectionCallbacks, null);
         mMediaBrowser.connect();
@@ -121,7 +122,7 @@ public class Albums extends Fragment {
                     }
                 },new AlbumOrArtistContextMenuClickListener(context,mMediaController));
                 albumsBinding.allAlbums.setAdapter(albumsAdapter);
-                albumsBinding.albumRefresh.setColorSchemeColors(((MainActivity) activity).getAttributeColor(R.attr.colorPrimary));
+                albumsBinding.albumRefresh.setColorSchemeColors(BaseActivity.getAttributeColor(context,R.attr.colorPrimary));
                 albumsBinding.albumRefresh.setOnRefreshListener(new SwipeRefreshLayout.OnRefreshListener() {
                     @Override
                     public void onRefresh() {

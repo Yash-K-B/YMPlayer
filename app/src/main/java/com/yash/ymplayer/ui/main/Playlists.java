@@ -24,6 +24,7 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 
+import com.yash.ymplayer.BaseActivity;
 import com.yash.ymplayer.ListExpandActivity;
 import com.yash.ymplayer.MainActivity;
 import com.yash.ymplayer.PlayerService;
@@ -111,7 +112,7 @@ public class Playlists extends Fragment implements PlaylistUpdateListener {
                 viewModel = new ViewModelProvider(Playlists.this).get(LocalViewModel.class);
                 mMediaController = new MediaControllerCompat(getContext(), mMediaBrowser.getSessionToken());
                 mMediaController.registerCallback(mMediaControllerCallbacks);
-                playlistsBinding.playlistRefresh.setColorSchemeColors(((MainActivity) getActivity()).getAttributeColor(R.attr.colorPrimary));
+                playlistsBinding.playlistRefresh.setColorSchemeColors(BaseActivity.getAttributeColor(getContext(),R.attr.colorPrimary));
                 playlistsBinding.playlistRefresh.setOnRefreshListener(new SwipeRefreshLayout.OnRefreshListener() {
                     @Override
                     public void onRefresh() {
@@ -137,11 +138,11 @@ public class Playlists extends Fragment implements PlaylistUpdateListener {
                         }, 400);
                     }
                 });
-            } catch (RemoteException e) {
+                LocalSongs localSongs = (LocalSongs) Playlists.this.getParentFragment();
+                localSongs.onFabClicked(Playlists.this);
+            } catch (RemoteException|NullPointerException e) {
                 e.printStackTrace();
             }
-            LocalSongs localSongs = (LocalSongs) Playlists.this.getParentFragment();
-            localSongs.onFabClicked(Playlists.this);
         }
     };
 

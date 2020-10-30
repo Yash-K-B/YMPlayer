@@ -34,6 +34,20 @@
 
     <PreferenceCategory app:title="Playback">
 
+        <SwitchPreference
+            android:key="builtin_equalizer"
+            android:defaultValue="false"
+            android:title="Use built-in equalizer"
+            android:summaryOff="System Equalizer is configured to give audio effects"
+            android:summaryOn="Built-In Equalizer is configured to give audio effects"/>
+
+        <Preference
+            android:key="equalizer"
+            android:dependency="builtin_equalizer"
+            android:title="Equalizer">
+            <intent android:targetPackage="com.yash.ymplayer" android:targetClass="com.yash.ymplayer.EqualizerActivity"/>
+        </Preference>
+
         <SwitchPreferenceCompat
             android:summaryOff="Disabled"
             android:summaryOn="Enabled"

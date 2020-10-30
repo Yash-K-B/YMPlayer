@@ -52,7 +52,6 @@ public interface AudioProvider {
     List<MediaSessionCompat.QueueItem> getRandomQueue();
 
     /**
-     *
      * @param queueHint
      * @param mediaId
      * @return list of QueueItem

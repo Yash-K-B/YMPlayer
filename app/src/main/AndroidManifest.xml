@@ -7,6 +7,9 @@
     <uses-permission android:name="android.permission.ACCESS_MEDIA_LOCATION" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
     <uses-permission android:name="android.permission.WAKE_LOCK" />
+    <uses-permission android:name="android.permission.RECORD_AUDIO"/>
+    <uses-permission android:name="android.permission.MODIFY_AUDIO_SETTINGS"/>
+    <uses-permission android:name="android.permission.INTERNET"/>
 
     <application
         android:allowBackup="true"
@@ -51,6 +54,7 @@
         <activity
             android:name=".PlaylistExpandActivity"
             android:screenOrientation="portrait" />
+        <activity android:name=".EqualizerActivity" />
 
         <service
             android:name=".PlayerService"
@@ -59,6 +63,7 @@
                 <action android:name="android.media.browse.MediaBrowserService" />
             </intent-filter>
         </service>
+        <service android:name=".DownloadService" />
 
         <receiver android:name="androidx.media.session.MediaButtonReceiver">
             <intent-filter>

@@ -3,7 +3,7 @@ package com.yash.ymplayer.util;
 import android.net.Uri;
 
 public class YoutubeSong {
-    String title,videoId,channelTitle;
+    String title,videoId,channelTitle,channelDesc;
     String art_url_small,art_url_medium;
     Uri audioUri;
     long durationMillis;
@@ -14,6 +14,14 @@ public class YoutubeSong {
         this.channelTitle = channelTitle;
         this.art_url_small = art_url_small;
         this.art_url_medium = art_url_medium;
+    }
+
+    public String getChannelDesc() {
+        return channelDesc;
+    }
+
+    public void setChannelDesc(String channelDesc) {
+        this.channelDesc = channelDesc;
     }
 
     public Uri getAudioUri() {
