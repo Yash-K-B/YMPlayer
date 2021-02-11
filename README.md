@@ -3,10 +3,30 @@ Music Player for Android 5.0+.
 
 Build upon android Media Playback Guidelines. It has support for Android Auto.
 
+# Features
+  - Stream YouTube videos like songs.
+  - YouTube songs download.
+  - Play device audio files.
+  
+# Screenshots
+![](https://github.com/Yash-K-B/YMPlayer/blob/master/screenshots/screenshot1.png?raw=true)
+![](https://github.com/Yash-K-B/YMPlayer/blob/master/screenshots/screenshot2.png?raw=true)
+![](https://github.com/Yash-K-B/YMPlayer/blob/master/screenshots/screenshot3.png?raw=true)
+![](https://github.com/Yash-K-B/YMPlayer/blob/master/screenshots/screenshot4.png?raw=true)
+![](https://github.com/Yash-K-B/YMPlayer/blob/master/screenshots/screenshot5.png?raw=true)
+![](https://github.com/Yash-K-B/YMPlayer/blob/master/screenshots/screenshot6.png?raw=true)
+
+
 # Credits
 [YoutubeExtractor](https://github.com/Yash-K-B/YoutubeExtractor) - Extraction of youtube video links.
 
-[AndroidEqualizer](https://github.com/bullheadandplato/AndroidEqualizer) - Equalizer for player.
+[AndroidEqualizer](https://github.com/bullheadandplato/AndroidEqualizer) - Audio Equalizer for player.
+
+[AndroidLame](https://github.com/naman14/TAndroidLame) - Wrapper library for Android / Java around Lame MP3 encoder.
+
+[mp3agic](https://github.com/mpatric/mp3agic) - A java library for reading mp3 files and reading / manipulating the ID3 tags (ID3v1 and ID3v2.2 through ID3v2.4)
+
+[Glide](https://github.com/bumptech/glide) - Open Source Media Management and Image Loading Framework for Android
 
 # License
 
