@@ -55,7 +55,6 @@ public class Albums extends Fragment {
     List<MediaBrowserCompat.MediaItem> songs = new ArrayList<>();
     AlbumListAdapter albumsAdapter;
     private static Albums instance;
-    Handler handler = new Handler();
     Context context;
     FragmentActivity activity;
 

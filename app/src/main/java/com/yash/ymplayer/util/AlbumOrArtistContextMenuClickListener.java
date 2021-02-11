@@ -10,8 +10,7 @@ import android.provider.MediaStore;
 import android.support.v4.media.MediaBrowserCompat;
 import android.support.v4.media.session.MediaControllerCompat;
 import android.widget.Toast;
-
-import com.yash.ymplayer.helper.LogHelper;
+import com.yash.logging.LogHelper;
 import com.yash.ymplayer.repository.Repository;
 import com.yash.ymplayer.storage.AudioProvider;
 import com.yash.ymplayer.storage.OfflineMediaProvider;

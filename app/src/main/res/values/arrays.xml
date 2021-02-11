@@ -33,4 +33,16 @@
         <item>amoled</item>
     </string-array>
 
+    <!-- Playback Audio Quality   -->
+    <string-array name="audio_quality">
+        <item>Low</item>
+        <item>Medium</item>
+        <item>High</item>
+    </string-array>
+    <string-array name="audio_quality_values">
+        <item>1</item>
+        <item>2</item>
+        <item>3</item>
+    </string-array>
+
 </resources>

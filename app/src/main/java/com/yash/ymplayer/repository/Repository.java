@@ -2,6 +2,7 @@ package com.yash.ymplayer.repository;
 
 import android.content.Context;
 import android.media.session.MediaSession;
+import android.net.Uri;
 import android.support.v4.media.MediaBrowserCompat;
 import android.support.v4.media.MediaDescriptionCompat;
 import android.support.v4.media.session.MediaSessionCompat;
@@ -88,6 +89,7 @@ public class Repository {
                 MediaBrowserCompat.MediaItem song = new MediaBrowserCompat.MediaItem(new MediaDescriptionCompat.Builder()
                         .setMediaId(mediaId + "|" + item.getMediaId())
                         .setTitle(item.getName())
+                        .setIconUri(item.getArtwork() == null ? null : Uri.parse(item.getArtwork()))
                         .setSubtitle(item.getArtist())
                         .setDescription(item.getAlbum())
                         .build(), MediaBrowserCompat.MediaItem.FLAG_PLAYABLE);
@@ -143,6 +145,7 @@ public class Repository {
                                 .setMediaId(item.getMediaId())
                                 .setTitle(item.getName())
                                 .setSubtitle(item.getArtist())
+                                .setIconUri(item.getArtwork() == null ? null : Uri.parse(item.getArtwork()))
                                 .setDescription(item.getAlbum())
                                 .build(), i);
                         items.add(song);

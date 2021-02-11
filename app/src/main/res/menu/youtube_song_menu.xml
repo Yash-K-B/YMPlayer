@@ -4,10 +4,28 @@
 
     <item
         android:id="@+id/play_single"
-        android:title="Play Single" />
+        android:title="@string/play_single" />
+
     <item
-        android:id="@+id/download"
-        android:title="Download" />
-    <item android:title="Item" />
-    <item android:title="Item" />
+        android:id="@+id/queue_next"
+        android:title="@string/queue_next" />
+
+    <item android:title="@string/download">
+       <menu>
+           <item
+               android:id="@+id/download128kbps"
+               android:title="@string/_128kbps" />
+           <item
+               android:id="@+id/download192kbps"
+               android:title="@string/_192kbps" />
+           <item
+               android:id="@+id/download320kbps"
+               android:title="@string/_320kbps" />
+       </menu>
+    </item>
+
+
+    <item
+        android:id="@+id/queue_last"
+        android:title="@string/queue_last" />
 </menu>

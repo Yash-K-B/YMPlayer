@@ -31,6 +31,15 @@
     <string name="author_name">Yashobanta Kumar Behera</string>
     <string name="changelog">
         -----------------------------------\n
+        Version 1.4.5\n
+        -----------------------------------\n
+        * Mp3 Download in 128Kbps, 192Kbps and 320Kbps added\n
+        * 5 Band Equalizer added\n
+        * Now stream audio in HIGH, MEDIUM and LOW Qualities\n
+        * Playlist playback support both online and offline audio files\n
+        * Crash report send function added\n
+        * Bug fixes\n
+        -----------------------------------\n
         Version 1.4\n
         ------------------------------------\n
         * Google assistant integration for media controls\n
@@ -55,4 +64,13 @@
     <string name="youtube_songs">Youtube Songs</string>
     <string name="eq">Equalizer</string>
     <string name="downloads">Downloads</string>
+    <string name="list_name">list_name</string>
+    <string name="list_image">list_image</string>
+    <string name="play_single">Play Single</string>
+    <string name="queue_next">Queue Next</string>
+    <string name="download">Download</string>
+    <string name="_128kbps">128Kbps</string>
+    <string name="_192kbps">192Kbps</string>
+    <string name="_320kbps">320Kbps</string>
+    <string name="queue_last">Queue Last</string>
 </resources>

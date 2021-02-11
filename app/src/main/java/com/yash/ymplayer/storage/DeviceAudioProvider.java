@@ -16,7 +16,7 @@ import android.widget.Button;
 import androidx.annotation.NonNull;
 import androidx.media.MediaBrowserServiceCompat;
 
-import com.yash.ymplayer.helper.LogHelper;
+import com.yash.logging.LogHelper;
 import com.yash.ymplayer.util.Keys;
 
 import org.jetbrains.annotations.Contract;

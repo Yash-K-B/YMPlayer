@@ -13,6 +13,7 @@ import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.swiperefreshlayout.widget.SwipeRefreshLayout;
 
 import android.os.Handler;
+import android.os.Looper;
 import android.os.RemoteException;
 import android.support.v4.media.MediaBrowserCompat;
 import android.support.v4.media.MediaDescriptionCompat;
@@ -49,7 +50,7 @@ public class Playlists extends Fragment implements PlaylistUpdateListener {
     FragmentPlaylistsBinding playlistsBinding;
     private LocalViewModel viewModel;
     private MediaControllerCompat mMediaController;
-    private Handler handler = new Handler();
+    private final Handler handler = new Handler(Looper.getMainLooper());
 
 
     public Playlists() {
@@ -77,7 +78,7 @@ public class Playlists extends Fragment implements PlaylistUpdateListener {
         mMediaBrowser.connect();
         adapter = new SongListAdapter(getContext(), songs, new SongListAdapter.OnItemClickListener() {
             @Override
-            public void onClick(MediaBrowserCompat.MediaItem song) {
+            public void onClick(View v, MediaBrowserCompat.MediaItem song) {
                 if (song.isBrowsable()) {
                     Intent intent = new Intent(getActivity(), ListExpandActivity.class);
                     intent.putExtra(Keys.EXTRA_PARENT_ID, song.getMediaId());
@@ -112,7 +113,7 @@ public class Playlists extends Fragment implements PlaylistUpdateListener {
                 viewModel = new ViewModelProvider(Playlists.this).get(LocalViewModel.class);
                 mMediaController = new MediaControllerCompat(getContext(), mMediaBrowser.getSessionToken());
                 mMediaController.registerCallback(mMediaControllerCallbacks);
-                playlistsBinding.playlistRefresh.setColorSchemeColors(BaseActivity.getAttributeColor(getContext(),R.attr.colorPrimary));
+                playlistsBinding.playlistRefresh.setColorSchemeColors(BaseActivity.getAttributeColor(getContext(), R.attr.colorPrimary));
                 playlistsBinding.playlistRefresh.setOnRefreshListener(new SwipeRefreshLayout.OnRefreshListener() {
                     @Override
                     public void onRefresh() {
@@ -140,7 +141,7 @@ public class Playlists extends Fragment implements PlaylistUpdateListener {
                 });
                 LocalSongs localSongs = (LocalSongs) Playlists.this.getParentFragment();
                 localSongs.onFabClicked(Playlists.this);
-            } catch (RemoteException|NullPointerException e) {
+            } catch (RemoteException | NullPointerException e) {
                 e.printStackTrace();
             }
         }
@@ -170,7 +171,7 @@ public class Playlists extends Fragment implements PlaylistUpdateListener {
     }
 
 
-    void initPlaylist(){
+    void initPlaylist() {
         songs.clear();
 //        songs.add(new MediaBrowserCompat.MediaItem(new MediaDescriptionCompat.Builder()
 //                .setMediaId("PLAYLISTS/RECENT")

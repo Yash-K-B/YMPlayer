@@ -54,13 +54,13 @@ public class PopularHitAdapter extends RecyclerView.Adapter<PopularHitAdapter.Po
         void bindPlaylist(PopularPlaylist playlist, ItemClickListener listener) {
             binding.playlistTitle.setText(playlist.getSnippet().getLocalized().getTitle());
             binding.playlistSubTitle.setText(playlist.getSnippet().getLocalized().getDescription());
-            binding.itemCount.setText(playlist.getContentDetails().getItemCount()+" Tracks");
+            binding.itemCount.setText(playlist.getContentDetails().getItemCount() + " Tracks");
             Glide.with(context).load(playlist.getSnippet().getThumbnails().getMedium().getUrl()).into(binding.playlistArt);
-            itemView.setOnClickListener(v -> listener.onClick(playlist));
+            itemView.setOnClickListener(v -> listener.onClick(binding, playlist));
         }
     }
 
     public interface ItemClickListener {
-        void onClick(PopularPlaylist playlist);
+        void onClick(ItemPlaylistBannerBinding view, PopularPlaylist playlist);
     }
 }

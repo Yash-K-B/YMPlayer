@@ -12,7 +12,6 @@ import android.view.View;
 import android.view.ViewGroup;
 
 import com.afollestad.materialdialogs.MaterialDialog;
-import com.afollestad.materialdialogs.MaterialDialog.Builder;
 import com.yash.ymplayer.ActivityActionProvider;
 import com.yash.ymplayer.R;
 import com.yash.ymplayer.databinding.FragmentAboutBinding;
@@ -40,11 +39,7 @@ public class AboutFragment extends Fragment {
         binding.licenses.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                MaterialDialog licensesDialog = new MaterialDialog.Builder(context)
-                        .title("Licenses")
-                        .content("Material Dialogs")
-                        .build();
-                licensesDialog.show();
+
             }
         });
         return binding.getRoot();

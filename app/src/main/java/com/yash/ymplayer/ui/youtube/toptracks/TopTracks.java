@@ -21,6 +21,7 @@ import androidx.paging.PagedList;
 import androidx.recyclerview.widget.LinearLayoutManager;
 
 import android.os.Handler;
+import android.os.Looper;
 import android.os.RemoteException;
 import android.support.v4.media.MediaBrowserCompat;
 import android.support.v4.media.session.MediaControllerCompat;
@@ -34,7 +35,7 @@ import android.view.ViewGroup;
 import com.google.android.material.snackbar.Snackbar;
 import com.yash.ymplayer.PlayerService;
 import com.yash.ymplayer.databinding.FragmentTopTracksBinding;
-import com.yash.ymplayer.helper.LogHelper;
+import com.yash.logging.LogHelper;
 import com.yash.ymplayer.ui.youtube.YoutubeLibraryViewModel;
 import com.yash.ymplayer.util.YoutubeSong;
 
@@ -49,7 +50,7 @@ public class TopTracks extends Fragment {
     TopTracksAdapter adapter;
     MediaBrowserCompat mediaBrowser;
     MediaControllerCompat mediaController;
-    Handler handler = new Handler();
+    private final Handler handler = new Handler(Looper.getMainLooper());
     ExecutorService executorService = Executors.newSingleThreadExecutor();
     YoutubeLibraryViewModel viewModel;
     ConnectivityManager connectivityManager;

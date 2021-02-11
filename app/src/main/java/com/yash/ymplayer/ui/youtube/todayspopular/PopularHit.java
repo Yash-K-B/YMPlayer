@@ -1,19 +1,10 @@
 package com.yash.ymplayer.ui.youtube.todayspopular;
 
-import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
-import android.net.ConnectivityManager;
-import android.net.Network;
-import android.net.NetworkCapabilities;
-import android.net.NetworkRequest;
-import android.os.Build;
 import android.os.Bundle;
-import android.os.RemoteException;
 import android.support.v4.media.MediaBrowserCompat;
 import android.support.v4.media.session.MediaControllerCompat;
-import android.support.v4.media.session.MediaSessionCompat.Token;
-import android.text.Html;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -22,22 +13,17 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
 import androidx.fragment.app.FragmentActivity;
-import androidx.lifecycle.Observer;
 import androidx.lifecycle.ViewModelProvider;
 import androidx.recyclerview.widget.DividerItemDecoration;
 import androidx.recyclerview.widget.LinearLayoutManager;
 
-import com.google.android.material.snackbar.Snackbar;
-import com.yash.ymplayer.PlayerService;
+import com.yash.logging.LogHelper;
 import com.yash.ymplayer.PlaylistExpandActivity;
 import com.yash.ymplayer.databinding.FragmentPopularHitBinding;
-import com.yash.ymplayer.helper.LogHelper;
 import com.yash.ymplayer.models.PopularPlaylist;
-import com.yash.ymplayer.repository.OnlineYoutubeRepository;
 import com.yash.ymplayer.ui.youtube.YoutubeLibraryViewModel;
 import com.yash.ymplayer.util.Keys;
 
-import java.security.Key;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -70,7 +56,7 @@ public class PopularHit extends Fragment {
         context = getContext();
         activity = getActivity();
 
-        adapter = new PopularHitAdapter(context, playlists, playlist -> {
+        adapter = new PopularHitAdapter(context, playlists, (v, playlist) -> {
             Intent intent = new Intent(context, PlaylistExpandActivity.class);
             intent.putExtra(Keys.EXTRA_PARENT_ID,playlist.getId());
             intent.putExtra(Keys.EXTRA_TITLE,playlist.getSnippet().getLocalized().getTitle());
@@ -88,7 +74,9 @@ public class PopularHit extends Fragment {
                 popularHitBinding.popularHitError.setVisibility(View.VISIBLE);
                 return;
             }
+            LogHelper.d(TAG, "onActivityCreated: Playlist size : "+playlists.size());
             popularHitBinding.popularHitError.setVisibility(View.GONE);
+            PopularHit.this.playlists.clear();
             PopularHit.this.playlists.addAll(playlists);
             adapter.notifyDataSetChanged();
         });

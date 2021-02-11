@@ -55,7 +55,6 @@ public class AllSongs extends Fragment {
     FragmentAllSongsBinding allSongsBinding;
     List<MediaBrowserCompat.MediaItem> songs = new ArrayList<>();
     SongsListAdapter songsAdapter;
-    Handler handler = new Handler();
     private static AllSongs instance;
 
     public AllSongs() {
@@ -125,7 +124,7 @@ public class AllSongs extends Fragment {
                 mMediaController.registerCallback(mMediaControllerCallbacks);
                 songsAdapter = new SongsListAdapter(context, songs, new SongListAdapter.OnItemClickListener() {
                     @Override
-                    public void onClick(MediaBrowserCompat.MediaItem song) {
+                    public void onClick(View v, MediaBrowserCompat.MediaItem song) {
                         mMediaController.getTransportControls().playFromMediaId(song.getDescription().getMediaId(), null);
                         Log.d(TAG, "onClick: Extra: null");
                     }

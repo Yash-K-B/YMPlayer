@@ -32,7 +32,7 @@ import com.db.chart.view.ChartView;
 import com.db.chart.view.LineChartView;
 import com.google.gson.Gson;
 import com.yash.ymplayer.R;
-import com.yash.ymplayer.helper.LogHelper;
+import com.yash.logging.LogHelper;
 
 import java.util.ArrayList;
 
@@ -64,7 +64,7 @@ public class EqualizerFragment extends Fragment {
 
     SeekBar[] seekBarFinal = new SeekBar[5];
 
-    AnalogController bassController, reverbController,loudnessController;
+    AnalogController bassController, reverbController, loudnessController;
 
     Spinner presetSpinner;
 
@@ -295,9 +295,9 @@ public class EqualizerFragment extends Fragment {
                 }
             }
 
-            if(loudnessEnhancer != null){
+            if (loudnessEnhancer != null) {
                 try {
-                    z = (int)((loudnessEnhancer.getTargetGain() * 18) / TARGET_GAIN_MAX) + 1;
+                    z = (int) ((loudnessEnhancer.getTargetGain() * 18) / TARGET_GAIN_MAX) + 1;
                 } catch (Exception e) {
                     e.printStackTrace();
                 }
@@ -315,7 +315,7 @@ public class EqualizerFragment extends Fragment {
                 reverbController.setProgress(y);
             }
 
-            if(z == 0){
+            if (z == 0) {
                 loudnessController.setProgress(1);
             } else {
                 loudnessController.setProgress(z);
@@ -336,7 +336,7 @@ public class EqualizerFragment extends Fragment {
                 reverbController.setProgress(y);
             }
 
-            if(z == 0){
+            if (z == 0) {
                 loudnessController.setProgress(1);
             } else {
                 loudnessController.setProgress(z);
@@ -487,9 +487,9 @@ public class EqualizerFragment extends Fragment {
             seekBar.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
                 @Override
                 public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
-                    if(fromUser){
+                    if (fromUser) {
                         mEqualizer.setBandLevel(equalizerBandIndex, (short) (progress + lowerEqualizerBandLevel));
-                        Settings.seekbarpos[seekBar.getId()]                     = (progress + lowerEqualizerBandLevel);
+                        Settings.seekbarpos[seekBar.getId()] = (progress + lowerEqualizerBandLevel);
                         Settings.equalizerModel.getSeekbarpos()[seekBar.getId()] = (progress + lowerEqualizerBandLevel);
                     }
                     points[seekBar.getId()] = progress;

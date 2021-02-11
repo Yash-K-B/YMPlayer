@@ -6,6 +6,7 @@ import android.graphics.drawable.BitmapDrawable;
 import android.graphics.drawable.Drawable;
 import android.net.Uri;
 import android.os.Handler;
+import android.os.Looper;
 import android.support.v4.media.MediaBrowserCompat;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -14,6 +15,8 @@ import android.view.ViewGroup;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.palette.graphics.Palette;
+import androidx.recyclerview.widget.DiffUtil;
+import androidx.recyclerview.widget.ListUpdateCallback;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.bumptech.glide.Glide;
@@ -33,18 +36,17 @@ public class SearchListAdapter extends RecyclerView.Adapter<SearchListAdapter.So
     private static final String TAG = "SearchListAdapter";
 
     List<MediaBrowserCompat.MediaItem> songs;
-    List<MediaBrowserCompat.MediaItem> allSongs = new ArrayList<>();
     private OnItemClickListener listener;
     private Context context;
     ExecutorService executor;
-    Handler handler = new Handler();
+    private final Handler handler = new Handler(Looper.getMainLooper());
     int listPos;
     int type;
     View headView;
     View recyclerView;
 
-    public SearchListAdapter(Context context, List<MediaBrowserCompat.MediaItem> songs, OnItemClickListener listener, int type, View headView, View recyclerview) {
-        this.songs = new ArrayList<>(songs);
+    public SearchListAdapter(Context context, OnItemClickListener listener, int type, View headView, View recyclerview) {
+        this.songs = new ArrayList<>();
         this.listener = listener;
         this.context = context;
         this.type = type;
@@ -109,7 +111,7 @@ public class SearchListAdapter extends RecyclerView.Adapter<SearchListAdapter.So
             binding.trackName.setOnClickListener(new View.OnClickListener() {
                 @Override
                 public void onClick(View v) {
-                    listener.onClick(song);
+                    listener.onClick(v,song);
                 }
             });
         }
@@ -225,6 +227,14 @@ public class SearchListAdapter extends RecyclerView.Adapter<SearchListAdapter.So
         }
     }
 
+    public void updateList(List<MediaBrowserCompat.MediaItem> newList) {
+        DiffUtil.DiffResult diffResult = DiffUtil.calculateDiff(new SearchListDiffCallback(this.songs,newList));
+        this.songs.clear();
+        this.songs.addAll(newList);
+        diffResult.dispatchUpdatesTo(this);
+
+    }
+
 
     public void animateTo(List<MediaBrowserCompat.MediaItem> models) {
         applyAndAnimateRemovals(models);
@@ -258,10 +268,9 @@ public class SearchListAdapter extends RecyclerView.Adapter<SearchListAdapter.So
         }
     }
 
-    public MediaBrowserCompat.MediaItem removeItem(int position) {
-        final MediaBrowserCompat.MediaItem model = songs.remove(position);
+    public void removeItem(int position) {
+        songs.remove(position);
         notifyItemRemoved(position);
-        return model;
     }
 
     public void addItem(int position, MediaBrowserCompat.MediaItem model) {
@@ -290,6 +299,35 @@ public class SearchListAdapter extends RecyclerView.Adapter<SearchListAdapter.So
         int ALBUMS = 1;
         int ARTISTS = 2;
 
+    }
+
+    public static class SearchListDiffCallback extends DiffUtil.Callback{
+        List<MediaBrowserCompat.MediaItem> oldList,newList;
+
+        public SearchListDiffCallback(List<MediaBrowserCompat.MediaItem> oldList, List<MediaBrowserCompat.MediaItem> newList) {
+            this.oldList = oldList;
+            this.newList = newList;
+        }
+
+        @Override
+        public int getOldListSize() {
+            return oldList!=null?oldList.size():0;
+        }
+
+        @Override
+        public int getNewListSize() {
+            return newList!=null?newList.size():0;
+        }
+
+        @Override
+        public boolean areItemsTheSame(int oldItemPosition, int newItemPosition) {
+            return oldList.get(oldItemPosition).getMediaId().equals(newList.get(newItemPosition).getMediaId());
+        }
+
+        @Override
+        public boolean areContentsTheSame(int oldItemPosition, int newItemPosition) {
+            return oldList.get(oldItemPosition).equals(newList.get(newItemPosition));
+        }
     }
 
 }

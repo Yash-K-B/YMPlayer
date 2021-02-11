@@ -108,7 +108,7 @@ public class ListExpandActivity extends BaseActivity {
                 binding.listProgress.setVisibility(View.GONE);
                 SongsListAdapter adapter = new SongsListAdapter(context, songs, new SongListAdapter.OnItemClickListener() {
                     @Override
-                    public void onClick(MediaBrowserCompat.MediaItem song) {
+                    public void onClick(View v, MediaBrowserCompat.MediaItem song) {
                         if (song.isBrowsable())
                             viewModel.getAllArtists(mMediaBrowser, song.getMediaId());
                         else if (song.isPlayable())
@@ -132,7 +132,7 @@ public class ListExpandActivity extends BaseActivity {
                 binding.listProgress.setVisibility(View.GONE);
                 SongsListAdapter adapter = new SongsListAdapter(context, songs, new SongListAdapter.OnItemClickListener() {
                     @Override
-                    public void onClick(MediaBrowserCompat.MediaItem song) {
+                    public void onClick(View v, MediaBrowserCompat.MediaItem song) {
                         if (song.isBrowsable())
                             viewModel.getAllAlbums(mMediaBrowser, song.getMediaId());
                         else if (song.isPlayable())
@@ -155,7 +155,7 @@ public class ListExpandActivity extends BaseActivity {
                 binding.listProgress.setVisibility(View.GONE);
                 SongsListAdapter adapter = new SongsListAdapter(context, songs, new SongListAdapter.OnItemClickListener() {
                     @Override
-                    public void onClick(MediaBrowserCompat.MediaItem song) {
+                    public void onClick(View v, MediaBrowserCompat.MediaItem song) {
                         if (song.isBrowsable())
                             viewModel.getAllPlaylists(mMediaBrowser, song.getMediaId());
                         else if (song.isPlayable())

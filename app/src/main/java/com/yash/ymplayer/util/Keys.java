@@ -24,6 +24,9 @@ public interface Keys {
     String VIDEO_ID = "videoId";
     String AUDIO_SESSION_ID = "audioSessionId";
     String EXTRA_EQUALIZER_STATE = "equalizerState";
+    String EXTRA_PLAYBACK_QUALITY = "playbackQuality";
+    String EXTRA_LENGTH = "length";
+    String EXTRA_DOWNLOAD_QUALITY = "downloadQuality";
 
     interface Action {
         String ADD_TO_PLAYLIST = "addToPlaylist";
@@ -35,6 +38,7 @@ public interface Keys {
         String DOWNLOAD = "download";
         String AUDIO_SESSION_CHANGED = "audioSessionChanged";
         String TOGGLE_EQUALIZER_STATE = "toggleEqualizerState";
+        String PLAYBACK_QUALITY_CHANGED = "qualityChanged";
     }
 
     interface Fragments {
@@ -54,6 +58,9 @@ public interface Keys {
         String BUILTIN_EQUALIZER = "builtin_equalizer";
         String DOWNLOADS = "downloads";
         String TOTAL_DOWNLOADS = "totalDownloads";
+        String PLAYBACK_QUALITY = "playback_quality";
+        String IS_EXCEPTION = "isException";
+        String EXCEPTION = "exception";
     }
 
     interface PLAYLISTS {
@@ -87,5 +94,10 @@ public interface Keys {
         String EQUALIZER = "equalizer";
         String BASSBOOST = "bassBoost";
         String PRESETREVERB = "presetReverb";
+    }
+
+    interface DownloadManager {
+        String EXTRA_ACTION = "action";
+        String EXTRA_VIDEO_ID = "videoId";
     }
 }

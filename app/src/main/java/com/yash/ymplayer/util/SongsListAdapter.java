@@ -34,6 +34,7 @@ import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.regex.Pattern;
 
 public class SongsListAdapter extends RecyclerView.Adapter<SongsListAdapter.ItemViewHolder> {
     private static final String TAG = "debug";
@@ -48,6 +49,7 @@ public class SongsListAdapter extends RecyclerView.Adapter<SongsListAdapter.Item
     int size;
     Drawable failedDrawable;
     LocalViewModel viewModel;
+    Pattern pattern;
 
 
     public SongsListAdapter(Context context, List<MediaBrowserCompat.MediaItem> songs, SongListAdapter.OnItemClickListener listener, SongsContextMenuClickListener songContextMenuListener, int mode) {
@@ -59,6 +61,7 @@ public class SongsListAdapter extends RecyclerView.Adapter<SongsListAdapter.Item
         this.mode = mode;
         size = (int) (context.getResources().getDisplayMetrics().density * 50);
         failedDrawable = context.getDrawable(R.drawable.album_art_placeholder);
+        pattern = Pattern.compile("[0-9]+");
     }
 
     public void setViewModel(LocalViewModel viewModel) {
@@ -79,7 +82,7 @@ public class SongsListAdapter extends RecyclerView.Adapter<SongsListAdapter.Item
         //Log.d(TAG, "No of Processors: " + Runtime.getRuntime().availableProcessors());
     }
 
-    public void refreshList(){
+    public void refreshList() {
         allSongs.clear();
         allSongs.addAll(songs);
     }
@@ -158,16 +161,17 @@ public class SongsListAdapter extends RecyclerView.Adapter<SongsListAdapter.Item
             binding.more.setOnClickListener(v -> menu.show());
             binding.title.setText(song.getDescription().getTitle());
             binding.subTitle.setText(song.getDescription().getSubtitle());
-            itemView.setOnClickListener(v -> listener.onClick(song));
+            itemView.setOnClickListener(v -> listener.onClick(v, song));
 
             executor.execute(() -> {
                 if (viewModel.songImages.get(song.getDescription().getMediaId()) == null) {
                     MediaMetadataRetriever retriever = new MediaMetadataRetriever();
                     String[] parts = song.getDescription().getMediaId().split("[/|]");
                     try {
-                        long id = Long.parseLong(parts[parts.length - 1]);
-                        retriever.setDataSource(context, ContentUris.withAppendedId(MediaStore.Audio.Media.EXTERNAL_CONTENT_URI, id));
-                        Glide.with(context).load(retriever.getEmbeddedPicture()).into(new CustomTarget<Drawable>(size, size) {
+                        boolean isEmbeddedArt = pattern.matcher(parts[parts.length - 1]).matches();
+                        if (isEmbeddedArt)
+                            retriever.setDataSource(context, ContentUris.withAppendedId(MediaStore.Audio.Media.EXTERNAL_CONTENT_URI, Long.parseLong(parts[parts.length - 1])));
+                        Glide.with(context).load(isEmbeddedArt ? retriever.getEmbeddedPicture() : song.getDescription().getIconUri()).into(new CustomTarget<Drawable>(size, size) {
                             @Override
                             public void onResourceReady(@NonNull Drawable resource, @Nullable Transition<? super Drawable> transition) {
                                 handler.post(() -> binding.art.setImageDrawable(resource));

@@ -40,7 +40,7 @@ public class AlbumListAdapter extends RecyclerView.Adapter<AlbumListAdapter.Albu
     private static final String TAG = "AlbumListAdapter";
     private List<MediaBrowserCompat.MediaItem> albums;
     List<MediaBrowserCompat.MediaItem> allAlbums = new ArrayList<>();
-    private OnItemClickListener listener;
+    private  OnItemClickListener listener;
     private Context context;
     AlbumOrArtistContextMenuListener albumOrArtistContextMenuListener;
 

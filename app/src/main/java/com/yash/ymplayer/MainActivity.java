@@ -1,34 +1,55 @@
 package com.yash.ymplayer;
 
 import android.Manifest;
+import android.app.AlertDialog;
 import android.app.NotificationChannel;
 import android.app.NotificationManager;
 import android.content.ComponentName;
 import android.content.ContentUris;
+import android.content.Context;
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.pm.ApplicationInfo;
 import android.content.pm.PackageManager;
+import android.graphics.Bitmap;
 import android.graphics.Color;
+import android.graphics.drawable.BitmapDrawable;
 import android.graphics.drawable.Drawable;
+import android.media.MediaCodec;
+import android.media.MediaCodecInfo;
+import android.media.MediaCodecList;
+import android.media.MediaFormat;
 import android.media.MediaMetadataRetriever;
+import android.media.MediaMuxer;
 import android.media.audiofx.AudioEffect;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
+import android.os.Environment;
 import android.os.Handler;
+import android.os.Looper;
 import android.os.RemoteException;
 import android.os.ResultReceiver;
 import android.provider.MediaStore;
+import android.provider.Settings;
+import android.provider.Settings.Secure;
 import android.support.v4.media.MediaBrowserCompat;
 import android.support.v4.media.MediaMetadataCompat;
 import android.support.v4.media.session.MediaControllerCompat;
 import android.support.v4.media.session.MediaSessionCompat;
 import android.support.v4.media.session.PlaybackStateCompat;
+import android.telephony.TelephonyManager;
+import android.view.Gravity;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
+import android.view.ViewGroup;
+import android.webkit.WebView;
+import android.webkit.WebViewClient;
+import android.widget.HorizontalScrollView;
 import android.widget.ImageView;
+import android.widget.ScrollView;
 import android.widget.SeekBar;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -60,25 +81,38 @@ import com.naman14.androidlame.LameBuilder;
 import com.sothree.slidinguppanel.SlidingUpPanelLayout;
 import com.yash.ymplayer.databinding.ActivityMainBinding;
 import com.yash.ymplayer.equaliser.DialogEqualizerFragment;
-import com.yash.ymplayer.helper.LogHelper;
+import com.yash.logging.LogHelper;
 import com.yash.ymplayer.ui.main.AboutFragment;
 import com.yash.ymplayer.ui.main.LocalSongs;
 import com.yash.ymplayer.ui.main.SettingsFragment;
 import com.yash.ymplayer.ui.youtube.YoutubeLibrary;
+import com.yash.ymplayer.util.ConverterUtil;
 import com.yash.ymplayer.util.Keys;
 import com.yash.ymplayer.util.QueueListAdapter;
 import com.yash.ymplayer.util.Song;
 
+import java.io.BufferedReader;
+import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.io.OutputStream;
+import java.io.OutputStreamWriter;
+import java.io.Reader;
+import java.io.Writer;
+import java.net.HttpURLConnection;
+import java.net.MalformedURLException;
+import java.net.URL;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.Date;
 import java.util.List;
+import java.util.Objects;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
@@ -97,7 +131,7 @@ public class MainActivity extends BaseActivity implements ActivityActionProvider
     MediaBrowserCompat mediaBrowser;
     MediaControllerCompat mediaController;
     ActionBarDrawerToggle drawerToggle;
-    Handler handler = new Handler();
+    Handler handler = new Handler(Looper.getMainLooper());
     SharedPreferences preferences;
     SharedPreferences defaultSharedPreferences;
     String currentFragment;  //current visible fragment
@@ -132,6 +166,74 @@ public class MainActivity extends BaseActivity implements ActivityActionProvider
         bottomSheetBehavior = BottomSheetBehavior.from(activityMainBinding.playlists);
         preferences = getSharedPreferences(STATE_PREF, MODE_PRIVATE);
         defaultSharedPreferences = PreferenceManager.getDefaultSharedPreferences(this);
+
+
+        //Display Exception
+        if (defaultSharedPreferences.getBoolean(Keys.PREFERENCE_KEYS.IS_EXCEPTION, false)) {
+            ScrollView scrollView = new ScrollView(this);
+            scrollView.setLayoutParams(new ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
+            HorizontalScrollView horizontalScrollView = new HorizontalScrollView(this);
+            horizontalScrollView.setLayoutParams(new ViewGroup.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.MATCH_PARENT));
+
+
+            String exception = defaultSharedPreferences.getString(Keys.PREFERENCE_KEYS.EXCEPTION, "");
+            TextView tv = new TextView(this);
+            tv.setGravity(GravityCompat.START);
+            int px = (int) ConverterUtil.getPx(this, 20);
+            tv.setPadding(px, px, px, px);
+            tv.setText(exception);
+
+            horizontalScrollView.addView(tv);
+            scrollView.addView(horizontalScrollView);
+
+
+            AlertDialog.Builder builder = new AlertDialog.Builder(this);
+            builder.setTitle("Exception")
+                    .setView(scrollView)
+                    .setOnDismissListener(new DialogInterface.OnDismissListener() {
+                        @Override
+                        public void onDismiss(DialogInterface dialog) {
+                            SharedPreferences.Editor editor = defaultSharedPreferences.edit();
+                            editor.putBoolean(Keys.PREFERENCE_KEYS.IS_EXCEPTION, false);
+                            editor.apply();
+                        }
+                    })
+                    .setPositiveButton("SEND", (dialog, which) -> {
+                        executor.execute(new Runnable() {
+                            @Override
+                            public void run() {
+                                try {
+                                    URL url = new URL("https://ydashboard.000webhostapp.com/apis/crash_report.php");
+                                    HttpURLConnection connection = (HttpURLConnection) url.openConnection();
+                                    connection.setRequestMethod("POST");
+                                    connection.getDoInput();
+                                    connection.getDoOutput();
+                                    Uri.Builder uriBuilder = new Uri.Builder()
+                                            .appendQueryParameter("device_id", Build.MANUFACTURER + " " + Build.MODEL + "(API:" + Build.VERSION.SDK_INT + ")")
+                                            .appendQueryParameter("report", exception.replace("\n", "<br>").substring(0, Math.min(exception.length(), 980)))
+                                            .appendQueryParameter("time_stamp", new Date().toString());
+
+                                    connection.getOutputStream().write(uriBuilder.build().getEncodedQuery().getBytes(StandardCharsets.UTF_8));
+                                    InputStream stream = connection.getInputStream();
+                                    BufferedReader reader = new BufferedReader(new InputStreamReader(stream, StandardCharsets.UTF_8));
+                                    String r;
+                                    StringBuilder res = new StringBuilder();
+                                    while ((r = reader.readLine()) != null) {
+                                        res.append(r);
+                                    }
+                                    LogHelper.d(TAG, res.toString());
+                                } catch (IOException e) {
+                                    LogHelper.d(TAG, ConverterUtil.toStringException(e));
+                                }
+                            }
+                        });
+                        dialog.dismiss();
+                    });
+
+            AlertDialog dialog = builder.create();
+            dialog.show();
+        }
+
         currentFragment = (getIntent().getStringExtra(EXTRA_CURRENT_FRAGMENT) != null) ? (getIntent().getStringExtra(EXTRA_CURRENT_FRAGMENT)) : "localSongs";
         activityMainBinding.slidingLayout.setPanelState(SlidingUpPanelLayout.PanelState.HIDDEN);
         activityMainBinding.slidingLayout.addPanelSlideListener(new SlidingUpPanelLayout.PanelSlideListener() {
@@ -186,11 +288,6 @@ public class MainActivity extends BaseActivity implements ActivityActionProvider
                 LogHelper.d(TAG, "onDrawerClosed: ");
                 if (navigationItemId == -1) return;
                 switch (navigationItemId) {
-//                    case R.id.spotifySongs:
-//                        if (currentFragment.equals(Keys.Fragments.SPOTIFY_SONGS)) return;
-//                        currentFragment = Keys.Fragments.SPOTIFY_SONGS;
-//                        getSupportFragmentManager().beginTransaction().replace(activityMainBinding.container.getId(), new SpotifySongs(), Keys.Fragments.SPOTIFY_SONGS).commit();
-//                        return;
                     case R.id.youtubeLibSongs:
                         if (currentFragment.equals(Keys.Fragments.YOUTUBE_SONGS)) return;
                         currentFragment = Keys.Fragments.YOUTUBE_SONGS;
@@ -201,7 +298,7 @@ public class MainActivity extends BaseActivity implements ActivityActionProvider
                         currentFragment = Keys.Fragments.LOCAL_SONGS;
                         getSupportFragmentManager().beginTransaction().replace(activityMainBinding.container.getId(), new LocalSongs(), Keys.Fragments.LOCAL_SONGS).commit();
                         return;
-                        case R.id.downloads:
+                    case R.id.downloads:
                         if (currentFragment.equals(Keys.Fragments.DOWNLOADS)) return;
                         currentFragment = Keys.Fragments.DOWNLOADS;
                         getSupportFragmentManager().beginTransaction().replace(activityMainBinding.container.getId(), new DownloadFragment(), Keys.Fragments.DOWNLOADS).commit();
@@ -321,6 +418,60 @@ public class MainActivity extends BaseActivity implements ActivityActionProvider
     }
 
     @Override
+    protected void onResume() {
+        super.onResume();
+        LogHelper.d(TAG, "onResume: ");
+        if (bottomSheetBehavior != null && bottomSheetBehavior.getState() != BottomSheetBehavior.STATE_HIDDEN) {
+            if (mediaController != null && mediaController.getMetadata() != null) {
+
+                if (mediaController.getMetadata().getBitmap(MediaMetadataCompat.METADATA_KEY_ALBUM_ART) != null) {
+                    Drawable resource = new BitmapDrawable(getResources(), mediaController.getMetadata().getBitmap(MediaMetadataCompat.METADATA_KEY_ALBUM_ART));
+                    activityMainBinding.art.setImageDrawable(resource);
+                    activityMainBinding.songArt.setImageDrawable(resource);
+                    activityMainBinding.playerBlurBackground.setImageDrawable(resource);
+                    activityMainBinding.playerBlurBackground.setBlur(5);
+                    return;
+                }
+
+                executor.submit(() -> {
+                    String songArt = mediaController.getMetadata().getString(MediaMetadataCompat.METADATA_KEY_ALBUM_ART_URI);
+                    boolean isUriSufficient = true;
+                    if (songArt != null && songArt.contains(MediaStore.Audio.Media.EXTERNAL_CONTENT_URI.toString())) {
+                        retriever.setDataSource(MainActivity.this, Uri.parse(songArt));
+                        isUriSufficient = false;
+                    }
+                    songArt = String.format("https://i.ytimg.com/vi/%s/hqdefault.jpg", mediaController.getMetadata().getString(MediaMetadataCompat.METADATA_KEY_MEDIA_ID));
+                    Glide.with(MainActivity.this).load(isUriSufficient ? songArt : retriever.getEmbeddedPicture()).placeholder(R.drawable.album_art_placeholder).into(new CustomTarget<Drawable>() {
+                        @Override
+                        public void onResourceReady(@NonNull Drawable resource, @Nullable Transition<? super Drawable> transition) {
+                            activityMainBinding.art.setImageDrawable(resource);
+                            activityMainBinding.songArt.setImageDrawable(resource);
+                            activityMainBinding.playerBlurBackground.setImageDrawable(resource);
+                            activityMainBinding.playerBlurBackground.setBlur(5);
+                        }
+
+                        @Override
+                        public void onLoadFailed(@Nullable Drawable errorDrawable) {
+                            activityMainBinding.art.setImageResource(R.drawable.album_art_placeholder);
+                            activityMainBinding.songArt.setImageResource(R.drawable.album_art_placeholder);
+                            activityMainBinding.playerBlurBackground.setImageResource(R.drawable.bg_album_art);
+                            activityMainBinding.playerBlurBackground.setBlur(5);
+                        }
+
+                        @Override
+                        public void onLoadCleared(@Nullable Drawable placeholder) {
+
+                        }
+                    });
+
+
+                });
+            }
+
+        }
+    }
+
+    @Override
     protected void onDestroy() {
         super.onDestroy();
         mediaBrowser.disconnect();
@@ -328,7 +479,8 @@ public class MainActivity extends BaseActivity implements ActivityActionProvider
     }
 
     @Override
-    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
+    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions,
+                                           @NonNull int[] grantResults) {
         LogHelper.d(TAG, "onRequestPermissionsResult: ");
         if (requestCode == 100) {
             for (int i = 0; i < permissions.length; i++)
@@ -384,12 +536,13 @@ public class MainActivity extends BaseActivity implements ActivityActionProvider
                     activityMainBinding.repeatBtn.setImageResource(R.drawable.exo_controls_repeat_off);
                     break;
                 default:
+                    break;
             }
         }
 
         @Override
         public void onQueueChanged(List<MediaSessionCompat.QueueItem> queue) {
-            int color = getAttributeColor(MainActivity.this,R.attr.listTitleTextColor);
+            int color = getAttributeColor(MainActivity.this, R.attr.listTitleTextColor);
             //LogHelper.d(TAG, "onQueueChanged: queue size:" + queue.size() + " song size:" + songs.size() + " QueueUpdated: " + !(queueTitle != null && queueTitle.equals(Keys.QUEUE_TITLE.CUSTOM)));
             if (queueTitle != null && queueTitle.equals(Keys.QUEUE_TITLE.CUSTOM))
                 return;
@@ -596,7 +749,9 @@ public class MainActivity extends BaseActivity implements ActivityActionProvider
         else if (!getSupportFragmentManager().getFragments().contains(getSupportFragmentManager().findFragmentByTag(Keys.Fragments.LOCAL_SONGS))) {
             getSupportFragmentManager().beginTransaction().replace(activityMainBinding.container.getId(), new LocalSongs(), Keys.Fragments.LOCAL_SONGS).commit();
             activityMainBinding.navView.setCheckedItem(R.id.localSongs);
+            navigationItemId = Objects.requireNonNull(activityMainBinding.navView.getCheckedItem()).getItemId();
             currentFragment = Keys.Fragments.LOCAL_SONGS;
+
         } else {
             if (dblClick)
                 super.onBackPressed();
@@ -633,7 +788,14 @@ public class MainActivity extends BaseActivity implements ActivityActionProvider
 
     @Override
     public void sendActionToMediaSession(String action, Bundle extras) {
-        mediaController.getTransportControls().sendCustomAction(action,extras);
+        if(mediaController == null) return;
+        mediaController.getTransportControls().sendCustomAction(action, extras);
+    }
+
+    @Override
+    public void interactWithMediaSession(Callback callback) {
+        if(mediaController == null) return;
+        callback.trigger(mediaController);
     }
 
     void scheduledFutureUpdate() {
@@ -753,22 +915,22 @@ public class MainActivity extends BaseActivity implements ActivityActionProvider
                 openEQIntent.resolveActivity(getPackageManager());
                 startActivity(openEQIntent);
 
-            } else{
-                mediaController.sendCommand(Keys.COMMAND.ON_AUDIO_SESSION_ID_CHANGE,null,new ResultReceiver(handler){
+            } else {
+                mediaController.sendCommand(Keys.COMMAND.ON_AUDIO_SESSION_ID_CHANGE, null, new ResultReceiver(handler) {
                     @Override
                     protected void onReceiveResult(int resultCode, Bundle resultData) {
-                        if(dialogEqualizerFragment != null)
+                        if (dialogEqualizerFragment != null)
                             dialogEqualizerFragment.updateAudioSessionId(resultData.getInt(Keys.AUDIO_SESSION_ID));
                     }
                 });
-                mediaController.sendCommand(Keys.COMMAND.GET_AUDIO_SESSION_ID,null,new ResultReceiver(handler) {
+                mediaController.sendCommand(Keys.COMMAND.GET_AUDIO_SESSION_ID, null, new ResultReceiver(handler) {
                     @Override
                     protected void onReceiveResult(int resultCode, Bundle resultData) {
                         dialogEqualizerFragment = DialogEqualizerFragment.newBuilder()
-                                .setAccentColor(BaseActivity.getAttributeColor(MainActivity.this,R.attr.colorAccent))  //Color.parseColor("#4caf50")
+                                .setAccentColor(BaseActivity.getAttributeColor(MainActivity.this, R.attr.colorAccent))  //Color.parseColor("#4caf50")
                                 .setAudioSessionId(resultData.getInt(Keys.AUDIO_SESSION_ID))
                                 .build();
-                        dialogEqualizerFragment.show(getSupportFragmentManager(),"eq");
+                        dialogEqualizerFragment.show(getSupportFragmentManager(), "eq");
                     }
                 });
             }
@@ -822,7 +984,7 @@ public class MainActivity extends BaseActivity implements ActivityActionProvider
         if (mediaController.getQueue() != null) {
             List<MediaSessionCompat.QueueItem> queue = mediaController.getQueue();
             songs.clear();
-            int color = getAttributeColor(MainActivity.this,R.attr.listTitleTextColor);
+            int color = getAttributeColor(MainActivity.this, R.attr.listTitleTextColor);
             for (int i = 0; i < queue.size(); i++) {
 
                 LogHelper.d(TAG, "QueueIem : " + queue.get(i).getDescription().getTitle());
@@ -959,7 +1121,6 @@ public class MainActivity extends BaseActivity implements ActivityActionProvider
             }
             in.close();
             out.close();
-            System.out.println("File copied.");
             //Open share dialog
             Uri fileUri = FileProvider.getUriForFile(this, "com.yash.ymplayer.provider", tempFile);
             intent.putExtra(Intent.EXTRA_STREAM, fileUri);
@@ -1056,6 +1217,24 @@ public class MainActivity extends BaseActivity implements ActivityActionProvider
     public static final int CHUNK_SIZE = 8192;
 
     void encodeToMP3() {
+        List<Integer> x = null;
+        x.add(5);
+
+        for (File f : getExternalMediaDirs()) {
+            LogHelper.d(TAG, "encodeToMP3: " + f.getName() + " " + f.getAbsolutePath());
+        }
+        ;
+        LogHelper.d(TAG, "encodeToMP3: " + Environment.getRootDirectory().getName() + " " + Environment.getRootDirectory().getAbsolutePath());
+        LogHelper.d(TAG, "encodeToMP3: " + getDir("YMPlayer", MODE_PRIVATE).getName() + " " + getDir("YMPlayer", MODE_PRIVATE).getAbsolutePath());
+        LogHelper.d(TAG, "encodeToMP3: " + Environment.getExternalStoragePublicDirectory("YMPlayer").getName() + " " + Environment.getExternalStoragePublicDirectory("YMPlayer").getAbsolutePath());
+
+//        for(File f : Environment.getExternalStoragePublicDirectory("YMPlayer")) {
+//            LogHelper.d(TAG, "encodeToMP3: " + f.getName() + " "+ f.getAbsolutePath());
+//        }
+
+//        Intent downloadIntent = new Intent(MainActivity.this,DownloadService.class);
+//        downloadIntent.putExtra(Keys.VIDEO_ID,"jjdjgfhj");
+//        MainActivity.this.startService(downloadIntent);
 //        extractID3Tags("/storage/emulated/0/Test/soja.mp3");
 //        try {
 //            MediaExtractor extractor = new MediaExtractor();
@@ -1198,7 +1377,8 @@ public class MainActivity extends BaseActivity implements ActivityActionProvider
         return (short) (b1 & 0xFF | ((b2 & 0xFF) << 8));
     }
 
-    public int read(InputStream stream, short[] left, short[] right, int numSamples) throws IOException {
+    public int read(InputStream stream, short[] left, short[] right, int numSamples) throws
+            IOException {
 
         byte[] buf = new byte[numSamples * 4];
         int index = 0;
@@ -1238,5 +1418,6 @@ public class MainActivity extends BaseActivity implements ActivityActionProvider
 //            e.printStackTrace();
 //        }
 //    }
+
 
 }

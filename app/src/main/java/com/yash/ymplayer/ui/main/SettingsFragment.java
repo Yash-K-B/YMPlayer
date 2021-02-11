@@ -7,6 +7,7 @@ import android.os.Bundle;
 
 import androidx.annotation.NonNull;
 import androidx.preference.PreferenceManager;
+
 import android.util.Log;
 
 import androidx.annotation.Nullable;
@@ -16,10 +17,11 @@ import com.yash.ymplayer.ActivityActionProvider;
 import com.yash.ymplayer.BaseActivity;
 import com.yash.ymplayer.MainActivity;
 import com.yash.ymplayer.R;
-import com.yash.ymplayer.helper.LogHelper;
+import com.yash.logging.LogHelper;
 import com.yash.ymplayer.util.Keys;
 
 import java.security.Key;
+import java.util.Objects;
 
 
 public class SettingsFragment extends PreferenceFragmentCompat {
@@ -56,24 +58,28 @@ public class SettingsFragment extends PreferenceFragmentCompat {
     private SharedPreferences.OnSharedPreferenceChangeListener listener = new SharedPreferences.OnSharedPreferenceChangeListener() {
         @Override
         public void onSharedPreferenceChanged(SharedPreferences sharedPreferences, String key) {
-            switch (key){
+            switch (key) {
                 case "theme":
                 case "background":
-                    ((MainActivity)context).refresh();
+                    ((MainActivity) context).refresh();
                     break;
 
                 case "user_name":
-                    ((ActivityActionProvider) context).setUserName(sharedPreferences.getString("user_name","User@YMPlayer"));
+                    ((ActivityActionProvider) context).setUserName(sharedPreferences.getString("user_name", "User@YMPlayer"));
                     break;
 
                 case Keys.PREFERENCE_KEYS.BUILTIN_EQUALIZER:
                     Bundle extras = new Bundle();
-                    extras.putBoolean(Keys.EXTRA_EQUALIZER_STATE,sharedPreferences.getBoolean(Keys.PREFERENCE_KEYS.BUILTIN_EQUALIZER,false));
-                    ((ActivityActionProvider)context).sendActionToMediaSession(Keys.Action.TOGGLE_EQUALIZER_STATE,extras);
+                    extras.putBoolean(Keys.EXTRA_EQUALIZER_STATE, sharedPreferences.getBoolean(Keys.PREFERENCE_KEYS.BUILTIN_EQUALIZER, false));
+                    ((ActivityActionProvider) context).sendActionToMediaSession(Keys.Action.TOGGLE_EQUALIZER_STATE, extras);
+                    break;
+
+                case Keys.PREFERENCE_KEYS.PLAYBACK_QUALITY:
+                    ((ActivityActionProvider) context).sendActionToMediaSession(Keys.Action.PLAYBACK_QUALITY_CHANGED, null);
                     break;
 
                 default:
-                    LogHelper.d(TAG, "Invalid Preference Key. ");
+                    LogHelper.d(TAG, "No Action Preference Key. ");
             }
 
         }

@@ -6,6 +6,7 @@ import android.content.Context;
 import android.graphics.drawable.Drawable;
 import android.media.MediaMetadataRetriever;
 import android.os.Handler;
+import android.os.Looper;
 import android.provider.MediaStore;
 import android.support.v4.media.MediaBrowserCompat;
 import android.util.Log;
@@ -49,7 +50,7 @@ public class SongListAdapter extends RecyclerView.Adapter<SongListAdapter.SongVi
     private int mode;
     private Context context;
     ThreadPoolExecutor executor = (ThreadPoolExecutor) Executors.newFixedThreadPool(4);
-    Handler handler = new Handler();
+    private final Handler handler = new Handler(Looper.getMainLooper());
     AlbumOrArtistContextMenuListener albumOrArtistContextMenuListener;
 
     public SongListAdapter(Context context, List<MediaBrowserCompat.MediaItem> songs, OnItemClickListener listener, AlbumOrArtistContextMenuListener albumOrArtistContextMenuListener, int mode) {
@@ -122,7 +123,7 @@ public class SongListAdapter extends RecyclerView.Adapter<SongListAdapter.SongVi
             binding.trackName.setOnClickListener(new View.OnClickListener() {
                 @Override
                 public void onClick(View v) {
-                    listener.onClick(song);
+                    listener.onClick(v, song);
                 }
             });
         }
@@ -139,13 +140,13 @@ public class SongListAdapter extends RecyclerView.Adapter<SongListAdapter.SongVi
         void bindPlaylist(MediaBrowserCompat.MediaItem song, OnItemClickListener listener) {
             if ((Keys.PLAYLISTS.FAVOURITES).equals(song.getDescription().getTitle() + ""))
                 binding.iconPlaylist.setImageResource(R.drawable.icon_favourite);
-            else if("Last Added".equals(song.getDescription().getTitle()+""))
+            else if ("Last Added".equals(song.getDescription().getTitle() + ""))
                 binding.iconPlaylist.setImageResource(R.drawable.icon_last_added);
             binding.playlistTitle.setText(song.getDescription().getTitle());
             itemView.setOnClickListener(new View.OnClickListener() {
                 @Override
                 public void onClick(View v) {
-                    listener.onClick(song);
+                    listener.onClick(v, song);
                 }
             });
         }
@@ -191,7 +192,7 @@ public class SongListAdapter extends RecyclerView.Adapter<SongListAdapter.SongVi
             itemView.setOnClickListener(new View.OnClickListener() {
                 @Override
                 public void onClick(View v) {
-                    listener.onClick(song);
+                    listener.onClick(v, song);
                 }
             });
 
@@ -239,7 +240,7 @@ public class SongListAdapter extends RecyclerView.Adapter<SongListAdapter.SongVi
             binding.art.setVisibility(View.GONE);
             binding.title.setText(song.getDescription().getTitle());
             binding.subTitle.setText(song.getDescription().getSubtitle());
-            itemView.setOnClickListener(v -> listener.onClick(song));
+            itemView.setOnClickListener(v -> listener.onClick(v, song));
         }
     }
 
@@ -250,6 +251,6 @@ public class SongListAdapter extends RecyclerView.Adapter<SongListAdapter.SongVi
 
 
     public interface OnItemClickListener {
-        void onClick(MediaBrowserCompat.MediaItem song);
+        void onClick(View v, MediaBrowserCompat.MediaItem song);
     }
 }

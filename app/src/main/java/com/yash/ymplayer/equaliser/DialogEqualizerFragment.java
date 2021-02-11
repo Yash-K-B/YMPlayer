@@ -43,7 +43,7 @@ import com.db.chart.view.ChartView;
 import com.db.chart.view.LineChartView;
 import com.google.gson.Gson;
 import com.yash.ymplayer.R;
-import com.yash.ymplayer.helper.LogHelper;
+import com.yash.logging.LogHelper;
 
 import java.util.ArrayList;
 
@@ -299,7 +299,7 @@ public class DialogEqualizerFragment extends DialogFragment {
 
             if (loudnessEnhancer != null) {
                 try {
-                    z = (int)((loudnessEnhancer.getTargetGain() * 18) / TARGET_GAIN_MAX) + 1;
+                    z = (int) ((loudnessEnhancer.getTargetGain() * 18) / TARGET_GAIN_MAX) + 1;
                 } catch (Exception e) {
                     e.printStackTrace();
                 }

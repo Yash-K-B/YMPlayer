@@ -6,14 +6,19 @@ import android.os.Bundle;
 import android.util.Log;
 import android.util.TypedValue;
 
+import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.preference.PreferenceManager;
 
+import com.yash.logging.LogHelper;
+
 import org.jetbrains.annotations.NotNull;
 
+import java.util.Objects;
+
 public abstract class BaseActivity extends AppCompatActivity {
-    private static final String TAG = "debug";
+    private static final String TAG = "BaseActivity";
     SharedPreferences preferences;
 
     @Override

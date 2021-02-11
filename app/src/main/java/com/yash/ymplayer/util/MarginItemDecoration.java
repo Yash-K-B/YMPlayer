@@ -6,8 +6,6 @@ import android.view.View;
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 
-import com.yash.ymplayer.helper.LogHelper;
-
 public class MarginItemDecoration extends RecyclerView.ItemDecoration {
     private int margin;
     private static final String TAG = "MarginItemDecoration";

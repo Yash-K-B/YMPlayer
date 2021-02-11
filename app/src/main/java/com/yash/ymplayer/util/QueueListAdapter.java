@@ -13,7 +13,7 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import com.yash.ymplayer.R;
 import com.yash.ymplayer.databinding.ItemPlayingQueueBinding;
-import com.yash.ymplayer.helper.LogHelper;
+import com.yash.logging.LogHelper;
 
 import java.util.List;
 

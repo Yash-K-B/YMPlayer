@@ -17,7 +17,7 @@ import com.android.volley.toolbox.HttpHeaderParser;
 import com.android.volley.toolbox.JsonObjectRequest;
 import com.android.volley.toolbox.Volley;
 import com.google.gson.Gson;
-import com.yash.ymplayer.helper.LogHelper;
+import com.yash.logging.LogHelper;
 import com.yash.ymplayer.models.PopularPlaylist;
 import com.yash.ymplayer.models.PopularPlaylists;
 import com.yash.ymplayer.models.YoutubePlaylist;
@@ -99,8 +99,8 @@ public class OnlineYoutubeRepository {
                         if (cacheEntry == null) {
                             cacheEntry = new Cache.Entry();
                         }
-                        final long cacheHitButRefreshed = 10 * 60 * 60 * 1000; // in 10 hour cache will be hit, but also refreshed on background
-                        final long cacheExpired = 10 * 24 * 60 * 60 * 1000; // in 10 days this cache entry expires completely
+                        final long cacheHitButRefreshed = 12 * 60 * 60 * 1000; // in 12 hour cache will be hit, but also refreshed on background
+                        final long cacheExpired = 24 * 60 * 60 * 1000; // in 1 days this cache entry expires completely
                         long now = System.currentTimeMillis();
                         final long softExpire = now + cacheHitButRefreshed;
                         final long ttl = now + cacheExpired;
@@ -174,8 +174,8 @@ public class OnlineYoutubeRepository {
                     if (cacheEntry == null) {
                         cacheEntry = new Cache.Entry();
                     }
-                    final long cacheHitButRefreshed = 10 * 60 * 60 * 1000; // in 10 hour cache will be hit, but also refreshed on background
-                    final long cacheExpired = 10 * 24 * 60 * 60 * 1000; // in 10 days this cache entry expires completely
+                    final long cacheHitButRefreshed = 12 * 60 * 60 * 1000; // in 12 hour cache will be hit, but also refreshed on background
+                    final long cacheExpired = 24 * 60 * 60 * 1000; // in 1 days this cache entry expires completely
                     long now = System.currentTimeMillis();
                     final long softExpire = now + cacheHitButRefreshed;
                     final long ttl = now + cacheExpired;
@@ -280,8 +280,8 @@ public class OnlineYoutubeRepository {
                     if (cacheEntry == null) {
                         cacheEntry = new Cache.Entry();
                     }
-                    final long cacheHitButRefreshed = 10 * 60 * 60 * 1000; // in 10 hour cache will be hit, but also refreshed on background
-                    final long cacheExpired = 10 * 24 * 60 * 60 * 1000; // in 10 days this cache entry expires completely
+                    final long cacheHitButRefreshed = 12 * 60 * 60 * 1000; // in 12 hour cache will be hit, but also refreshed on background
+                    final long cacheExpired = 24 * 60 * 60 * 1000; // in 1 days this cache entry expires completely
                     long now = System.currentTimeMillis();
                     final long softExpire = now + cacheHitButRefreshed;
                     final long ttl = now + cacheExpired;
@@ -332,8 +332,8 @@ public class OnlineYoutubeRepository {
                     if (cacheEntry == null) {
                         cacheEntry = new Cache.Entry();
                     }
-                    final long cacheHitButRefreshed = 10 * 60 * 60 * 1000; // in 10 hour cache will be hit, but also refreshed on background
-                    final long cacheExpired = 10 * 24 * 60 * 60 * 1000; // in 10 days this cache entry expires completely
+                    final long cacheHitButRefreshed = 12 * 60 * 60 * 1000; // in 12 hour cache will be hit, but also refreshed on background
+                    final long cacheExpired = 24 * 60 * 60 * 1000; // in 1 days this cache entry expires completely
                     long now = System.currentTimeMillis();
                     final long softExpire = now + cacheHitButRefreshed;
                     final long ttl = now + cacheExpired;
@@ -396,8 +396,8 @@ public class OnlineYoutubeRepository {
                     if (cacheEntry == null) {
                         cacheEntry = new Cache.Entry();
                     }
-                    final long cacheHitButRefreshed = 10 * 60 * 60 * 1000; // in 10 hour cache will be hit, but also refreshed on background
-                    final long cacheExpired = 10 * 24 * 60 * 60 * 1000; // in 10 days this cache entry expires completely
+                    final long cacheHitButRefreshed = 12 * 60 * 60 * 1000; // in 12 hour cache will be hit, but also refreshed on background
+                    final long cacheExpired = 24 * 60 * 60 * 1000; // in 1 days this cache entry expires completely
                     long now = System.currentTimeMillis();
                     final long softExpire = now + cacheHitButRefreshed;
                     final long ttl = now + cacheExpired;
@@ -469,8 +469,8 @@ public class OnlineYoutubeRepository {
                     if (cacheEntry == null) {
                         cacheEntry = new Cache.Entry();
                     }
-                    final long cacheHitButRefreshed = 10 * 60 * 60 * 1000; // in 10 hour cache will be hit, but also refreshed on background
-                    final long cacheExpired = 10 * 24 * 60 * 60 * 1000; // in 10 days this cache entry expires completely
+                    final long cacheHitButRefreshed = 12 * 60 * 60 * 1000; // in 12 hour cache will be hit, but also refreshed on background
+                    final long cacheExpired = 24 * 60 * 60 * 1000; // in 1 days this cache entry expires completely
                     long now = System.currentTimeMillis();
                     final long softExpire = now + cacheHitButRefreshed;
                     final long ttl = now + cacheExpired;
@@ -508,7 +508,6 @@ public class OnlineYoutubeRepository {
 
     public List<MediaSessionCompat.QueueItem> getPlayingQueue(String uri) {
         String id = uri.split("[|]")[0];
-
         if ("TOP_TRACKS".equals(id)) {
             return getPlayingQueue();
         } else {

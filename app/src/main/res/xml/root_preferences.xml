@@ -55,6 +55,14 @@
             app:key="albumart_enabled"
             app:title="Album art on lock screen" />
 
+        <ListPreference
+            app:key="playback_quality"
+            app:title="Online streaming audio quality"
+            app:useSimpleSummaryProvider="true"
+            app:entries="@array/audio_quality"
+            app:entryValues="@array/audio_quality_values"
+            app:defaultValue="2"/>
+
 
     </PreferenceCategory>
 

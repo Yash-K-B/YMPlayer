@@ -36,7 +36,8 @@
                 android:paddingEnd="10dp"
                 android:singleLine="true"
                 android:textColor="?attr/listTitleTextColor"
-                android:textSize="16sp" />
+                android:textSize="16sp"
+                android:transitionName="@string/list_name"/>
 
             <TextView
                 android:id="@+id/subTitle"

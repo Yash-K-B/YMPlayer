@@ -54,7 +54,6 @@ public class Artists extends Fragment {
     List<MediaBrowserCompat.MediaItem> songs = new ArrayList<>();
     SongListAdapter artistsAdapter;
     private static Artists instance;
-    Handler handler = new Handler();
     Context context;
     FragmentActivity activity;
 
@@ -107,19 +106,19 @@ public class Artists extends Fragment {
                 mMediaController = new MediaControllerCompat(getContext(), mMediaBrowser.getSessionToken());
                 artistsAdapter = new SongListAdapter(getContext(), songs, new SongListAdapter.OnItemClickListener() {
                     @Override
-                    public void onClick(MediaBrowserCompat.MediaItem song) {
+                    public void onClick(View v, MediaBrowserCompat.MediaItem song) {
                         if (song.isBrowsable()) {
                             Intent intent = new Intent(getActivity(), ListExpandActivity.class);
                             intent.putExtra(Keys.EXTRA_PARENT_ID, song.getMediaId());
                             intent.putExtra(Keys.EXTRA_TYPE, "artist");
-                            intent.putExtra(Keys.EXTRA_TITLE,song.getDescription().getTitle());
+                            intent.putExtra(Keys.EXTRA_TITLE, song.getDescription().getTitle());
                             startActivity(intent);
                         }
                     }
-                }, new AlbumOrArtistContextMenuClickListener(context,mMediaController),1);
+                }, new AlbumOrArtistContextMenuClickListener(context, mMediaController), 1);
                 artistsBinding.allArtists.setAdapter(artistsAdapter);
                 mMediaController.registerCallback(mMediaControllerCallbacks);
-                artistsBinding.artistsRefresh.setColorSchemeColors(BaseActivity.getAttributeColor(context,R.attr.colorPrimary));
+                artistsBinding.artistsRefresh.setColorSchemeColors(BaseActivity.getAttributeColor(context, R.attr.colorPrimary));
                 artistsBinding.artistsRefresh.setOnRefreshListener(new SwipeRefreshLayout.OnRefreshListener() {
                     @Override
                     public void onRefresh() {

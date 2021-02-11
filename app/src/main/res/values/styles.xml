@@ -44,13 +44,14 @@
         <item name="layoutBackground">@android:color/background_light</item>
         <item name="overlayTheme">@style/ThemeOverlay.AppCompat.Light</item>
         <item name="backgroundHeadingTextColor">?attr/colorPrimary</item>
+        <item name="android:windowActivityTransitions">true</item>
     </style>
 
     <!--    Light Child Themes-->
     <style name="YTheme.Light.Red.NoActionBar" parent="YTheme.Light">
         <item name="colorPrimary">#8F0000</item>
         <item name="colorPrimaryDark">#680000</item>
-        <item name="colorAccent">#D50000</item>
+        <item name="colorAccent">#FA928D</item>
     </style>
 
     <style name="YTheme.Light.Blue.NoActionBar" parent="YTheme.Light">
@@ -76,13 +77,14 @@
         <item name="layoutBackground">#272727</item>
         <item name="overlayTheme">@style/ThemeOverlay.AppCompat.Dark</item>
         <item name="backgroundHeadingTextColor">#FFD600</item>
+        <item name="android:windowActivityTransitions">true</item>
     </style>
 
     <!--    Dark Child Themes-->
     <style name="YTheme.Dark.Red.NoActionBar" parent="YTheme.Dark">
         <item name="colorPrimary">#8F0000</item>
         <item name="colorPrimaryDark">#680000</item>
-        <item name="colorAccent">#D50000</item>
+        <item name="colorAccent">#FA928D</item>
     </style>
 
     <style name="YTheme.Dark.Blue.NoActionBar" parent="YTheme.Dark">
@@ -107,13 +109,14 @@
         <item name="layoutBackground">@android:color/black</item>
         <item name="overlayTheme">@style/ThemeOverlay.AppCompat.Dark</item>
         <item name="backgroundHeadingTextColor">#FFD600</item>
+        <item name="android:windowActivityTransitions">true</item>
         <!--        <item name="android:background">#000000</item>-->
     </style>
     <!--    AMOLED Themes-->
     <style name="YTheme.AMOLED.Red.NoActionBar" parent="YTheme.AMOLED">
         <item name="colorPrimary">#8F0000</item>
         <item name="colorPrimaryDark">#680000</item>
-        <item name="colorAccent">#D50000</item>
+        <item name="colorAccent">#FA928D</item>
     </style>
 
     <style name="YTheme.AMOLED.Blue.NoActionBar" parent="YTheme.AMOLED">
