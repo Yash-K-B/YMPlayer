@@ -99,5 +99,7 @@ public interface Keys {
     interface DownloadManager {
         String EXTRA_ACTION = "action";
         String EXTRA_VIDEO_ID = "videoId";
+        String EXTRA_TASK_ID = "taskId";
+        String EXTRA_BITRATE = "bitrate";
     }
 }

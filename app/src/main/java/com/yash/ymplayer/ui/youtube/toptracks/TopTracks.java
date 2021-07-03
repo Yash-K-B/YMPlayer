@@ -55,6 +55,8 @@ public class TopTracks extends Fragment {
     YoutubeLibraryViewModel viewModel;
     ConnectivityManager connectivityManager;
     boolean isContentLoaded = false;
+    boolean isConnectedToService = false;
+    boolean isNetworkAvailable = false;
 
     public TopTracks() {
         // Required empty public constructor
@@ -74,11 +76,26 @@ public class TopTracks extends Fragment {
         activity = getActivity();
         context = getContext();
         connectivityManager = (ConnectivityManager) context.getSystemService(Context.CONNECTIVITY_SERVICE);
+        connectivityManager.registerNetworkCallback(networkRequest, networkCallback);
         topTracksBinding.topTracksContainer.setLayoutManager(new LinearLayoutManager(context));
         topTracksBinding.topTracksContainer.setHasFixedSize(true);
         mediaBrowser = new MediaBrowserCompat(context, new ComponentName(context, PlayerService.class), connectionCallback, null);
         mediaBrowser.connect();
 
+    }
+
+    @Override
+    public void onStart() {
+        super.onStart();
+        connectivityManager.registerNetworkCallback(networkRequest, networkCallback);
+    }
+
+
+    @Override
+    public void onStop() {
+        super.onStop();
+        if (connectivityManager != null)
+            connectivityManager.unregisterNetworkCallback(networkCallback);
     }
 
     @Override
@@ -97,8 +114,8 @@ public class TopTracks extends Fragment {
             try {
                 mediaController = new MediaControllerCompat(context, mediaBrowser.getSessionToken());
                 LogHelper.d(TAG, "onConnected: TopTracks");
+                isConnectedToService = true;
                 handler.postDelayed(noInternet, 1000);
-                connectivityManager.registerNetworkCallback(networkRequest, networkCallback);
                 adapter = new TopTracksAdapter(context, new TopTracksAdapter.OnClickListener() {
                     @Override
                     public void onClick(YoutubeSong song) {
@@ -107,13 +124,17 @@ public class TopTracks extends Fragment {
                             mediaController.getTransportControls().playFromUri(audioUri, null);
                         else LogHelper.d(TAG, "Click Track: No Audio Uri Found");
                     }
-                },mediaController);
+                }, mediaController);
                 topTracksBinding.topTracksContainer.setAdapter(adapter);
 
             } catch (RemoteException e) {
                 e.printStackTrace();
             }
+            if (!isContentLoaded && isNetworkAvailable)
+                loadContent();
+
         }
+
     };
     NetworkRequest networkRequest = new NetworkRequest.Builder().addCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET)
             .addTransportType(NetworkCapabilities.TRANSPORT_CELLULAR)
@@ -126,6 +147,7 @@ public class TopTracks extends Fragment {
         @Override
         public void onAvailable(@NonNull Network network) {
             LogHelper.d(TAG, "onAvailable: ");
+            isNetworkAvailable = true;
             handler.removeCallbacks(noInternet);
             handler.post(() -> {
                 if (isContentLoaded) {
@@ -134,8 +156,6 @@ public class TopTracks extends Fragment {
                     else
                         Snackbar.make(topTracksBinding.getRoot(), Html.fromHtml("<font color='green'>Internet Connection Available</font>"), Snackbar.LENGTH_SHORT).show();
                 } else {
-                    topTracksBinding.topTracksLoadingHint.setVisibility(View.VISIBLE);
-                    topTracksBinding.noInternetHint.setVisibility(View.INVISIBLE);
                     loadContent();
                 }
             });
@@ -145,6 +165,7 @@ public class TopTracks extends Fragment {
         @Override
         public void onLost(@NonNull Network network) {
             LogHelper.d(TAG, "onLost: ");
+            isNetworkAvailable = false;
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N)
                 Snackbar.make(topTracksBinding.getRoot(), Html.fromHtml("<font color='red'>Internet Connection Lost</font>", Html.FROM_HTML_MODE_LEGACY), Snackbar.LENGTH_INDEFINITE).show();
             else
@@ -152,12 +173,20 @@ public class TopTracks extends Fragment {
         }
     };
 
+
     void loadContent() {
-        isContentLoaded = true;
-        viewModel.getTopTracks().observe(getViewLifecycleOwner(), youtubeSongs -> {
-            LogHelper.d(TAG, "onChanged: TopTracks : " + youtubeSongs.isEmpty());
-            adapter.submitList(youtubeSongs);
-        });
+
+        if (isConnectedToService && isNetworkAvailable) {
+            handler.removeCallbacks(noInternet);
+            topTracksBinding.topTracksLoadingHint.setVisibility(View.VISIBLE);
+            topTracksBinding.noInternetHint.setVisibility(View.INVISIBLE);
+            isContentLoaded = true;
+            viewModel.getTopTracks().observe(getViewLifecycleOwner(), youtubeSongs -> {
+                LogHelper.d(TAG, "onChanged: TopTracks : " + youtubeSongs.isEmpty());
+                adapter.submitList(youtubeSongs);
+            });
+        }
+
     }
 
     Runnable noInternet = () -> {

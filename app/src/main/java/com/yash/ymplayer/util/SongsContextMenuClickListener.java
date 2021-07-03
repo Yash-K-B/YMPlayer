@@ -75,7 +75,7 @@ public class SongsContextMenuClickListener implements SongContextMenuListener {
         values.put(MediaStore.Audio.Playlists.Members.PLAY_ORDER, base + 1);
         values.put(MediaStore.Audio.Playlists.Members.AUDIO_ID, parts[parts.length - 1]);
         resolver.insert(uri, values);
-        Toast.makeText(context, "Added to "+playlist, Toast.LENGTH_SHORT).show();
+        Toast.makeText(context, "Added to " + playlist, Toast.LENGTH_SHORT).show();
 
     }
 
@@ -85,7 +85,7 @@ public class SongsContextMenuClickListener implements SongContextMenuListener {
             return;
 
         Intent intent = new Intent(context, ListExpandActivity.class);
-        intent.putExtra(Keys.EXTRA_PARENT_ID, item.getDescription().getExtras().getString(Keys.EXTRA_ALBUM_ID));
+        intent.putExtra(Keys.EXTRA_PARENT_ID, "ALBUMS/" + item.getDescription().getExtras().getString(Keys.EXTRA_ALBUM_ID));
         intent.putExtra(Keys.EXTRA_TYPE, "album");
         intent.putExtra(Keys.EXTRA_TITLE, item.getDescription().getDescription());
         context.startActivity(intent);
@@ -96,7 +96,7 @@ public class SongsContextMenuClickListener implements SongContextMenuListener {
         if (item.getDescription().getExtras() == null || !item.getDescription().getExtras().containsKey(Keys.EXTRA_ARTIST_ID))
             return;
         Intent intent = new Intent(context, ListExpandActivity.class);
-        intent.putExtra(Keys.EXTRA_PARENT_ID, item.getDescription().getExtras().getString(Keys.EXTRA_ARTIST_ID));
+        intent.putExtra(Keys.EXTRA_PARENT_ID, "ARTISTS/" + item.getDescription().getExtras().getString(Keys.EXTRA_ARTIST_ID));
         intent.putExtra(Keys.EXTRA_TYPE, "artist");
         intent.putExtra(Keys.EXTRA_TITLE, item.getDescription().getSubtitle());
         context.startActivity(intent);
@@ -110,10 +110,12 @@ public class SongsContextMenuClickListener implements SongContextMenuListener {
         Intent intent = new Intent(Intent.ACTION_SEND);
         intent.setType("audio/*");
         intent.putExtra(Intent.EXTRA_STREAM, contentUri);
+        intent.putExtra(Intent.EXTRA_TITLE,item.getDescription().getTitle());
         intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
         context.startActivity(Intent.createChooser(intent, "Share song via"));
     }
 
+    @SuppressWarnings("deprecation")
     @Override
     public boolean deleteFromStorage(MediaBrowserCompat.MediaItem item) {
         String[] parts = item.getMediaId().split("[/|]");

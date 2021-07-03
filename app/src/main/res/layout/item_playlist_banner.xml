@@ -9,7 +9,7 @@
 
     <ImageView
         android:id="@+id/playlistArt"
-        android:layout_width="129dp"
+        android:layout_width="130dp"
         android:layout_height="130dp"
         android:layout_marginStart="8dp"
         android:layout_marginTop="8dp"
@@ -63,16 +63,14 @@
         android:id="@+id/itemCount"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
-        android:layout_marginStart="8dp"
         android:background="#5B000000"
-        android:textColor="#ffffff"
         android:gravity="center"
         android:text="20 Tracks"
+        android:textColor="#ffffff"
         android:textStyle="italic"
-        app:layout_constraintEnd_toStartOf="@+id/guideline35p"
-        app:layout_constraintStart_toStartOf="parent"
-        tools:layout_editor_absoluteY="119dp"
-        app:layout_constraintBottom_toBottomOf="@+id/playlistArt"/>
+        app:layout_constraintBottom_toBottomOf="@+id/playlistArt"
+        app:layout_constraintEnd_toEndOf="@+id/playlistArt"
+        app:layout_constraintStart_toStartOf="@+id/playlistArt" />
 
 
 </androidx.constraintlayout.widget.ConstraintLayout>

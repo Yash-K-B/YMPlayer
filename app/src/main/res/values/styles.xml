@@ -26,7 +26,8 @@
         <item name="colorPrimary">@color/colorPrimary</item>
         <item name="colorPrimaryDark">#00168E</item>
         <item name="colorAccent">@color/colorAccent</item>
-        <item name="android:windowBackground">@drawable/music_bg</item>
+        <item name="android:windowBackground">@drawable/splash_bg</item>
+        <item name="android:navigationBarColor">#0A0069</item>
     </style>
 
     <style name="windowAnimationTransition">
@@ -45,6 +46,7 @@
         <item name="overlayTheme">@style/ThemeOverlay.AppCompat.Light</item>
         <item name="backgroundHeadingTextColor">?attr/colorPrimary</item>
         <item name="android:windowActivityTransitions">true</item>
+        <item name="android:navigationBarColor">@android:color/white</item>
     </style>
 
     <!--    Light Child Themes-->
@@ -78,6 +80,7 @@
         <item name="overlayTheme">@style/ThemeOverlay.AppCompat.Dark</item>
         <item name="backgroundHeadingTextColor">#FFD600</item>
         <item name="android:windowActivityTransitions">true</item>
+        <item name="android:navigationBarColor">#272727</item>
     </style>
 
     <!--    Dark Child Themes-->
@@ -110,7 +113,7 @@
         <item name="overlayTheme">@style/ThemeOverlay.AppCompat.Dark</item>
         <item name="backgroundHeadingTextColor">#FFD600</item>
         <item name="android:windowActivityTransitions">true</item>
-        <!--        <item name="android:background">#000000</item>-->
+        <item name="android:navigationBarColor">@android:color/black</item>
     </style>
     <!--    AMOLED Themes-->
     <style name="YTheme.AMOLED.Red.NoActionBar" parent="YTheme.AMOLED">

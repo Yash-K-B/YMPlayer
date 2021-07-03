@@ -1,5 +1,7 @@
 package com.yash.ymplayer;
 
+import android.annotation.SuppressLint;
+import android.app.DownloadManager;
 import android.app.NotificationManager;
 import android.app.PendingIntent;
 import android.app.Service;
@@ -62,7 +64,9 @@ import java.net.URL;
 import java.nio.ByteBuffer;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
+import java.util.LinkedList;
 import java.util.List;
+import java.util.PriorityQueue;
 import java.util.Queue;
 
 public class DownloadService extends Service {
@@ -74,6 +78,7 @@ public class DownloadService extends Service {
     @Override
     public void onCreate() {
         super.onCreate();
+        LogHelper.d(TAG, "onCreate: ");
         downloader = new Downloader(2);
         preferences = this.getSharedPreferences(Keys.SHARED_PREFERENCES.DOWNLOADS, MODE_PRIVATE);
     }
@@ -86,9 +91,15 @@ public class DownloadService extends Service {
 
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
+        LogHelper.d(TAG, "onStartCommand: ");
         if (intent == null) return START_NOT_STICKY;
         if (intent.hasExtra(Keys.DownloadManager.EXTRA_ACTION) && ("pause").equals(intent.getStringExtra(Keys.DownloadManager.EXTRA_ACTION))) {
             downloader.pause(intent.getStringExtra(Keys.DownloadManager.EXTRA_VIDEO_ID));
+        } else if (intent.hasExtra(Keys.DownloadManager.EXTRA_ACTION) && ("play").equals(intent.getStringExtra(Keys.DownloadManager.EXTRA_ACTION))) {
+            String videoId = intent.getStringExtra(Keys.DownloadManager.EXTRA_VIDEO_ID);
+            int taskId = intent.getIntExtra(Keys.DownloadManager.EXTRA_TASK_ID,100);
+            int bitrate = intent.getIntExtra(Keys.DownloadManager.EXTRA_BITRATE,128);
+            downloader.resume(new DownloaderThread(videoId,bitrate,taskId));
         } else {
 
             if (!intent.hasExtra(Keys.VIDEO_ID) || !intent.hasExtra(Keys.EXTRA_DOWNLOAD_QUALITY))
@@ -97,25 +108,38 @@ public class DownloadService extends Service {
             int bitrate = intent.getIntExtra(Keys.EXTRA_DOWNLOAD_QUALITY, 128);
             downloader.enqueue(new DownloaderThread(videoId, bitrate));
         }
-        return super.onStartCommand(intent, flags, startId);
+        return START_NOT_STICKY;
     }
 
     class Downloader {
         Queue<DownloaderThread> taskQueue;
-        List<DownloaderThread> runningTasks;
+        LinkedList<DownloaderThread> runningTasks;
         int runningTaskCount = 0;
         int maxRunningTasks;
+        Queue<Integer> taskIds;
 
         public Downloader(int maxRunningTasks) {
             this.maxRunningTasks = maxRunningTasks;
             taskQueue = new ArrayDeque<>();
-            runningTasks = new ArrayList<>();
+            runningTasks = new LinkedList<>();
+            taskIds = new ArrayDeque<>(100);
+            for (int i = 100; i < 200; i++)
+                taskIds.add(i);
         }
 
         void enqueue(DownloaderThread task) {
             LogHelper.d(TAG, "enqueue: ");
+            Integer id = taskIds.poll();
+            if (id == null) return;
             task.setCallbackObject(this);
+            task.setTaskId(id);
             taskQueue.add(task);
+            execute();
+        }
+
+        void resume(DownloaderThread thread){
+            thread.setCallbackObject(this);
+            taskQueue.add(thread);
             execute();
         }
 
@@ -123,14 +147,15 @@ public class DownloadService extends Service {
             LogHelper.d(TAG, "execute: ");
             if (runningTaskCount == maxRunningTasks) return;
             if (taskQueue.isEmpty()) return;
-            DownloaderThread thread = taskQueue.remove();
+            DownloaderThread thread = taskQueue.poll();
             runningTasks.add(thread);
             runningTaskCount++;
             LogHelper.d(TAG, "execute:  running task videoId: " + thread.getVideoId());
             thread.start();
         }
 
-        void taskFinished(String videoId) {
+        void taskFinished(String videoId, int taskId) {
+            taskIds.add(taskId);
             runningTaskCount--;
             LogHelper.d(TAG, "taskFinished videoId: " + videoId);
             if (!taskQueue.isEmpty()) execute();
@@ -141,12 +166,10 @@ public class DownloadService extends Service {
             for (int i = 0; i < runningTasks.size(); i++) {
                 if (runningTasks.get(i).getVideoId().equals(videoId)) {
                     DownloaderThread task = runningTasks.remove(i);
-                    task.notificationBuilder.setContentText("Paused");
-                    task.notificationBuilder.setOngoing(false);
-                    task.notifyProgressPaused();
                     task.interrupt();
-                    LogHelper.d(TAG, "Task paused");
+                    task.notifyProgressPaused();
 
+                    LogHelper.d(TAG, "Task paused");
                     execute();
 
                 }
@@ -161,6 +184,7 @@ public class DownloadService extends Service {
         Downloader downloader;
         int bitrate = 128;
         int taskId;
+        boolean isTerminate;
         NotificationManager manager;
         Handler handler = new Handler(Looper.getMainLooper());
 
@@ -176,8 +200,19 @@ public class DownloadService extends Service {
             manager = (NotificationManager) getSystemService(NOTIFICATION_SERVICE);
         }
 
+        public DownloaderThread(String videoId, int bitrate,int taskId) {
+            this.videoId = videoId;
+            this.bitrate = bitrate;
+            this.taskId = taskId;
+            manager = (NotificationManager) getSystemService(NOTIFICATION_SERVICE);
+        }
+
         void setCallbackObject(Downloader downloader) {
             this.downloader = downloader;
+        }
+
+        void setTaskId(int taskId) {
+            this.taskId = taskId;
         }
 
         String getVideoId() {
@@ -206,7 +241,7 @@ public class DownloadService extends Service {
                         .setContentTitle(videoDetails.getVideoData().getTitle())
                         .setContentText(videoDetails.getVideoData().getAuthor())
                         .setProgress(100, 0, false)
-                        .setContentIntent(dFilePendingIntent);
+                        .addAction(R.drawable.icon_pause, "PAUSE", dFilePendingIntent);
                 LogHelper.d(TAG, "onSuccess: " + videoDetails.getVideoData());
 
 
@@ -321,12 +356,12 @@ public class DownloadService extends Service {
                     mediaExtractor.release();
 
                     File directory;
-                    if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q) {
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                        directory = getExternalFilesDir(Environment.DIRECTORY_MUSIC);
+                    } else {
                         if (!Environment.getExternalStoragePublicDirectory("YMPlayer").exists()) // Deprecated
                             Environment.getExternalStoragePublicDirectory("YMPlayer").mkdirs();
                         directory = Environment.getExternalStoragePublicDirectory("YMPlayer");
-                    } else {
-                        directory = getExternalFilesDir(Environment.DIRECTORY_MUSIC);
                     }
 
 
@@ -370,7 +405,7 @@ public class DownloadService extends Service {
                                     @Override
                                     public void onScanCompleted(String path, Uri uri) {
                                         LogHelper.d(TAG, "onScanCompleted: ");
-                                        addToDownloads(videoDetails,uri,fileLength,bitrate);
+                                        addToDownloads(videoDetails, uri, fileLength, bitrate);
                                     }
                                 });
                     } else {
@@ -404,7 +439,7 @@ public class DownloadService extends Service {
                             while ((byteCount = fin.read(bytes)) != -1) {
                                 stream.write(bytes, 0, byteCount);
                             }
-                            addToDownloads(videoDetails,uri,fileLength,bitrate);
+                            addToDownloads(videoDetails, uri, fileLength, bitrate);
                             if (outFile.exists())
                                 outFile.delete();
                             fin.close();
@@ -490,7 +525,6 @@ public class DownloadService extends Service {
                     notificationBuilder.setContentText("Completed");
                     notificationBuilder.setLargeIcon(BitmapFactory.decodeByteArray(image, 0, image.length));
                     notifyProgressComplete();
-                    downloader.taskFinished(videoId);
 
                 } catch (IOException | InvalidDataException | UnsupportedTagException | NotSupportedException e) {
                     e.printStackTrace();
@@ -503,11 +537,15 @@ public class DownloadService extends Service {
                 });
             }
 
+            downloader.taskFinished(videoId, taskId);
+
         }
 
         long prevTime = -1, currentTime;
 
         void notifyProgress(int progress) {
+            LogHelper.d(TAG, "notifyProgress: ");
+            if (isTerminate) return;
             currentTime = System.currentTimeMillis();
             if (prevTime == -1) prevTime = System.currentTimeMillis();
             else if (currentTime - prevTime < 250) return;
@@ -519,6 +557,8 @@ public class DownloadService extends Service {
         }
 
         void notifyIndeterminateProgress() {
+            LogHelper.d(TAG, "notifyIndeterminateProgress: ");
+            if (isTerminate) return;
             notificationBuilder.setContentInfo("");
             notificationBuilder.setProgress(0, 0, true);
             notificationBuilder.setOngoing(true);
@@ -526,7 +566,9 @@ public class DownloadService extends Service {
         }
 
         void notifyProgressComplete() {
+            LogHelper.d(TAG, "notifyProgressComplete: ");
             prevTime = -1;
+            notificationBuilder.mActions.clear();
             notificationBuilder.setContentInfo("");
             notificationBuilder.setSmallIcon(R.drawable.ic_done_24);
             notificationBuilder.setProgress(0, 0, false);
@@ -534,12 +576,23 @@ public class DownloadService extends Service {
             manager.notify(taskId, notificationBuilder.build());
         }
 
+        @SuppressLint("RestrictedApi")
         public void notifyProgressPaused() {
+            LogHelper.d(TAG, "notifyProgressPaused: ");
+            isTerminate = true;
             prevTime = -1;
+            Intent downloadFileIntent = new Intent(DownloadService.this, DownloadService.class);
+            downloadFileIntent.putExtra(Keys.DownloadManager.EXTRA_ACTION, "play");
+            downloadFileIntent.putExtra(Keys.DownloadManager.EXTRA_VIDEO_ID, videoId);
+            downloadFileIntent.putExtra(Keys.DownloadManager.EXTRA_TASK_ID, taskId);
+            downloadFileIntent.putExtra(Keys.DownloadManager.EXTRA_BITRATE, bitrate);
+            PendingIntent dFilePendingIntent = PendingIntent.getService(DownloadService.this, 10023, downloadFileIntent, PendingIntent.FLAG_UPDATE_CURRENT);
+            notificationBuilder.mActions.set(0, new NotificationCompat.Action(R.drawable.icon_play, "Play", dFilePendingIntent));
+            notificationBuilder.setContentText("Paused");
+            notificationBuilder.setOngoing(false);
             notificationBuilder.setContentInfo("");
             notificationBuilder.setSmallIcon(R.drawable.ic_pause_24);
             notificationBuilder.setProgress(0, 0, false);
-            notificationBuilder.setOngoing(false);
             manager.notify(taskId, notificationBuilder.build());
         }
     }

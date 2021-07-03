@@ -5,6 +5,8 @@ import android.annotation.SuppressLint;
 import android.content.Context;
 import android.content.SharedPreferences;
 import android.graphics.Color;
+import android.graphics.ColorFilter;
+import android.graphics.ColorMatrixColorFilter;
 import android.graphics.Paint;
 import android.graphics.PorterDuff;
 import android.graphics.PorterDuffColorFilter;
@@ -254,7 +256,7 @@ public class DialogEqualizerFragment extends DialogFragment {
 
 
         presetSpinner = view.findViewById(R.id.equalizer_preset_spinner);
-        presetSpinner.getBackground().setColorFilter(textColor, PorterDuff.Mode.SRC_ATOP);
+        presetSpinner.getBackground().setColorFilter(new PorterDuffColorFilter(textColor, PorterDuff.Mode.SRC_ATOP));
 
         chart = view.findViewById(R.id.lineChart);
         Paint paint = new Paint();

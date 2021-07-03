@@ -132,7 +132,7 @@ public class Playlists extends Fragment implements PlaylistUpdateListener {
                             @Override
                             public void run() {
                                 adapter.notifyDataSetChanged();
-                                playlistsBinding.noPlaylist.setVisibility((songs.size() == 0) ? View.VISIBLE : View.INVISIBLE);
+                                playlistsBinding.noPlaylist.setVisibility((Playlists.this.songs.size() == 0) ? View.VISIBLE : View.INVISIBLE);
                                 playlistsBinding.playlistRefresh.setRefreshing(false);
                                 playlistsBinding.loading.setVisibility(View.INVISIBLE);
                             }

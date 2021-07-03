@@ -4,6 +4,7 @@ import android.content.ComponentName;
 import android.graphics.Color;
 import android.os.Bundle;
 import android.os.Handler;
+import android.os.Looper;
 import android.os.RemoteException;
 import android.os.ResultReceiver;
 import android.support.v4.media.MediaBrowserCompat;
@@ -29,7 +30,7 @@ public class EqualizerActivity extends BaseActivity {
         super.onCreate(savedInstanceState);
         layoutBinding = FragmentMainBinding.inflate(getLayoutInflater());
         setContentView(layoutBinding.getRoot());
-        handler = new Handler();
+        handler = new Handler(Looper.getMainLooper());
         mediaBrowser = new MediaBrowserCompat(this, new ComponentName(this, PlayerService.class), connectionCallback, null);
         mediaBrowser.connect();
     }

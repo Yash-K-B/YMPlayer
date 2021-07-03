@@ -9,11 +9,8 @@ import android.os.Handler;
 import android.os.Looper;
 import android.provider.MediaStore;
 import android.support.v4.media.MediaBrowserCompat;
-import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.ViewGroup;
-import android.widget.Filter;
-import android.widget.Filterable;
 import android.widget.PopupMenu;
 
 import androidx.annotation.NonNull;
@@ -30,7 +27,6 @@ import com.yash.ymplayer.ui.main.LocalViewModel;
 import com.yash.ymplayer.ui.main.SongContextMenuListener;
 
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;

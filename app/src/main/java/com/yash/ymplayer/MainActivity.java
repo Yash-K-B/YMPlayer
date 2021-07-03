@@ -118,6 +118,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
+import java.util.regex.Pattern;
 
 
 public class MainActivity extends BaseActivity implements ActivityActionProvider {
@@ -153,6 +154,7 @@ public class MainActivity extends BaseActivity implements ActivityActionProvider
     boolean isQueueItemArranging;
     String queueTitle;
     DialogEqualizerFragment dialogEqualizerFragment;
+    Pattern offlineAudioPattern;
 
 
     @Override
@@ -166,9 +168,10 @@ public class MainActivity extends BaseActivity implements ActivityActionProvider
         bottomSheetBehavior = BottomSheetBehavior.from(activityMainBinding.playlists);
         preferences = getSharedPreferences(STATE_PREF, MODE_PRIVATE);
         defaultSharedPreferences = PreferenceManager.getDefaultSharedPreferences(this);
+        offlineAudioPattern = Pattern.compile("[0-9]+");
 
 
-        //Display Exception
+        //Display Exception (If any)
         if (defaultSharedPreferences.getBoolean(Keys.PREFERENCE_KEYS.IS_EXCEPTION, false)) {
             ScrollView scrollView = new ScrollView(this);
             scrollView.setLayoutParams(new ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
@@ -788,13 +791,13 @@ public class MainActivity extends BaseActivity implements ActivityActionProvider
 
     @Override
     public void sendActionToMediaSession(String action, Bundle extras) {
-        if(mediaController == null) return;
+        if (mediaController == null) return;
         mediaController.getTransportControls().sendCustomAction(action, extras);
     }
 
     @Override
     public void interactWithMediaSession(Callback callback) {
-        if(mediaController == null) return;
+        if (mediaController == null) return;
         callback.trigger(mediaController);
     }
 
@@ -865,17 +868,21 @@ public class MainActivity extends BaseActivity implements ActivityActionProvider
     View.OnClickListener shareSongListener = new View.OnClickListener() {
         @Override
         public void onClick(View v) {
-            try {
-                String[] parts = currentMediaId.split("[|/]");
+
+            String[] parts = currentMediaId.split("[|/]");
+            if (offlineAudioPattern.matcher(parts[parts.length - 1]).matches()) {
                 long mediaId = Long.parseLong(parts[parts.length - 1]);
                 Uri contentUri = ContentUris.withAppendedId(MediaStore.Audio.Media.EXTERNAL_CONTENT_URI, mediaId);
                 Intent intent = new Intent(Intent.ACTION_SEND);
                 intent.setType("audio/*");
                 intent.putExtra(Intent.EXTRA_STREAM, contentUri);
                 intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
-                MainActivity.this.startActivity(Intent.createChooser(intent, "Share Song via"));
-            } catch (Exception e) {
-                e.printStackTrace();
+                startActivity(Intent.createChooser(intent, "Share Song via"));
+            } else {
+                String baseUrl = "https://youtu.be/";
+                Intent shareIntent = new Intent(Intent.ACTION_VIEW);
+                shareIntent.setData(Uri.parse(baseUrl + currentMediaId));
+                startActivity(shareIntent);
             }
 
         }

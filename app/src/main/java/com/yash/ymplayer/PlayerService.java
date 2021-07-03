@@ -135,7 +135,8 @@ public class PlayerService extends MediaBrowserServiceCompat implements PlayerHe
     boolean isQueueChanged;
     UriCache uriCache;
     DownloadManager downloadManager;
-    ResultReceiver resultReceiver;
+
+    List<ResultReceiver> resultReceivers;
 
     private int audioSessionId;
 
@@ -203,6 +204,7 @@ public class PlayerService extends MediaBrowserServiceCompat implements PlayerHe
         audioManager = (AudioManager) getSystemService(AUDIO_SERVICE);
         mediaSources = new ConcatenatingMediaSource();
         mediaIdLists = new ArrayList<>();
+        resultReceivers = new ArrayList<>();
         isSeek = false;
         repeatMode = preferences.getInt(Keys.REPEAT_MODE, 0);
         isShuffleModeEnabled = preferences.getBoolean(Keys.SHUFFLE_MODE, false);
@@ -587,11 +589,11 @@ public class PlayerService extends MediaBrowserServiceCompat implements PlayerHe
         public void onCommand(String command, Bundle extras, ResultReceiver cb) {
             switch (command) {
                 case Keys.COMMAND.AUDIO_SESSION_ID:
-                    resultReceiver = cb;
+                    resultReceivers.add(cb);
                     if (player != null) {
                         Bundle extra = new Bundle();
                         extra.putInt(Keys.AUDIO_SESSION_ID, player.getAudioSessionId());
-                        resultReceiver.send(1001, extra);
+                        cb.send(1001, extra);
                     }
                     break;
                 case Keys.COMMAND.GET_AUDIO_SESSION_ID:
@@ -602,7 +604,7 @@ public class PlayerService extends MediaBrowserServiceCompat implements PlayerHe
                     cb.send(1001, extra);
                     break;
                 case Keys.COMMAND.ON_AUDIO_SESSION_ID_CHANGE:
-                    resultReceiver = cb;
+                    resultReceivers.add(cb);
                     break;
                 default:
             }
@@ -1433,8 +1435,10 @@ public class PlayerService extends MediaBrowserServiceCompat implements PlayerHe
                     PlayerService.this.audioSessionId = audioSessionId;
                     Bundle extras = new Bundle();
                     extras.putInt(Keys.AUDIO_SESSION_ID, audioSessionId);
-                    if (resultReceiver != null)
-                        resultReceiver.send(1001, extras);
+                    if(!resultReceivers.isEmpty()){
+                        for(ResultReceiver rr: resultReceivers)
+                            rr.send(1001,extras);
+                    }
                     loadEqualizer(audioSessionId);
                 }
             });
