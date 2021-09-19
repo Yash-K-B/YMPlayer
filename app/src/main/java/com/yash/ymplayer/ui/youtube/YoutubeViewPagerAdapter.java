@@ -7,8 +7,12 @@ import androidx.lifecycle.Lifecycle;
 import androidx.viewpager2.adapter.FragmentStateAdapter;
 
 import com.yash.ymplayer.ui.youtube.alltimehit.AllTimeHit;
+import com.yash.ymplayer.ui.youtube.discover.DiscoverNew;
+import com.yash.ymplayer.ui.youtube.magic90s.Magic90s;
 import com.yash.ymplayer.ui.youtube.todayspopular.PopularHit;
 import com.yash.ymplayer.ui.youtube.toptracks.TopTracks;
+
+import static com.yash.ymplayer.ui.youtube.YoutubeLibrary.TAB_TITLES;
 
 public class YoutubeViewPagerAdapter extends FragmentStateAdapter {
 
@@ -25,7 +29,13 @@ public class YoutubeViewPagerAdapter extends FragmentStateAdapter {
                 fragment = new PopularHit();
                 break;
             case 2:
+                fragment = new DiscoverNew();
+                break;
+            case 3:
                 fragment = new AllTimeHit();
+                break;
+            case 4:
+                fragment = new Magic90s();
                 break;
             default:
                 fragment = new TopTracks();
@@ -35,6 +45,6 @@ public class YoutubeViewPagerAdapter extends FragmentStateAdapter {
 
     @Override
     public int getItemCount() {
-        return 3;
+        return TAB_TITLES.length;
     }
 }

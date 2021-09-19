@@ -17,7 +17,7 @@ import com.yash.ymplayer.databinding.FragmentYoutubeLibraryBinding;
 
 public class YoutubeLibrary extends Fragment {
     FragmentYoutubeLibraryBinding youtubeLibraryBinding;
-    public static final String[] TAB_TITLES = {"TOP TRACKS","TODAY'S POPULAR","ALL TIME HIT"};
+    public static final String[] TAB_TITLES = {"TOP TRACKS","TODAY'S POPULAR","DISCOVER NEW","ALL TIME HIT","90s MAGIC"};
     public YoutubeLibrary() {
         // Required empty public constructor
     }
@@ -37,11 +37,6 @@ public class YoutubeLibrary extends Fragment {
         ((ActivityActionProvider)getActivity()).setCustomToolbar(youtubeLibraryBinding.youtubeToolbar,"Youtube Library");
         YoutubeViewPagerAdapter adapter = new YoutubeViewPagerAdapter(getChildFragmentManager(),getLifecycle());
         youtubeLibraryBinding.youtubeViewPager.setAdapter(adapter);
-        new TabLayoutMediator(youtubeLibraryBinding.tabs, youtubeLibraryBinding.youtubeViewPager, new TabLayoutMediator.TabConfigurationStrategy() {
-            @Override
-            public void onConfigureTab(@NonNull TabLayout.Tab tab, int position) {
-                tab.setText(TAB_TITLES[position]);
-            }
-        }).attach();
+        new TabLayoutMediator(youtubeLibraryBinding.tabs, youtubeLibraryBinding.youtubeViewPager, (tab, position) -> tab.setText(TAB_TITLES[position])).attach();
     }
 }

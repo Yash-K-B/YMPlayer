@@ -5,7 +5,10 @@ import android.net.Uri;
 import android.os.Bundle;
 import android.support.v4.media.MediaDescriptionCompat;
 import android.support.v4.media.session.MediaSessionCompat;
+import android.text.TextUtils;
 import android.util.Log;
+
+import androidx.room.util.StringUtil;
 
 import com.android.volley.Cache;
 import com.android.volley.NetworkResponse;
@@ -66,7 +69,7 @@ public class OnlineYoutubeRepository {
     public void topTracks(String pageToken, TopTracksLoadedCallback callback) {
         this.callback = callback;
         LogHelper.d(TAG, "topTracks: Extraction");
-        String url = "https://www.googleapis.com/youtube/v3/playlistItems?part=snippet&fields=prevPageToken,nextPageToken,items(snippet(title,thumbnails(default,medium,high),channelTitle,resourceId))&playlistId=PLzri3KLjNzBZLBZFFm6AnC41QNcnJfPfD&maxResults=50&key=AIzaSyAdfvLnL55J-5dOwiL_IDF5PydkF3r2jQA";
+        String url = "https://www.googleapis.com/youtube/v3/playlistItems?part=snippet&fields=prevPageToken,nextPageToken,items(snippet(title,thumbnails(default,medium,high),channelTitle,resourceId))&playlistId=PL4fGSI1pDJn40WjZ6utkIuj2rNg-7iGsq&maxResults=50&key=AIzaSyAdfvLnL55J-5dOwiL_IDF5PydkF3r2jQA";
         if (!pageToken.equals("-1"))
             url += "&pageToken=" + pageToken;
         if (topTracksCache != null && topTracksCache.containsKey(pageToken)) {
@@ -255,9 +258,10 @@ public class OnlineYoutubeRepository {
     }
 
 
+
     /*                 --------------------------------------------------------                             */
     public void getPopularPlaylist(PlaylistsLoadedCallback callback) {
-        String url = "https://www.googleapis.com/youtube/v3/playlists?part=snippet,contentDetails&fields=items(id,snippet(localized,thumbnails(medium,standard)),contentDetails)&maxResults=50&id=RDCLAK5uy_ksEjgm3H_7zOJ_RHzRjN1wY-_FFcs7aAU,RDCLAK5uy_n9Fbdw7e6ap-98_A-8JYBmPv64v-Uaq1g,RDCLAK5uy_kmPRjHDECIcuVwnKsx2Ng7fyNgFKWNJFs,RDCLAK5uy_lBGRuQnsG37Akr1CY4SxL0VWFbPrbO4gs,RDCLAK5uy_kuo_NioExeUmw07dFf8BzQ64DFFTlgE7Q,RDCLAK5uy_mOvRWCE7v4C98UgkSVh5FTlD3osGjolas,RDCLAK5uy_nTbyVypdXPQd00z15bTWjZr7pG-26yyQ4,RDCLAK5uy_n17q7_2dwfDqWckpccDyTTkZ-g03jXuII,RDCLAK5uy_kLWIr9gv1XLlPbaDS965-Db4TrBoUTxQ8,RDCLAK5uy_lyVnWI5JnuwKJiuE-n1x-Un0mj9WlEyZw,RDCLAK5uy_lJ8xZWiZj2GCw7MArjakb6b0zfvqwldps,RDCLAK5uy_mu-BhJj3yO1OXEMzahs_aJVtNWJwAwFEE&key=AIzaSyAdfvLnL55J-5dOwiL_IDF5PydkF3r2jQA";
+        String url = "https://www.googleapis.com/youtube/v3/playlists?part=snippet,contentDetails&fields=items(id,snippet(localized,thumbnails(medium,standard)),contentDetails)&maxResults=50&id=RDCLAK5uy_n9Fbdw7e6ap-98_A-8JYBmPv64v-Uaq1g,RDCLAK5uy_kuo_NioExeUmw07dFf8BzQ64DFFTlgE7Q,RDCLAK5uy_mOvRWCE7v4C98UgkSVh5FTlD3osGjolas,RDCLAK5uy_lyVnWI5JnuwKJiuE-n1x-Un0mj9WlEyZw,RDCLAK5uy_nTbyVypdXPQd00z15bTWjZr7pG-26yyQ4,RDCLAK5uy_lj-zBExVYl7YN_NxXboDIh4A-wKGfgzNY,RDCLAK5uy_n17q7_2dwfDqWckpccDyTTkZ-g03jXuII,RDCLAK5uy_nhLiD_PquxQnzA35YpoaaAUv2ikZuYFgw,RDCLAK5uy_nT-zkEpc2x7AVVP0XV9JvHSfkFsOtGMR8,RDCLAK5uy_mPBQePobkU9UZ100tOTfvTCdwWOHoiiPo,RDCLAK5uy_kjNBBWqyQ_Cy14B0P4xrcKgd39CRjXXKk&key=AIzaSyAdfvLnL55J-5dOwiL_IDF5PydkF3r2jQA";
         JsonObjectRequest request = new JsonObjectRequest(url, null, new Response.Listener<JSONObject>() {
             @Override
             public void onResponse(JSONObject response) {
@@ -362,7 +366,7 @@ public class OnlineYoutubeRepository {
     }
 
 
-    public void getTracks(String id,String desc, String pageToken, TracksLoadedCallback callback) {
+    public void getTracks(String id, String desc, String pageToken, TracksLoadedCallback callback) {
         LogHelper.d(TAG, "topTracks: Extraction");
         String url = "https://www.googleapis.com/youtube/v3/playlistItems?part=snippet&fields=prevPageToken,nextPageToken,items(snippet(title,thumbnails(default,medium,high),channelTitle,resourceId))&playlistId=" + id + "&maxResults=50&key=AIzaSyAdfvLnL55J-5dOwiL_IDF5PydkF3r2jQA";
         if (!pageToken.equals("-1"))
@@ -498,7 +502,6 @@ public class OnlineYoutubeRepository {
         requestQueue.add(jsonObjectRequest);
     }
 
-
     public interface TracksLoadedCallback {
         void onLoaded(List<YoutubeSong> songs);
 
@@ -536,6 +539,57 @@ public class OnlineYoutubeRepository {
 
     }
 
+
+
+
+
+    /*     ---- Generic Playlists Details ----- */
+
+    public void getPlaylistsDetails(List<String> playlistIds, PlaylistsLoadedCallback callback) {
+        String url = "https://www.googleapis.com/youtube/v3/playlists?part=snippet,contentDetails&fields=items(id,snippet(localized,thumbnails(medium,standard)),contentDetails)&maxResults=50&id=" + TextUtils.join(",", playlistIds) + "&key=AIzaSyAdfvLnL55J-5dOwiL_IDF5PydkF3r2jQA";
+        JsonObjectRequest request = new JsonObjectRequest(url, null, response -> {
+            Gson gson = new Gson();
+            PopularPlaylists playlists = gson.fromJson(response.toString(), PopularPlaylists.class);
+            callback.onLoaded(playlists.getItems());
+        }, error -> {
+            callback.onError();
+        }) {
+            @Override
+            protected Response<JSONObject> parseNetworkResponse(NetworkResponse response) {
+                try {
+                    Cache.Entry cacheEntry = HttpHeaderParser.parseCacheHeaders(response);
+                    if (cacheEntry == null) {
+                        cacheEntry = new Cache.Entry();
+                    }
+                    final long cacheHitButRefreshed = 18 * 60 * 60 * 1000; // in 18 hour cache will be hit, but also refreshed on background
+                    final long cacheExpired = 24 * 60 * 60 * 1000; // in 1 days this cache entry expires completely
+                    long now = System.currentTimeMillis();
+                    final long softExpire = now + cacheHitButRefreshed;
+                    final long ttl = now + cacheExpired;
+                    cacheEntry.data = response.data;
+                    cacheEntry.softTtl = softExpire;
+                    cacheEntry.ttl = ttl;
+                    String headerValue;
+                    headerValue = response.headers.get("Date");
+                    if (headerValue != null) {
+                        cacheEntry.serverDate = HttpHeaderParser.parseDateAsEpoch(headerValue);
+                    }
+                    headerValue = response.headers.get("Last-Modified");
+                    if (headerValue != null) {
+                        cacheEntry.lastModified = HttpHeaderParser.parseDateAsEpoch(headerValue);
+                    }
+                    cacheEntry.responseHeaders = response.headers;
+                    final String jsonString = new String(response.data,
+                            HttpHeaderParser.parseCharset(response.headers));
+                    return Response.success(new JSONObject(jsonString), cacheEntry);
+                } catch (UnsupportedEncodingException | JSONException e) {
+                    return Response.error(new ParseError(e));
+                }
+            }
+        };
+        requestQueue.add(request);
+
+    }
 
 }
 
