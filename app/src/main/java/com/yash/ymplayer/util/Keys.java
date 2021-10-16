@@ -61,6 +61,7 @@ public interface Keys {
         String PLAYBACK_QUALITY = "playback_quality";
         String IS_EXCEPTION = "isException";
         String EXCEPTION = "exception";
+        String LOUDNESS_GAIN = "loudness_gain";
     }
 
     interface PLAYLISTS {

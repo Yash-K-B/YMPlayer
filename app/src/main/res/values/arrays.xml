@@ -45,4 +45,24 @@
         <item>3</item>
     </string-array>
 
+    <string-array name="loudness_gain">
+        <item>1dB</item>
+        <item>5dB</item>
+        <item>10dB</item>
+        <item>15dB</item>
+        <item>20dB</item>
+        <item>25dB</item>
+        <item>30dB</item>
+    </string-array>
+
+    <string-array name="loudness_gain_values">
+        <item>100</item>
+        <item>500</item>
+        <item>1000</item>
+        <item>1500</item>
+        <item>2000</item>
+        <item>2500</item>
+        <item>3000</item>
+    </string-array>
+
 </resources>

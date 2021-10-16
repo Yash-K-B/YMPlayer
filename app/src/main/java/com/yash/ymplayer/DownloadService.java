@@ -365,11 +365,11 @@ public class DownloadService extends Service {
                     }
 
 
-                    File outFile = new File(directory, file_name + "-128Kbps.mp3");
+                    File outFile = new File(directory, file_name + "-"+bitrate+"Kbps.mp3");
                     int i = 0;
                     while (outFile.exists()) {
                         i++;
-                        outFile = new File(directory, file_name + "-" + i + "-128Kbps.mp3");
+                        outFile = new File(directory, file_name + "-" + i + "-"+bitrate+"Kbps.mp3");
                     }
 
                     //Tags
@@ -565,6 +565,7 @@ public class DownloadService extends Service {
             manager.notify(taskId, notificationBuilder.build());
         }
 
+        @SuppressLint("RestrictedApi")
         void notifyProgressComplete() {
             LogHelper.d(TAG, "notifyProgressComplete: ");
             prevTime = -1;

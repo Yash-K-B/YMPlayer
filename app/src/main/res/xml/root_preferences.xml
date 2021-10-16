@@ -63,6 +63,14 @@
             app:entryValues="@array/audio_quality_values"
             app:defaultValue="2"/>
 
+        <ListPreference
+            app:defaultValue="1000"
+            app:key="loudness_gain"
+            app:title="Loudness Gain"
+            app:entries="@array/loudness_gain"
+            app:entryValues="@array/loudness_gain_values"
+            app:useSimpleSummaryProvider="true" />
+
 
     </PreferenceCategory>
 

@@ -9,6 +9,7 @@ import androidx.annotation.NonNull;
 import androidx.preference.PreferenceManager;
 
 import android.util.Log;
+import android.widget.Toast;
 
 import androidx.annotation.Nullable;
 import androidx.preference.PreferenceFragmentCompat;
@@ -18,6 +19,8 @@ import com.yash.ymplayer.BaseActivity;
 import com.yash.ymplayer.MainActivity;
 import com.yash.ymplayer.R;
 import com.yash.logging.LogHelper;
+import com.yash.ymplayer.equaliser.Settings;
+import com.yash.ymplayer.util.EqualizerUtil;
 import com.yash.ymplayer.util.Keys;
 
 import java.security.Key;
@@ -78,9 +81,21 @@ public class SettingsFragment extends PreferenceFragmentCompat {
                     ((ActivityActionProvider) context).sendActionToMediaSession(Keys.Action.PLAYBACK_QUALITY_CHANGED, null);
                     break;
 
+                case Keys.PREFERENCE_KEYS.LOUDNESS_GAIN:
+                    try {
+                        int gain = Integer.parseInt(sharedPreferences.getString(Keys.PREFERENCE_KEYS.LOUDNESS_GAIN, "1000"));
+                        EqualizerUtil.getInstance(context).reloadLoudnessGain(gain);
+                    } catch (NumberFormatException e) {
+                        LogHelper.d(TAG, e.getMessage());
+                    }
+
+
+                    break;
+
                 default:
                     LogHelper.d(TAG, "No Action Preference Key. ");
             }
+
 
         }
     };

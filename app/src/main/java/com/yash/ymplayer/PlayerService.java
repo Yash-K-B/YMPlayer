@@ -1,5 +1,7 @@
 package com.yash.ymplayer;
 
+import static android.net.ConnectivityManager.NetworkCallback;
+
 import android.app.DownloadManager;
 import android.app.Notification;
 import android.app.PendingIntent;
@@ -55,7 +57,6 @@ import com.google.android.exoplayer2.Player;
 import com.google.android.exoplayer2.SimpleExoPlayer;
 import com.google.android.exoplayer2.Timeline;
 import com.google.android.exoplayer2.analytics.AnalyticsListener;
-import com.google.android.exoplayer2.ext.mediasession.MediaSessionConnector;
 import com.google.android.exoplayer2.extractor.DefaultExtractorsFactory;
 import com.google.android.exoplayer2.extractor.ExtractorsFactory;
 import com.google.android.exoplayer2.source.ConcatenatingMediaSource;
@@ -66,17 +67,14 @@ import com.google.android.exoplayer2.upstream.DataSpec;
 import com.google.android.exoplayer2.upstream.DefaultDataSourceFactory;
 import com.google.android.exoplayer2.upstream.ResolvingDataSource;
 import com.google.android.exoplayer2.util.Util;
-import com.google.gson.Gson;
 import com.yash.logging.LogHelper;
 import com.yash.ymplayer.data.UriCache;
-import com.yash.ymplayer.equaliser.EqualizerModel;
-import com.yash.ymplayer.equaliser.EqualizerSettings;
-import com.yash.ymplayer.equaliser.Settings;
 import com.yash.ymplayer.repository.OnlineYoutubeRepository;
 import com.yash.ymplayer.repository.Repository;
 import com.yash.ymplayer.storage.AudioProvider;
 import com.yash.ymplayer.storage.MediaItem;
 import com.yash.ymplayer.util.ConverterUtil;
+import com.yash.ymplayer.util.EqualizerUtil;
 import com.yash.ymplayer.util.Keys;
 import com.yash.ymplayer.util.Song;
 import com.yash.ymplayer.util.YoutubeSong;
@@ -87,17 +85,10 @@ import com.yash.youtube_extractor.models.VideoDetails;
 
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.Objects;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.regex.Pattern;
-
-import static android.net.ConnectivityManager.NetworkCallback;
-import static com.yash.ymplayer.equaliser.EqualizerFragment.PREF_KEY;
 
 public class PlayerService extends MediaBrowserServiceCompat implements PlayerHelper {
     public static final String STATE_PREF = "PlayerState";
@@ -365,6 +356,7 @@ public class PlayerService extends MediaBrowserServiceCompat implements PlayerHe
             player.release();
         mSession.release();
         stopForeground(true);
+        EqualizerUtil.getInstance(this).release();
         LogHelper.d(TAG, "onDestroy: Service Destroyed");
     }
 
@@ -738,17 +730,9 @@ public class PlayerService extends MediaBrowserServiceCompat implements PlayerHe
                     if (!extras.containsKey(Keys.EXTRA_EQUALIZER_STATE)) return;
                     boolean equalizerState = extras.getBoolean(Keys.EXTRA_EQUALIZER_STATE);
                     if (equalizerState) {
-                        if (audioSessionId != 0)
-                            loadEqualizer(audioSessionId);
+                        EqualizerUtil.getInstance(PlayerService.this).setEqualizerEnabled(true, audioSessionId);
                     } else {
-                        if (mEqualizer != null)
-                            mEqualizer.setEnabled(false);
-                        if (bassBoost != null)
-                            bassBoost.setEnabled(false);
-                        if (presetReverb != null)
-                            presetReverb.setEnabled(false);
-                        if (loudnessEnhancer != null)
-                            loudnessEnhancer.setEnabled(false);
+                       EqualizerUtil.getInstance(PlayerService.this).setEqualizerEnabled(false);
                     }
                     break;
 
@@ -1435,9 +1419,9 @@ public class PlayerService extends MediaBrowserServiceCompat implements PlayerHe
                     PlayerService.this.audioSessionId = audioSessionId;
                     Bundle extras = new Bundle();
                     extras.putInt(Keys.AUDIO_SESSION_ID, audioSessionId);
-                    if(!resultReceivers.isEmpty()){
-                        for(ResultReceiver rr: resultReceivers)
-                            rr.send(1001,extras);
+                    if (!resultReceivers.isEmpty()) {
+                        for (ResultReceiver rr : resultReceivers)
+                            rr.send(1001, extras);
                     }
                     loadEqualizer(audioSessionId);
                 }
@@ -1495,50 +1479,61 @@ public class PlayerService extends MediaBrowserServiceCompat implements PlayerHe
 
         if (!appPreferences.getBoolean(Keys.PREFERENCE_KEYS.BUILTIN_EQUALIZER, false)) return;
 
-        Gson gson = new Gson();
-        EqualizerSettings settings = gson.fromJson(appPreferences.getString(PREF_KEY, "{}"), EqualizerSettings.class);
+        EqualizerUtil.getInstance(this).updateAudioSessionId(audioSessionId);
 
-        EqualizerModel model = new EqualizerModel();
-        model.setBassStrength(settings.bassStrength);
-        model.setPresetPos(settings.presetPos);
-        model.setReverbPreset(settings.reverbPreset);
-        model.setSeekbarpos(settings.seekbarpos);
-        model.setLoudnessGain(settings.loudnessGain);
-
-        Settings.isEqualizerEnabled = settings.isEqualizerEnabled;
-        Settings.isEqualizerReloaded = true;
-        Settings.bassStrength = settings.bassStrength;
-        Settings.presetPos = settings.presetPos;
-        Settings.reverbPreset = settings.reverbPreset;
-        Settings.seekbarpos = settings.seekbarpos;
-        Settings.loudnessGain = settings.loudnessGain;
-        Settings.equalizerModel = model;
-
-        mEqualizer = new Equalizer(0, audioSessionId);
-
-        bassBoost = new BassBoost(0, audioSessionId);
-        bassBoost.setEnabled(Settings.isEqualizerEnabled);
-        BassBoost.Settings bassBoostSettingTemp = bassBoost.getProperties();
-        BassBoost.Settings bassBoostSetting = new BassBoost.Settings(bassBoostSettingTemp.toString());
-        bassBoostSetting.strength = Settings.equalizerModel.getBassStrength();
-        bassBoost.setProperties(bassBoostSetting);
-
-        presetReverb = new PresetReverb(0, audioSessionId);
-        presetReverb.setPreset(Settings.equalizerModel.getReverbPreset());
-        presetReverb.setEnabled(Settings.isEqualizerEnabled);
-
-        loudnessEnhancer = new LoudnessEnhancer(audioSessionId);
-        loudnessEnhancer.setTargetGain(Settings.equalizerModel.getLoudnessGain());
-        loudnessEnhancer.setEnabled(Settings.isEqualizerEnabled);
-
-        mEqualizer.setEnabled(Settings.isEqualizerEnabled);
-        if (Settings.presetPos == 0) {
-            for (short bandIdx = 0; bandIdx < mEqualizer.getNumberOfBands(); bandIdx++) {
-                mEqualizer.setBandLevel(bandIdx, (short) Settings.seekbarpos[bandIdx]);
-            }
-        } else {
-            mEqualizer.usePreset((short) (Settings.presetPos - 1));
-        }
+//        if (mEqualizer != null)
+//            mEqualizer.release();
+//        if (bassBoost != null)
+//            bassBoost.release();
+//        if (presetReverb != null)
+//            presetReverb.release();
+//        if (loudnessEnhancer != null)
+//            loudnessEnhancer.release();
+//
+//        Gson gson = new Gson();
+//        EqualizerSettings settings = gson.fromJson(appPreferences.getString(PREF_KEY, "{}"), EqualizerSettings.class);
+//
+//        EqualizerModel model = new EqualizerModel();
+//        model.setBassStrength(settings.bassStrength);
+//        model.setPresetPos(settings.presetPos);
+//        model.setReverbPreset(settings.reverbPreset);
+//        model.setSeekbarpos(settings.seekbarpos);
+//        model.setLoudnessGain(settings.loudnessGain);
+//
+//        Settings.isEqualizerEnabled = settings.isEqualizerEnabled;
+//        Settings.isEqualizerReloaded = true;
+//        Settings.bassStrength = settings.bassStrength;
+//        Settings.presetPos = settings.presetPos;
+//        Settings.reverbPreset = settings.reverbPreset;
+//        Settings.seekbarpos = settings.seekbarpos;
+//        Settings.loudnessGain = settings.loudnessGain;
+//        Settings.equalizerModel = model;
+//
+//        mEqualizer = new Equalizer(0, audioSessionId);
+//
+//        bassBoost = new BassBoost(0, audioSessionId);
+//        bassBoost.setEnabled(Settings.isEqualizerEnabled);
+//        BassBoost.Settings bassBoostSettingTemp = bassBoost.getProperties();
+//        BassBoost.Settings bassBoostSetting = new BassBoost.Settings(bassBoostSettingTemp.toString());
+//        bassBoostSetting.strength = Settings.equalizerModel.getBassStrength();
+//        bassBoost.setProperties(bassBoostSetting);
+//
+//        presetReverb = new PresetReverb(0, audioSessionId);
+//        presetReverb.setPreset(Settings.equalizerModel.getReverbPreset());
+//        presetReverb.setEnabled(Settings.isEqualizerEnabled);
+//
+//        loudnessEnhancer = new LoudnessEnhancer(audioSessionId);
+//        loudnessEnhancer.setTargetGain(Settings.equalizerModel.getLoudnessGain());
+//        loudnessEnhancer.setEnabled(Settings.isEqualizerEnabled);
+//
+//        mEqualizer.setEnabled(Settings.isEqualizerEnabled);
+//        if (Settings.presetPos == 0) {
+//            for (short bandIdx = 0; bandIdx < mEqualizer.getNumberOfBands(); bandIdx++) {
+//                mEqualizer.setBandLevel(bandIdx, (short) Settings.seekbarpos[bandIdx]);
+//            }
+//        } else {
+//            mEqualizer.usePreset((short) (Settings.presetPos - 1));
+//        }
     }
 
 }

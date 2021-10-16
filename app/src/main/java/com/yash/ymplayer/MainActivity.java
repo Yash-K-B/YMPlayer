@@ -136,7 +136,7 @@ public class MainActivity extends BaseActivity implements ActivityActionProvider
     SharedPreferences preferences;
     SharedPreferences defaultSharedPreferences;
     String currentFragment;  //current visible fragment
-    private ScheduledExecutorService mExecutorService = Executors.newSingleThreadScheduledExecutor();
+    private final ScheduledExecutorService mExecutorService = Executors.newSingleThreadScheduledExecutor();
     private ScheduledFuture<?> mScheduledFuture;
     long currentProgress;
     long currentBufferedPosition;
@@ -733,6 +733,7 @@ public class MainActivity extends BaseActivity implements ActivityActionProvider
                 Intent intent = new Intent(this.getApplicationContext(), PlayerService.class);
                 stopService(intent);
                 finish();
+                System.exit(0);
                 return true;
             default:
                 return false;
@@ -923,23 +924,11 @@ public class MainActivity extends BaseActivity implements ActivityActionProvider
                 startActivity(openEQIntent);
 
             } else {
-                mediaController.sendCommand(Keys.COMMAND.ON_AUDIO_SESSION_ID_CHANGE, null, new ResultReceiver(handler) {
-                    @Override
-                    protected void onReceiveResult(int resultCode, Bundle resultData) {
-                        if (dialogEqualizerFragment != null)
-                            dialogEqualizerFragment.updateAudioSessionId(resultData.getInt(Keys.AUDIO_SESSION_ID));
-                    }
-                });
-                mediaController.sendCommand(Keys.COMMAND.GET_AUDIO_SESSION_ID, null, new ResultReceiver(handler) {
-                    @Override
-                    protected void onReceiveResult(int resultCode, Bundle resultData) {
-                        dialogEqualizerFragment = DialogEqualizerFragment.newBuilder()
-                                .setAccentColor(BaseActivity.getAttributeColor(MainActivity.this, R.attr.colorAccent))  //Color.parseColor("#4caf50")
-                                .setAudioSessionId(resultData.getInt(Keys.AUDIO_SESSION_ID))
-                                .build();
-                        dialogEqualizerFragment.show(getSupportFragmentManager(), "eq");
-                    }
-                });
+                dialogEqualizerFragment = DialogEqualizerFragment.newBuilder()
+                        .setAccentColor(BaseActivity.getAttributeColor(MainActivity.this, R.attr.colorAccent))  //Color.parseColor("#4caf50")
+                        .setAudioSessionId(0)
+                        .build();
+                dialogEqualizerFragment.show(getSupportFragmentManager(), "eq");
             }
 
 

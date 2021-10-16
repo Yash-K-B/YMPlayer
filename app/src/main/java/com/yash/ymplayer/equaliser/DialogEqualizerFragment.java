@@ -46,6 +46,7 @@ import com.db.chart.view.LineChartView;
 import com.google.gson.Gson;
 import com.yash.ymplayer.R;
 import com.yash.logging.LogHelper;
+import com.yash.ymplayer.util.EqualizerUtil;
 
 import java.util.ArrayList;
 
@@ -62,7 +63,7 @@ public class DialogEqualizerFragment extends DialogFragment {
     private static String titleString = "";
     private static int titleRes = 0;
 
-    private final int TARGET_GAIN_MAX = 1000;
+    private final int TARGET_GAIN_MAX = 1000; //10dB = 1000mdB
     private Equalizer mEqualizer;
     private BassBoost bassBoost;
     private PresetReverb presetReverb;
@@ -72,7 +73,7 @@ public class DialogEqualizerFragment extends DialogFragment {
     private float[] points;
     private int y = 0;
     private int z = 0;
-    private SeekBar[] seekBarFinal = new SeekBar[5];
+    private final SeekBar[] seekBarFinal = new SeekBar[5];
     private Spinner presetSpinner;
     private Context ctx;
     private int audioSesionId;
@@ -111,97 +112,22 @@ public class DialogEqualizerFragment extends DialogFragment {
         super.onCreate(savedInstanceState);
 
         Settings.isEditing = true;
-        loadEqualizerSettings();
 
-        if (getArguments() != null && getArguments().containsKey(ARG_AUDIO_SESSIOIN_ID)) {
-            audioSesionId = getArguments().getInt(ARG_AUDIO_SESSIOIN_ID);
-        }
+        mEqualizer = EqualizerUtil.getInstance(getContext()).getEqualizer().getValue();
+        bassBoost = EqualizerUtil.getInstance(getContext()).getBassBoost().getValue();
+        presetReverb = EqualizerUtil.getInstance(getContext()).getPresetReverb().getValue();
+        loudnessEnhancer = EqualizerUtil.getInstance(getContext()).getLoudnessEnhancer().getValue();
 
-        if (Settings.equalizerModel == null) {
-            Settings.equalizerModel = new EqualizerModel();
-            Settings.equalizerModel.setReverbPreset(PresetReverb.PRESET_NONE);
-            Settings.equalizerModel.setBassStrength((short) (1000 / 19));
-            Settings.equalizerModel.setLoudnessGain(0);
+        EqualizerUtil.getInstance(getContext()).getEqualizer().observe(requireActivity(), equalizer -> mEqualizer = equalizer);
+        EqualizerUtil.getInstance(getContext()).getBassBoost().observe(requireActivity(), bassBoost -> this.bassBoost = bassBoost);
+        EqualizerUtil.getInstance(getContext()).getPresetReverb().observe(requireActivity(), presetReverb -> this.presetReverb = presetReverb);
+        EqualizerUtil.getInstance(getContext()).getLoudnessEnhancer().observe(requireActivity(), loudnessEnhancer -> this.loudnessEnhancer = loudnessEnhancer);
 
-        }
-
-        LogHelper.d(TAG, "onCreate: Dialog Equalizer Fragment : sessionId : " + audioSesionId);
-
-        mEqualizer = new Equalizer(0, audioSesionId);
-
-        bassBoost = new BassBoost(0, audioSesionId);
-        bassBoost.setEnabled(Settings.isEqualizerEnabled);
-        BassBoost.Settings bassBoostSettingTemp = bassBoost.getProperties();
-        BassBoost.Settings bassBoostSetting = new BassBoost.Settings(bassBoostSettingTemp.toString());
-        bassBoostSetting.strength = Settings.equalizerModel.getBassStrength();
-        bassBoost.setProperties(bassBoostSetting);
-
-        presetReverb = new PresetReverb(0, audioSesionId);
-        presetReverb.setPreset(Settings.equalizerModel.getReverbPreset());
-        presetReverb.setEnabled(Settings.isEqualizerEnabled);
-
-        loudnessEnhancer = new LoudnessEnhancer(audioSesionId);
-        loudnessEnhancer.setTargetGain(Settings.equalizerModel.getLoudnessGain());
-        loudnessEnhancer.setEnabled(Settings.isEqualizerEnabled);
-
-        mEqualizer.setEnabled(Settings.isEqualizerEnabled);
-
-        if (Settings.presetPos == 0) {
-            for (short bandIdx = 0; bandIdx < mEqualizer.getNumberOfBands(); bandIdx++) {
-                mEqualizer.setBandLevel(bandIdx, (short) Settings.seekbarpos[bandIdx]);
-            }
-        } else {
-            mEqualizer.usePreset((short) (Settings.presetPos - 1));
-        }
     }
 
-
-    public void updateAudioSessionId(int audioSessionId) {
-        LogHelper.d(TAG, "updateAudioSessionId: ");
-        loadEqualizerSettings();
-
-        mEqualizer.release();
-        bassBoost.release();
-        presetReverb.release();
-
-        if (Settings.equalizerModel == null) {
-            Settings.equalizerModel = new EqualizerModel();
-            Settings.equalizerModel.setReverbPreset(PresetReverb.PRESET_NONE);
-            Settings.equalizerModel.setBassStrength((short) (1000 / 19));
-            Settings.equalizerModel.setLoudnessGain(0);
-
-        }
-
-        mEqualizer = new Equalizer(0, audioSessionId);
-
-        bassBoost = new BassBoost(0, audioSessionId);
-        bassBoost.setEnabled(Settings.isEqualizerEnabled);
-        BassBoost.Settings bassBoostSettingTemp = bassBoost.getProperties();
-        BassBoost.Settings bassBoostSetting = new BassBoost.Settings(bassBoostSettingTemp.toString());
-        bassBoostSetting.strength = Settings.equalizerModel.getBassStrength();
-        bassBoost.setProperties(bassBoostSetting);
-
-        presetReverb = new PresetReverb(0, audioSessionId);
-        presetReverb.setPreset(Settings.equalizerModel.getReverbPreset());
-        presetReverb.setEnabled(Settings.isEqualizerEnabled);
-
-        loudnessEnhancer = new LoudnessEnhancer(audioSesionId);
-        loudnessEnhancer.setTargetGain(Settings.equalizerModel.getLoudnessGain());
-        loudnessEnhancer.setEnabled(Settings.isEqualizerEnabled);
-
-        mEqualizer.setEnabled(Settings.isEqualizerEnabled);
-
-        if (Settings.presetPos == 0) {
-            for (short bandIdx = 0; bandIdx < mEqualizer.getNumberOfBands(); bandIdx++) {
-                mEqualizer.setBandLevel(bandIdx, (short) Settings.seekbarpos[bandIdx]);
-            }
-        } else {
-            mEqualizer.usePreset((short) (Settings.presetPos - 1));
-        }
-    }
 
     @Override
-    public void onAttach(Context context) {
+    public void onAttach(@NonNull Context context) {
         super.onAttach(context);
         ctx = context;
     }
@@ -249,7 +175,7 @@ public class DialogEqualizerFragment extends DialogFragment {
                 loudnessEnhancer.setEnabled(isChecked);
                 Settings.isEqualizerEnabled = isChecked;
                 Settings.equalizerModel.setEqualizerEnabled(isChecked);
-                saveEqualizerSettings();
+                EqualizerUtil.getInstance(getContext()).saveSettingsToDevice();
                 LogHelper.d(TAG, "onCheckedChanged: ");
             }
         });
@@ -354,7 +280,7 @@ public class DialogEqualizerFragment extends DialogFragment {
                 try {
                     bassBoost.setStrength(Settings.bassStrength);
                     Settings.equalizerModel.setBassStrength(Settings.bassStrength);
-                    saveEqualizerSettings();
+                    EqualizerUtil.getInstance(getContext()).saveSettingsToDevice();
                 } catch (Exception e) {
                     e.printStackTrace();
                 }
@@ -372,18 +298,18 @@ public class DialogEqualizerFragment extends DialogFragment {
                     e.printStackTrace();
                 }
                 y = progress;
-                saveEqualizerSettings();
+                EqualizerUtil.getInstance(getContext()).saveSettingsToDevice();
             }
         });
 
         loudnessController.setOnProgressChangedListener(new AnalogController.onProgressChangedListener() {
             @Override
             public void onProgressChanged(int progress) {
-                Settings.loudnessGain = ((progress - 1) * TARGET_GAIN_MAX) / 18;
+                Settings.loudnessGain = ((progress - 1) * Settings.TargetLoudnessGain) / 18;
                 Settings.equalizerModel.setLoudnessGain(Settings.loudnessGain);
                 try {
                     loudnessEnhancer.setTargetGain(Settings.loudnessGain);
-                    saveEqualizerSettings();
+                    EqualizerUtil.getInstance(getContext()).saveSettingsToDevice();
                 } catch (Exception e) {
                     e.printStackTrace();
                 }
@@ -509,7 +435,7 @@ public class DialogEqualizerFragment extends DialogFragment {
                 @Override
                 public void onStopTrackingTouch(SeekBar seekBar) {
                     LogHelper.d(TAG, "onStopTrackingTouch: ");
-                    saveEqualizerSettings();
+                    EqualizerUtil.getInstance(getContext()).saveSettingsToDevice();
                 }
             });
 
@@ -602,7 +528,7 @@ public class DialogEqualizerFragment extends DialogFragment {
                     Toast.makeText(ctx, "Error while updating Equalizer", Toast.LENGTH_SHORT).show();
                 }
                 Settings.equalizerModel.setPresetPos(position);
-                saveEqualizerSettings();
+                EqualizerUtil.getInstance(getContext()).saveSettingsToDevice();
             }
 
             @Override
@@ -621,23 +547,7 @@ public class DialogEqualizerFragment extends DialogFragment {
     @Override
     public void onDestroy() {
         super.onDestroy();
-
-        if (mEqualizer != null) {
-            mEqualizer.release();
-        }
-
-        if (bassBoost != null) {
-            bassBoost.release();
-        }
-
-        if (presetReverb != null) {
-            presetReverb.release();
-        }
-
-        if (loudnessEnhancer != null) {
-            loudnessEnhancer.release();
-        }
-        saveEqualizerSettings();
+        EqualizerUtil.getInstance(getContext()).saveSettingsToDevice();
         Settings.isEditing = false;
 
     }
@@ -694,51 +604,5 @@ public class DialogEqualizerFragment extends DialogFragment {
             return DialogEqualizerFragment.newInstance(id);
         }
     }
-
-
-    private void saveEqualizerSettings() {
-
-        if (Settings.equalizerModel != null) {
-            EqualizerSettings settings = new EqualizerSettings();
-            settings.bassStrength = Settings.equalizerModel.getBassStrength();
-            settings.presetPos = Settings.equalizerModel.getPresetPos();
-            settings.reverbPreset = Settings.equalizerModel.getReverbPreset();
-            settings.loudnessGain = Settings.equalizerModel.getLoudnessGain();
-            settings.seekbarpos = Settings.equalizerModel.getSeekbarpos();
-            settings.isEqualizerEnabled = Settings.isEqualizerEnabled;
-
-            SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(ctx);
-
-            Gson gson = new Gson();
-            preferences.edit()
-                    .putString(PREF_KEY, gson.toJson(settings))
-                    .apply();
-        }
-    }
-
-    private void loadEqualizerSettings() {
-        SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(ctx);
-
-        Gson gson = new Gson();
-        EqualizerSettings settings = gson.fromJson(preferences.getString(PREF_KEY, "{}"), EqualizerSettings.class);
-        EqualizerModel model = new EqualizerModel();
-        model.setBassStrength(settings.bassStrength);
-        model.setPresetPos(settings.presetPos);
-        model.setReverbPreset(settings.reverbPreset);
-        model.setSeekbarpos(settings.seekbarpos);
-        model.setLoudnessGain(settings.loudnessGain);
-
-        Settings.isEqualizerEnabled = settings.isEqualizerEnabled;
-        Settings.isEqualizerReloaded = true;
-        Settings.bassStrength = settings.bassStrength;
-        Settings.presetPos = settings.presetPos;
-        Settings.reverbPreset = settings.reverbPreset;
-        Settings.seekbarpos = settings.seekbarpos;
-        Settings.loudnessGain = settings.loudnessGain;
-        Settings.equalizerModel = model;
-    }
-
-    public static final String PREF_KEY = "equalizer";
-
 
 }
