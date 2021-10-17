@@ -1467,64 +1467,7 @@ public class PlayerService extends MediaBrowserServiceCompat implements PlayerHe
     }
 
     void loadEqualizer(int audioSessionId) {
-
-        if (!appPreferences.getBoolean(Keys.PREFERENCE_KEYS.BUILTIN_EQUALIZER, false)) return;
-
         EqualizerUtil.getInstance(this).updateAudioSessionId(audioSessionId);
-
-//        if (mEqualizer != null)
-//            mEqualizer.release();
-//        if (bassBoost != null)
-//            bassBoost.release();
-//        if (presetReverb != null)
-//            presetReverb.release();
-//        if (loudnessEnhancer != null)
-//            loudnessEnhancer.release();
-//
-//        Gson gson = new Gson();
-//        EqualizerSettings settings = gson.fromJson(appPreferences.getString(PREF_KEY, "{}"), EqualizerSettings.class);
-//
-//        EqualizerModel model = new EqualizerModel();
-//        model.setBassStrength(settings.bassStrength);
-//        model.setPresetPos(settings.presetPos);
-//        model.setReverbPreset(settings.reverbPreset);
-//        model.setSeekbarpos(settings.seekbarpos);
-//        model.setLoudnessGain(settings.loudnessGain);
-//
-//        Settings.isEqualizerEnabled = settings.isEqualizerEnabled;
-//        Settings.isEqualizerReloaded = true;
-//        Settings.bassStrength = settings.bassStrength;
-//        Settings.presetPos = settings.presetPos;
-//        Settings.reverbPreset = settings.reverbPreset;
-//        Settings.seekbarpos = settings.seekbarpos;
-//        Settings.loudnessGain = settings.loudnessGain;
-//        Settings.equalizerModel = model;
-//
-//        mEqualizer = new Equalizer(0, audioSessionId);
-//
-//        bassBoost = new BassBoost(0, audioSessionId);
-//        bassBoost.setEnabled(Settings.isEqualizerEnabled);
-//        BassBoost.Settings bassBoostSettingTemp = bassBoost.getProperties();
-//        BassBoost.Settings bassBoostSetting = new BassBoost.Settings(bassBoostSettingTemp.toString());
-//        bassBoostSetting.strength = Settings.equalizerModel.getBassStrength();
-//        bassBoost.setProperties(bassBoostSetting);
-//
-//        presetReverb = new PresetReverb(0, audioSessionId);
-//        presetReverb.setPreset(Settings.equalizerModel.getReverbPreset());
-//        presetReverb.setEnabled(Settings.isEqualizerEnabled);
-//
-//        loudnessEnhancer = new LoudnessEnhancer(audioSessionId);
-//        loudnessEnhancer.setTargetGain(Settings.equalizerModel.getLoudnessGain());
-//        loudnessEnhancer.setEnabled(Settings.isEqualizerEnabled);
-//
-//        mEqualizer.setEnabled(Settings.isEqualizerEnabled);
-//        if (Settings.presetPos == 0) {
-//            for (short bandIdx = 0; bandIdx < mEqualizer.getNumberOfBands(); bandIdx++) {
-//                mEqualizer.setBandLevel(bandIdx, (short) Settings.seekbarpos[bandIdx]);
-//            }
-//        } else {
-//            mEqualizer.usePreset((short) (Settings.presetPos - 1));
-//        }
     }
 
 }

@@ -63,19 +63,15 @@ public class EqualizerUtil {
     public void release() {
         if (equalizer.getValue() != null) {
             equalizer.getValue().release();
-            equalizer.setValue(null);
         }
         if (bassBoost.getValue() != null) {
             bassBoost.getValue().release();
-            bassBoost.setValue(null);
         }
         if (presetReverb.getValue() != null) {
             presetReverb.getValue().release();
-            presetReverb.setValue(null);
         }
         if (loudnessEnhancer.getValue() != null) {
             loudnessEnhancer.getValue().release();
-            loudnessEnhancer.setValue(null);
         }
     }
 
@@ -93,7 +89,7 @@ public class EqualizerUtil {
         presetReverb.getValue().setEnabled(Settings.isEqualizerEnabled);
 
         //LoudnessEnhancer
-        Objects.requireNonNull(loudnessEnhancer.getValue()).setTargetGain(Settings.equalizerModel.getLoudnessGain());
+        Objects.requireNonNull(loudnessEnhancer.getValue()).setTargetGain(Settings.loudnessGain);
         loudnessEnhancer.getValue().setEnabled(Settings.isEqualizerEnabled);
 
         //Equalizer
@@ -125,7 +121,7 @@ public class EqualizerUtil {
 
         //LoudnessEnhancer
         loudnessEnhancer.setValue(new LoudnessEnhancer(audioSessionId));
-        Objects.requireNonNull(loudnessEnhancer.getValue()).setTargetGain(Settings.equalizerModel.getLoudnessGain());
+        Objects.requireNonNull(loudnessEnhancer.getValue()).setTargetGain(Settings.loudnessGain);
         loudnessEnhancer.getValue().setEnabled(Settings.isEqualizerEnabled);
 
         //Equalizer
@@ -145,6 +141,8 @@ public class EqualizerUtil {
         Gson gson = new Gson();
         EqualizerSettings settings = gson.fromJson(appPreferences.getString(PREF_KEY, "{}"), EqualizerSettings.class);
 
+        Log.d(TAG, "loadSettingsFromDevice: " + settings);
+
         EqualizerModel model = new EqualizerModel();
         model.setBassStrength(settings.bassStrength);
         model.setPresetPos(settings.presetPos);
@@ -159,6 +157,7 @@ public class EqualizerUtil {
         Settings.reverbPreset = settings.reverbPreset;
         Settings.seekbarpos = settings.seekbarpos;
         Settings.loudnessGain = settings.loudnessGain;
+        Settings.TargetLoudnessGain  = Integer.parseInt(appPreferences.getString(Keys.PREFERENCE_KEYS.LOUDNESS_GAIN, "1000"));
         Settings.equalizerModel = model;
     }
 
@@ -168,9 +167,10 @@ public class EqualizerUtil {
             settings.bassStrength = Settings.equalizerModel.getBassStrength();
             settings.presetPos = Settings.equalizerModel.getPresetPos();
             settings.reverbPreset = Settings.equalizerModel.getReverbPreset();
-            settings.loudnessGain = Settings.equalizerModel.getLoudnessGain();
+            settings.loudnessGain = Settings.loudnessGain;
             settings.seekbarpos = Settings.equalizerModel.getSeekbarpos();
             settings.isEqualizerEnabled = Settings.isEqualizerEnabled;
+            settings.targetLoudnessGain = Settings.TargetLoudnessGain;
 
             Gson gson = new Gson();
             appPreferences.edit()

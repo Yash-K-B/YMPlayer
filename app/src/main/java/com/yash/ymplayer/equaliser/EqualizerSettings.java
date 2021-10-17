@@ -2,21 +2,27 @@ package com.yash.ymplayer.equaliser;
 
 import androidx.annotation.NonNull;
 
+import java.util.Arrays;
+
 public class EqualizerSettings {
     public int[] seekbarpos = new int[5];
     public int presetPos;
     public short reverbPreset;
     public short bassStrength;
     public int loudnessGain;
+    public int targetLoudnessGain;
     public boolean isEqualizerEnabled;
 
-    @NonNull
+    @Override
     public String toString() {
-        return "Preset Position : " + presetPos + "\n" +
-                "Reverb Preset : " + reverbPreset + "\n" +
-                "Bass Strength : " + bassStrength + "\n" +
-                "Loudness Gain : " + loudnessGain + "\n" +
-                "Seek bar pos : " + seekbarpos[0] + "-" + seekbarpos[1] + "-" + seekbarpos[2] + "-" + seekbarpos[3] + "-" + seekbarpos[4] + "\n" +
-                "Is Equalizer Enabled : " + isEqualizerEnabled;
+        return "EqualizerSettings{" +
+                "seekbarpos=" + Arrays.toString(seekbarpos) +
+                ", presetPos=" + presetPos +
+                ", reverbPreset=" + reverbPreset +
+                ", bassStrength=" + bassStrength +
+                ", loudnessGain=" + loudnessGain +
+                ", targetLoudnessGain=" + targetLoudnessGain +
+                ", isEqualizerEnabled=" + isEqualizerEnabled +
+                '}';
     }
 }

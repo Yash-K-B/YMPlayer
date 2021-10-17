@@ -213,7 +213,7 @@ public class EqualizerFragment extends Fragment {
 
             if (loudnessEnhancer != null) {
                 try {
-                    z = (int) ((loudnessEnhancer.getTargetGain() * 18) / Settings.TargetLoudnessGain) + 1;
+                    z = (int) ((Settings.loudnessGain * 18) / Settings.TargetLoudnessGain) + 1;
                 } catch (Exception e) {
                     e.printStackTrace();
                 }

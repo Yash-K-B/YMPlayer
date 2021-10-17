@@ -82,10 +82,10 @@
                     android:layout_height="match_parent"
                     android:gravity="center_horizontal">
 
-                    <ImageView
+                    <com.meg7.widget.SvgImageView
                         android:id="@+id/songArt"
-                        android:layout_width="250dp"
-                        android:layout_height="250dp"
+                        android:layout_width="354dp"
+                        android:layout_height="310dp"
                         android:layout_marginTop="82dp"
                         android:background="@drawable/circular_album_art_bg"
                         android:scaleType="centerCrop"
@@ -93,7 +93,8 @@
                         app:layout_constraintEnd_toEndOf="parent"
                         app:layout_constraintHorizontal_bias="0.5"
                         app:layout_constraintStart_toStartOf="parent"
-                        app:layout_constraintTop_toTopOf="parent" />
+                        app:layout_constraintTop_toTopOf="parent"
+                        app:svg_raw_resource="@raw/play_icon" />
 
 
                     <LinearLayout

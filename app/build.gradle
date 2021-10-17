@@ -88,4 +88,6 @@ dependencies {
 
     implementation 'com.github.Yash-K-B:Logging:1.0.4'
 
+    implementation 'com.mostafagazar:customshapeimageview:1.0.4'
+
 }

@@ -87,6 +87,7 @@ import com.yash.ymplayer.ui.main.LocalSongs;
 import com.yash.ymplayer.ui.main.SettingsFragment;
 import com.yash.ymplayer.ui.youtube.YoutubeLibrary;
 import com.yash.ymplayer.util.ConverterUtil;
+import com.yash.ymplayer.util.EqualizerUtil;
 import com.yash.ymplayer.util.Keys;
 import com.yash.ymplayer.util.QueueListAdapter;
 import com.yash.ymplayer.util.Song;
@@ -164,7 +165,7 @@ public class MainActivity extends BaseActivity implements ActivityActionProvider
         setContentView(activityMainBinding.getRoot());
         startService(new Intent(this, PlayerService.class));
         setCustomToolbar(null, null);
-        activityMainBinding.songArt.setClipToOutline(true);
+//        activityMainBinding.songArt.setClipToOutline(true);
         bottomSheetBehavior = BottomSheetBehavior.from(activityMainBinding.playlists);
         preferences = getSharedPreferences(STATE_PREF, MODE_PRIVATE);
         defaultSharedPreferences = PreferenceManager.getDefaultSharedPreferences(this);
@@ -954,6 +955,8 @@ public class MainActivity extends BaseActivity implements ActivityActionProvider
 
     //Initialise
     void initialise() {
+
+        EqualizerUtil.getInstance(this);
 
         mediaController.sendCommand(Keys.COMMAND.AUDIO_SESSION_ID, null, resultReceiver);
 
