@@ -158,13 +158,16 @@ public class EqualizerUtil {
     public void setEqualizerEnabled(boolean equalizerEnabled) {
         Settings.isEqualizerEnabled = equalizerEnabled;
         this.equalizerEnabled = equalizerEnabled;
+        Settings.equalizerModel.setEqualizerEnabled(equalizerEnabled);
+        saveSettingsToDevice();
         enableEqualizer(equalizerEnabled);
     }
 
     public void setEqualizerEnabled(boolean equalizerEnabled, int audioSessionId) {
         Settings.isEqualizerEnabled = equalizerEnabled;
         this.equalizerEnabled = equalizerEnabled;
-        if (audioSessionId == 0) return;
+        Settings.equalizerModel.setEqualizerEnabled(equalizerEnabled);
+        saveSettingsToDevice();
         reloadEqualizer(audioSessionId);
     }
 

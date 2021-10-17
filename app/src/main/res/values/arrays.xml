@@ -14,11 +14,15 @@
         <item>Blue</item>
         <item>Green</item>
         <item>Red</item>
+        <item>Violet</item>
+        <item>Sky Blue</item>
     </string-array>
     <string-array name="theme_values">
         <item>blue</item>
         <item>green</item>
         <item>red</item>
+        <item>violet</item>
+        <item>sky</item>
     </string-array>
 
     <!--    Background Modes -->

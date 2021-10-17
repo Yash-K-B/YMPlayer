@@ -726,15 +726,6 @@ public class PlayerService extends MediaBrowserServiceCompat implements PlayerHe
                     setMediaMetadata(playingQueue.get(queuePos));
                     break;
 
-                case Keys.Action.TOGGLE_EQUALIZER_STATE:
-                    if (!extras.containsKey(Keys.EXTRA_EQUALIZER_STATE)) return;
-                    boolean equalizerState = extras.getBoolean(Keys.EXTRA_EQUALIZER_STATE);
-                    if (equalizerState) {
-                        EqualizerUtil.getInstance(PlayerService.this).setEqualizerEnabled(true, audioSessionId);
-                    } else {
-                       EqualizerUtil.getInstance(PlayerService.this).setEqualizerEnabled(false);
-                    }
-                    break;
 
                 case Keys.COMMAND.UPDATE_EQUALIZER:
                     LogHelper.d(TAG, "onCustomAction: Updating Equalizer");

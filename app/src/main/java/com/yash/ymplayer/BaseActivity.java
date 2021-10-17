@@ -36,6 +36,12 @@ public abstract class BaseActivity extends AppCompatActivity {
             case "reddark":
                 setTheme(R.style.YTheme_Dark_Red_NoActionBar);
                 break;
+            case "violetdark":
+                setTheme(R.style.YTheme_Dark_Violet_NoActionBar);
+                break;
+            case "skydark":
+                setTheme(R.style.YTheme_Dark_Sky_NoActionBar);
+                break;
             case "bluelight":
                 setTheme(R.style.YTheme_Light_Blue_NoActionBar);
                 break;
@@ -45,6 +51,12 @@ public abstract class BaseActivity extends AppCompatActivity {
             case "redlight":
                 setTheme(R.style.YTheme_Light_Red_NoActionBar);
                 break;
+            case "violetlight":
+                setTheme(R.style.YTheme_Light_Violet_NoActionBar);
+                break;
+            case "skylight":
+                setTheme(R.style.YTheme_Light_Sky_NoActionBar);
+                break;
             case "blueamoled":
                 setTheme(R.style.YTheme_AMOLED_Blue_NoActionBar);
                 break;
@@ -53,6 +65,12 @@ public abstract class BaseActivity extends AppCompatActivity {
                 break;
             case "redamoled":
                 setTheme(R.style.YTheme_AMOLED_Red_NoActionBar);
+                break;
+            case "violetamoled":
+                setTheme(R.style.YTheme_AMOLED_Violet_NoActionBar);
+                break;
+            case "skyamoled":
+                setTheme(R.style.YTheme_AMOLED_Sky_NoActionBar);
                 break;
         }
         super.onCreate(savedInstanceState);

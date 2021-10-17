@@ -169,13 +169,7 @@ public class DialogEqualizerFragment extends DialogFragment {
         equalizerSwitch.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
             @Override
             public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
-                mEqualizer.setEnabled(isChecked);
-                bassBoost.setEnabled(isChecked);
-                presetReverb.setEnabled(isChecked);
-                loudnessEnhancer.setEnabled(isChecked);
-                Settings.isEqualizerEnabled = isChecked;
-                Settings.equalizerModel.setEqualizerEnabled(isChecked);
-                EqualizerUtil.getInstance(getContext()).saveSettingsToDevice();
+                EqualizerUtil.getInstance(getContext()).setEqualizerEnabled(isChecked);
                 LogHelper.d(TAG, "onCheckedChanged: ");
             }
         });

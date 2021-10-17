@@ -17,6 +17,7 @@ import androidx.preference.PreferenceFragmentCompat;
 import com.yash.ymplayer.ActivityActionProvider;
 import com.yash.ymplayer.BaseActivity;
 import com.yash.ymplayer.MainActivity;
+import com.yash.ymplayer.PlayerService;
 import com.yash.ymplayer.R;
 import com.yash.logging.LogHelper;
 import com.yash.ymplayer.equaliser.Settings;
@@ -72,9 +73,8 @@ public class SettingsFragment extends PreferenceFragmentCompat {
                     break;
 
                 case Keys.PREFERENCE_KEYS.BUILTIN_EQUALIZER:
-                    Bundle extras = new Bundle();
-                    extras.putBoolean(Keys.EXTRA_EQUALIZER_STATE, sharedPreferences.getBoolean(Keys.PREFERENCE_KEYS.BUILTIN_EQUALIZER, false));
-                    ((ActivityActionProvider) context).sendActionToMediaSession(Keys.Action.TOGGLE_EQUALIZER_STATE, extras);
+                    boolean equalizerState = sharedPreferences.getBoolean(Keys.PREFERENCE_KEYS.BUILTIN_EQUALIZER, false);
+                    EqualizerUtil.getInstance(context).setEqualizerEnabled(equalizerState);
                     break;
 
                 case Keys.PREFERENCE_KEYS.PLAYBACK_QUALITY:
