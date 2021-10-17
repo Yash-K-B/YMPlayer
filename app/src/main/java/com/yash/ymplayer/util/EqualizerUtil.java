@@ -46,12 +46,12 @@ public class EqualizerUtil {
     private EqualizerUtil(Context context) {
         equalizerEnabled = false;
         appPreferences = PreferenceManager.getDefaultSharedPreferences(context);
-        equalizer = new MutableLiveData<>();
-        bassBoost = new MutableLiveData<>();
-        presetReverb = new MutableLiveData<>();
-        loudnessEnhancer = new MutableLiveData<>();
+        equalizer = new MutableLiveData<>(new Equalizer(0,0));
+        bassBoost = new MutableLiveData<>(new BassBoost(0,0 ));
+        presetReverb = new MutableLiveData<>(new PresetReverb(0,0));
+        loudnessEnhancer = new MutableLiveData<>(new LoudnessEnhancer(0));
         loadSettingsFromDevice();
-        reloadEqualizer(0);
+        initEqualizer();
     }
 
 
@@ -77,6 +77,34 @@ public class EqualizerUtil {
             loudnessEnhancer.getValue().release();
             loudnessEnhancer.setValue(null);
         }
+    }
+
+    private void initEqualizer() {
+
+        //BassBoost
+        Objects.requireNonNull(bassBoost.getValue()).setEnabled(Settings.isEqualizerEnabled);
+        BassBoost.Settings bassBoostSettingTemp = bassBoost.getValue().getProperties();
+        BassBoost.Settings bassBoostSetting = new BassBoost.Settings(bassBoostSettingTemp.toString());
+        bassBoostSetting.strength = Settings.equalizerModel.getBassStrength();
+        bassBoost.getValue().setProperties(bassBoostSetting);
+
+        //PresetReverb
+        Objects.requireNonNull(presetReverb.getValue()).setPreset(Settings.equalizerModel.getReverbPreset());
+        presetReverb.getValue().setEnabled(Settings.isEqualizerEnabled);
+
+        //LoudnessEnhancer
+        Objects.requireNonNull(loudnessEnhancer.getValue()).setTargetGain(Settings.equalizerModel.getLoudnessGain());
+        loudnessEnhancer.getValue().setEnabled(Settings.isEqualizerEnabled);
+
+        //Equalizer
+        if (Settings.presetPos == 0) {
+            for (short bandIdx = 0; bandIdx < Objects.requireNonNull(equalizer.getValue()).getNumberOfBands(); bandIdx++) {
+                equalizer.getValue().setBandLevel(bandIdx, (short) Settings.seekbarpos[bandIdx]);
+            }
+        } else {
+            Objects.requireNonNull(equalizer.getValue()).usePreset((short) (Settings.presetPos - 1));
+        }
+        equalizer.getValue().setEnabled(Settings.isEqualizerEnabled);
     }
 
     private void reloadEqualizer(int audioSessionId) {

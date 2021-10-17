@@ -85,8 +85,6 @@ public class EqualizerFragment extends Fragment {
     public PresetReverb presetReverb;
     public LoudnessEnhancer loudnessEnhancer;
 
-    private final int TARGET_GAIN_MAX = 1000;
-
     static int themeColor = Color.parseColor("#B24242");
     static boolean showBackButton = true;
 
@@ -215,7 +213,7 @@ public class EqualizerFragment extends Fragment {
 
             if (loudnessEnhancer != null) {
                 try {
-                    z = (int) ((loudnessEnhancer.getTargetGain() * 18) / TARGET_GAIN_MAX) + 1;
+                    z = (int) ((loudnessEnhancer.getTargetGain() * 18) / Settings.TargetLoudnessGain) + 1;
                 } catch (Exception e) {
                     e.printStackTrace();
                 }
@@ -241,7 +239,7 @@ public class EqualizerFragment extends Fragment {
         } else {
             int x = ((Settings.bassStrength * 19) / 1000);
             y = (Settings.reverbPreset * 19) / 6;
-            z = Math.round((Settings.loudnessGain * 18.0f) / TARGET_GAIN_MAX) + 1;
+            z = Math.round((Settings.loudnessGain * 18.0f) / Settings.TargetLoudnessGain) + 1;
             if (x == 0) {
                 bassController.setProgress(1);
             } else {
