@@ -82,20 +82,37 @@
                     android:layout_height="match_parent"
                     android:gravity="center_horizontal">
 
-                    <com.meg7.widget.SvgImageView
+                    <com.yash.ymplayer.util.BlurImageView
                         android:id="@+id/songArt"
-                        android:layout_width="354dp"
-                        android:layout_height="310dp"
+                        android:layout_width="0dp"
+                        android:layout_height="0dp"
                         android:layout_marginTop="82dp"
+                        android:layout_marginBottom="40dp"
                         android:background="@drawable/circular_album_art_bg"
                         android:scaleType="centerCrop"
                         android:src="@drawable/album_art_placeholder"
+                        app:layout_constraintBottom_toTopOf="@+id/track_title_layout"
                         app:layout_constraintEnd_toEndOf="parent"
                         app:layout_constraintHorizontal_bias="0.5"
                         app:layout_constraintStart_toStartOf="parent"
-                        app:layout_constraintTop_toTopOf="parent"
-                        app:svg_raw_resource="@raw/play_icon" />
+                        app:layout_constraintTop_toTopOf="parent" />
 
+
+                    <ImageView
+                        android:id="@+id/songArt2"
+                        android:layout_marginStart="40dp"
+                        android:layout_marginEnd="40dp"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:scaleType="centerCrop"
+                        android:background="@drawable/circular_album_art_bg"
+                        android:src="@drawable/album_art_placeholder"
+                        app:layout_constraintBottom_toBottomOf="@+id/songArt"
+                        app:layout_constraintEnd_toEndOf="@+id/songArt"
+                        app:layout_constraintHorizontal_bias="0.0"
+                        app:layout_constraintStart_toStartOf="@+id/songArt"
+                        app:layout_constraintTop_toTopOf="@+id/songArt"
+                        app:svg_raw_resource="@raw/play_icon" />
 
                     <LinearLayout
                         android:id="@+id/track_title_layout"
@@ -186,11 +203,11 @@
                         android:background="@drawable/ripple_click_effect"
                         android:scaleType="centerCrop"
                         android:src="@drawable/icon_play_circle"
-                        android:tint="@android:color/white"
                         app:layout_constraintBottom_toBottomOf="parent"
                         app:layout_constraintEnd_toStartOf="@+id/skip_next_btn"
                         app:layout_constraintHorizontal_bias="0.5"
-                        app:layout_constraintStart_toEndOf="@+id/skip_prev_btn" />
+                        app:layout_constraintStart_toEndOf="@+id/skip_prev_btn"
+                        app:tint="@android:color/white" />
 
                     <ProgressBar
                         android:id="@+id/player_loading"
@@ -210,11 +227,11 @@
                         android:layout_marginEnd="10dp"
                         android:background="@drawable/ripple_click_effect"
                         android:src="@drawable/icon_skip_next"
-                        android:tint="@android:color/white"
                         app:layout_constraintEnd_toStartOf="@+id/current_playlist_btn"
                         app:layout_constraintHorizontal_bias="0.5"
                         app:layout_constraintStart_toEndOf="@+id/play_pause_btn"
-                        app:layout_constraintTop_toTopOf="@+id/play_pause_btn" />
+                        app:layout_constraintTop_toTopOf="@+id/play_pause_btn"
+                        app:tint="@android:color/white" />
 
                     <ImageButton
                         android:id="@+id/skip_prev_btn"
@@ -224,11 +241,11 @@
                         android:layout_marginTop="6dp"
                         android:background="@drawable/ripple_click_effect"
                         android:src="@drawable/icon_skip_prev"
-                        android:tint="@android:color/white"
                         app:layout_constraintEnd_toStartOf="@+id/play_pause_btn"
                         app:layout_constraintHorizontal_bias="0.5"
                         app:layout_constraintStart_toEndOf="@+id/repeat_btn"
-                        app:layout_constraintTop_toTopOf="@+id/play_pause_btn" />
+                        app:layout_constraintTop_toTopOf="@+id/play_pause_btn"
+                        app:tint="@android:color/white" />
 
                     <ImageButton
                         android:id="@+id/repeat_btn"
@@ -238,12 +255,12 @@
                         android:layout_marginTop="6dp"
                         android:background="@drawable/ripple_click_effect"
                         android:src="@drawable/exo_icon_repeat_off"
-                        android:tint="@android:color/white"
                         app:layout_constraintEnd_toStartOf="@+id/skip_prev_btn"
                         app:layout_constraintHorizontal_bias="0.5"
                         app:layout_constraintHorizontal_chainStyle="packed"
                         app:layout_constraintStart_toStartOf="parent"
-                        app:layout_constraintTop_toTopOf="@+id/play_pause_btn" />
+                        app:layout_constraintTop_toTopOf="@+id/play_pause_btn"
+                        app:tint="@android:color/white" />
 
                     <ImageButton
                         android:id="@+id/current_playlist_btn"
@@ -253,11 +270,11 @@
                         android:layout_marginEnd="20dp"
                         android:background="@drawable/ripple_click_effect"
                         android:src="@drawable/icon_queue_music"
-                        android:tint="@android:color/white"
                         app:layout_constraintEnd_toEndOf="parent"
                         app:layout_constraintHorizontal_bias="0.5"
                         app:layout_constraintStart_toEndOf="@+id/skip_next_btn"
-                        app:layout_constraintTop_toTopOf="@+id/play_pause_btn" />
+                        app:layout_constraintTop_toTopOf="@+id/play_pause_btn"
+                        app:tint="@android:color/white" />
 
                     <ImageButton
                         android:id="@+id/shuffleBtn"
@@ -266,12 +283,12 @@
                         android:layout_marginBottom="20dp"
                         android:background="@drawable/ripple_click_effect"
                         android:src="@drawable/exo_icon_shuffle_off"
-                        android:tint="@android:color/white"
                         app:layout_constraintBottom_toTopOf="@+id/music_progress"
                         app:layout_constraintEnd_toStartOf="@+id/favouriteBtn"
                         app:layout_constraintHorizontal_bias="0.5"
                         app:layout_constraintHorizontal_chainStyle="spread"
-                        app:layout_constraintStart_toStartOf="parent" />
+                        app:layout_constraintStart_toStartOf="parent"
+                        app:tint="@android:color/white" />
 
                     <ImageButton
                         android:id="@+id/favouriteBtn"
@@ -281,11 +298,11 @@
                         android:background="@drawable/ripple_click_effect"
                         android:scaleType="centerInside"
                         android:src="@drawable/icon_favourite_off"
-                        android:tint="@android:color/white"
                         app:layout_constraintBottom_toTopOf="@+id/music_progress"
                         app:layout_constraintEnd_toEndOf="parent"
                         app:layout_constraintHorizontal_bias="0.5"
-                        app:layout_constraintStart_toEndOf="@+id/shuffleBtn" />
+                        app:layout_constraintStart_toEndOf="@+id/shuffleBtn"
+                        app:tint="@android:color/white" />
 
                 </androidx.constraintlayout.widget.ConstraintLayout>
 
@@ -348,8 +365,8 @@
                         android:layout_centerVertical="true"
                         android:layout_marginStart="10dp"
                         android:background="?attr/selectableItemBackgroundBorderless"
-                        android:tint="@android:color/white"
-                        android:src="@drawable/ic_minimize" />
+                        android:src="@drawable/ic_minimize"
+                        app:tint="@android:color/white" />
 
                     <TextView
                         android:layout_width="match_parent"
@@ -371,7 +388,7 @@
                         android:background="?attr/selectableItemBackgroundBorderless"
                         android:layout_toStartOf="@+id/shareThis"
                         android:src="@drawable/ic_equalizer"
-                        android:tint="@android:color/white" />
+                        app:tint="@android:color/white" />
 
                     <ImageButton
                         android:id="@+id/shareThis"
@@ -383,7 +400,7 @@
                         android:layout_marginEnd="10dp"
                         android:background="?attr/selectableItemBackgroundBorderless"
                         android:src="@drawable/ic_share_black_24dp"
-                        android:tint="@android:color/white" />
+                        app:tint="@android:color/white" />
 
                 </RelativeLayout>
 

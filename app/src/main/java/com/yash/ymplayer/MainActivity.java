@@ -49,6 +49,7 @@ import android.webkit.WebView;
 import android.webkit.WebViewClient;
 import android.widget.HorizontalScrollView;
 import android.widget.ImageView;
+import android.widget.LinearLayout;
 import android.widget.ScrollView;
 import android.widget.SeekBar;
 import android.widget.TextView;
@@ -58,6 +59,7 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.ActionBarDrawerToggle;
 import androidx.appcompat.widget.Toolbar;
+import androidx.constraintlayout.widget.ConstraintLayout;
 import androidx.core.content.FileProvider;
 import androidx.core.view.GravityCompat;
 import androidx.drawerlayout.widget.DrawerLayout;
@@ -430,10 +432,7 @@ public class MainActivity extends BaseActivity implements ActivityActionProvider
 
                 if (mediaController.getMetadata().getBitmap(MediaMetadataCompat.METADATA_KEY_ALBUM_ART) != null) {
                     Drawable resource = new BitmapDrawable(getResources(), mediaController.getMetadata().getBitmap(MediaMetadataCompat.METADATA_KEY_ALBUM_ART));
-                    activityMainBinding.art.setImageDrawable(resource);
-                    activityMainBinding.songArt.setImageDrawable(resource);
-                    activityMainBinding.playerBlurBackground.setImageDrawable(resource);
-                    activityMainBinding.playerBlurBackground.setBlur(5);
+                    setSongArt(resource);
                     return;
                 }
 
@@ -448,18 +447,12 @@ public class MainActivity extends BaseActivity implements ActivityActionProvider
                     Glide.with(MainActivity.this).load(isUriSufficient ? songArt : retriever.getEmbeddedPicture()).placeholder(R.drawable.album_art_placeholder).into(new CustomTarget<Drawable>() {
                         @Override
                         public void onResourceReady(@NonNull Drawable resource, @Nullable Transition<? super Drawable> transition) {
-                            activityMainBinding.art.setImageDrawable(resource);
-                            activityMainBinding.songArt.setImageDrawable(resource);
-                            activityMainBinding.playerBlurBackground.setImageDrawable(resource);
-                            activityMainBinding.playerBlurBackground.setBlur(5);
+                           setSongArt(resource);
                         }
 
                         @Override
                         public void onLoadFailed(@Nullable Drawable errorDrawable) {
-                            activityMainBinding.art.setImageResource(R.drawable.album_art_placeholder);
-                            activityMainBinding.songArt.setImageResource(R.drawable.album_art_placeholder);
-                            activityMainBinding.playerBlurBackground.setImageResource(R.drawable.bg_album_art);
-                            activityMainBinding.playerBlurBackground.setBlur(5);
+                           setSongArt();
                         }
 
                         @Override
@@ -485,6 +478,7 @@ public class MainActivity extends BaseActivity implements ActivityActionProvider
     @Override
     public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions,
                                            @NonNull int[] grantResults) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
         LogHelper.d(TAG, "onRequestPermissionsResult: ");
         if (requestCode == 100) {
             for (int i = 0; i < permissions.length; i++)
@@ -585,19 +579,13 @@ public class MainActivity extends BaseActivity implements ActivityActionProvider
                     @Override
                     public void onResourceReady(@NonNull Drawable resource, @Nullable Transition<? super Drawable> transition) {
                         LogHelper.d(TAG, "onResourceReady: uri:" + currentAlbumArtUri);
-                        activityMainBinding.art.setImageDrawable(resource);
-                        activityMainBinding.songArt.setImageDrawable(resource);
-                        activityMainBinding.playerBlurBackground.setImageDrawable(resource);
-                        activityMainBinding.playerBlurBackground.setBlur(5);
+                        setSongArt(resource);
                     }
 
                     @Override
                     public void onLoadFailed(@Nullable Drawable errorDrawable) {
                         LogHelper.d(TAG, "onLoadFailed: uri:" + currentAlbumArtUri);
-                        activityMainBinding.art.setImageResource(R.drawable.album_art_placeholder);
-                        activityMainBinding.songArt.setImageResource(R.drawable.album_art_placeholder);
-                        activityMainBinding.playerBlurBackground.setImageResource(R.drawable.bg_album_art);
-                        activityMainBinding.playerBlurBackground.setBlur(5);
+                       setSongArt();
                     }
 
                     @Override
@@ -1008,10 +996,7 @@ public class MainActivity extends BaseActivity implements ActivityActionProvider
             Glide.with(MainActivity.this).load(isSufficient ? currentAlbumArtUri : retriever.getEmbeddedPicture()).listener(new RequestListener<Drawable>() {
                 @Override
                 public boolean onLoadFailed(@Nullable GlideException e, Object model, Target<Drawable> target, boolean isFirstResource) {
-                    activityMainBinding.art.setImageResource(R.drawable.album_art_placeholder);
-                    activityMainBinding.songArt.setImageResource(R.drawable.album_art_placeholder);
-                    activityMainBinding.playerBlurBackground.setImageResource(R.drawable.bg_album_art);
-                    activityMainBinding.playerBlurBackground.setBlur(5);
+                    setSongArt();
                     return false;
                 }
 
@@ -1022,10 +1007,7 @@ public class MainActivity extends BaseActivity implements ActivityActionProvider
             }).into(new CustomTarget<Drawable>() {
                 @Override
                 public void onResourceReady(@NonNull Drawable resource, @Nullable Transition<? super Drawable> transition) {
-                    activityMainBinding.art.setImageDrawable(resource);
-                    activityMainBinding.songArt.setImageDrawable(resource);
-                    activityMainBinding.playerBlurBackground.setImageDrawable(resource);
-                    activityMainBinding.playerBlurBackground.setBlur(4);
+                    setSongArt(resource);
                 }
 
                 @Override
@@ -1418,5 +1400,23 @@ public class MainActivity extends BaseActivity implements ActivityActionProvider
 //        }
 //    }
 
+    private void setSongArt(Drawable resource) {
+        activityMainBinding.art.setImageDrawable(resource);
+        activityMainBinding.songArt.setImageDrawable(resource);
+        activityMainBinding.songArt.setBlur(3);
+        activityMainBinding.songArt2.setImageDrawable(resource);
+        activityMainBinding.songArt2.getLayoutParams().height = (int) ConverterUtil.getPx(this, resource.getIntrinsicHeight());
+        activityMainBinding.songArt2.requestLayout();
+        activityMainBinding.playerBlurBackground.setImageDrawable(resource);
+        activityMainBinding.playerBlurBackground.setBlur(4);
+    }
+
+    private void setSongArt() {
+        activityMainBinding.art.setImageResource(R.drawable.album_art_placeholder);
+        activityMainBinding.songArt.setImageResource(R.drawable.album_art_placeholder);
+        activityMainBinding.songArt2.setImageResource(R.drawable.album_art_placeholder);
+        activityMainBinding.playerBlurBackground.setImageResource(R.drawable.bg_album_art);
+        activityMainBinding.playerBlurBackground.setBlur(5);
+    }
 
 }

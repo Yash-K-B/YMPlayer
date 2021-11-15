@@ -13,6 +13,8 @@ import android.view.LayoutInflater;
 import android.view.ViewGroup;
 import android.widget.PopupMenu;
 
+import androidx.activity.result.ActivityResultLauncher;
+import androidx.activity.result.IntentSenderRequest;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.recyclerview.widget.RecyclerView;
@@ -46,10 +48,12 @@ public class SongsListAdapter extends RecyclerView.Adapter<SongsListAdapter.Item
     Drawable failedDrawable;
     LocalViewModel viewModel;
     Pattern pattern;
+    ActivityResultLauncher<IntentSenderRequest> launcher;
 
 
-    public SongsListAdapter(Context context, List<MediaBrowserCompat.MediaItem> songs, SongListAdapter.OnItemClickListener listener, SongsContextMenuClickListener songContextMenuListener, int mode) {
+    public SongsListAdapter(Context context, ActivityResultLauncher<IntentSenderRequest> launcher, List<MediaBrowserCompat.MediaItem> songs, SongListAdapter.OnItemClickListener listener, SongsContextMenuClickListener songContextMenuListener, int mode) {
         this.songs = songs;
+        this.launcher = launcher;
         allSongs.addAll(songs);
         this.listener = listener;
         this.songContextMenuListener = songContextMenuListener;
@@ -143,7 +147,7 @@ public class SongsListAdapter extends RecyclerView.Adapter<SongsListAdapter.Item
                         songContextMenuListener.shareSong(song);
                         return true;
                     case R.id.deleteFromStorage:
-                        if (songContextMenuListener.deleteFromStorage(song)) {
+                        if (songContextMenuListener.deleteFromStorage(song, launcher)) {
                             songs.remove(getAdapterPosition());
                             SongsListAdapter.this.notifyItemRemoved(getAdapterPosition());
                         }

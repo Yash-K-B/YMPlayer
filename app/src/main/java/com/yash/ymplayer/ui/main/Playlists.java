@@ -4,6 +4,7 @@ import android.content.ComponentName;
 import android.content.Intent;
 import android.os.Bundle;
 
+import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
 import androidx.lifecycle.Observer;
@@ -72,8 +73,8 @@ public class Playlists extends Fragment implements PlaylistUpdateListener {
     }
 
     @Override
-    public void onActivityCreated(@Nullable Bundle savedInstanceState) {
-        super.onActivityCreated(savedInstanceState);
+    public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
+        super.onViewCreated(view, savedInstanceState);
         mMediaBrowser = new MediaBrowserCompat(getContext(), new ComponentName(getContext(), PlayerService.class), mConnectionCallbacks, null);
         mMediaBrowser.connect();
         adapter = new SongListAdapter(getContext(), songs, new SongListAdapter.OnItemClickListener() {
@@ -184,6 +185,10 @@ public class Playlists extends Fragment implements PlaylistUpdateListener {
         songs.add(new MediaBrowserCompat.MediaItem(new MediaDescriptionCompat.Builder()
                 .setMediaId("PLAYLISTS/FAVOURITE")
                 .setTitle("Favourites")
+                .build(), MediaBrowserCompat.MediaItem.FLAG_BROWSABLE));
+        songs.add(new MediaBrowserCompat.MediaItem(new MediaDescriptionCompat.Builder()
+                .setMediaId("PLAYLISTS/LAST_PLAYED")
+                .setTitle("Last Played")
                 .build(), MediaBrowserCompat.MediaItem.FLAG_BROWSABLE));
     }
 }

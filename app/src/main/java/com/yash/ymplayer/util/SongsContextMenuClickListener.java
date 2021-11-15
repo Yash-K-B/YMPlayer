@@ -1,10 +1,15 @@
 package com.yash.ymplayer.util;
 
+import android.annotation.SuppressLint;
+import android.app.Activity;
+import android.app.PendingIntent;
+import android.app.RecoverableSecurityException;
 import android.content.ContentResolver;
 import android.content.ContentUris;
 import android.content.ContentValues;
 import android.content.Context;
 import android.content.Intent;
+import android.content.IntentSender;
 import android.database.Cursor;
 import android.net.Uri;
 import android.os.Build;
@@ -14,6 +19,10 @@ import android.support.v4.media.MediaBrowserCompat;
 import android.support.v4.media.session.MediaControllerCompat;
 import android.widget.Toast;
 
+import androidx.activity.result.ActivityResultLauncher;
+import androidx.activity.result.IntentSenderRequest;
+import androidx.activity.result.contract.ActivityResultContracts;
+
 import com.yash.ymplayer.ListExpandActivity;
 import com.yash.logging.LogHelper;
 import com.yash.ymplayer.repository.Repository;
@@ -21,8 +30,10 @@ import com.yash.ymplayer.storage.AudioProvider;
 import com.yash.ymplayer.storage.OfflineMediaProvider;
 import com.yash.ymplayer.ui.main.Playlists;
 import com.yash.ymplayer.ui.main.SongContextMenuListener;
+//import androidx.activity.result.IntentSenderRequest;
 
 import java.io.File;
+import java.util.ArrayList;
 
 public class SongsContextMenuClickListener implements SongContextMenuListener {
     private static final String TAG = "SongsContextMenuClickLi";
@@ -117,7 +128,7 @@ public class SongsContextMenuClickListener implements SongContextMenuListener {
 
     @SuppressWarnings("deprecation")
     @Override
-    public boolean deleteFromStorage(MediaBrowserCompat.MediaItem item) {
+    public boolean deleteFromStorage(MediaBrowserCompat.MediaItem item, ActivityResultLauncher<IntentSenderRequest> launcher) {
         String[] parts = item.getMediaId().split("[/|]");
         long mediaId = Long.parseLong(parts[parts.length - 1]);
         Uri fileUri = ContentUris.withAppendedId(MediaStore.Audio.Media.EXTERNAL_CONTENT_URI, mediaId);
@@ -125,7 +136,7 @@ public class SongsContextMenuClickListener implements SongContextMenuListener {
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q) {
             Cursor cursor = context.getContentResolver().query(fileUri, new String[]{MediaStore.Audio.Media.DATA}, null, null, null);
             while (cursor != null && cursor.moveToNext()) {
-                File file = new File(cursor.getString(cursor.getColumnIndex(MediaStore.Audio.Media.DATA)));
+                @SuppressLint("Range") File file = new File(cursor.getString(cursor.getColumnIndex(MediaStore.Audio.Media.DATA)));
                 if (file.delete()) {
                     int x = context.getContentResolver().delete(fileUri, null, null);
                     LogHelper.d(TAG, "deleteFromStorage: " + fileUri.getEncodedPath() + " exist:" + file.exists());
@@ -139,10 +150,7 @@ public class SongsContextMenuClickListener implements SongContextMenuListener {
             }
             cursor.close();
         } else {
-            context.revokeUriPermission(fileUri, Intent.FLAG_GRANT_WRITE_URI_PERMISSION);
-            int x = context.getContentResolver().delete(fileUri, null, null);
-            LogHelper.d(TAG, "deleteFromStorage: " + fileUri.getEncodedPath());
-            return x != 0;
+            StorageXI.getInstance().with(context).delete(launcher, fileUri);
         }
 
         return false;

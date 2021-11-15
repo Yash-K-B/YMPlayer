@@ -1,13 +1,11 @@
 package com.yash.ymplayer.storage;
 
-import androidx.annotation.NonNull;
-import androidx.room.ColumnInfo;
 import androidx.room.Entity;
 import androidx.room.ForeignKey;
 import androidx.room.Index;
 import androidx.room.PrimaryKey;
 
-@Entity(indices = {@Index(value = {"mediaId","name","artist","album","playlist"},unique = true)})
+@Entity(indices = {@Index(value = {"mediaId","name","artist","album","playlist"},unique = true)}, foreignKeys = @ForeignKey(entity = PlayList.class,parentColumns = "playlist",childColumns = "playlist"))
 public class MediaItem {
     @PrimaryKey(autoGenerate = true)
     int id;
@@ -16,7 +14,6 @@ public class MediaItem {
     String name;
     String artist;
     String album;
-    @ForeignKey(entity = PlayList.class,parentColumns = "playlist",childColumns = "playlist")
     String playlist;
     String artwork;
 

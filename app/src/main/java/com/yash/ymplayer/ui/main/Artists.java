@@ -76,8 +76,8 @@ public class Artists extends Fragment {
     }
 
     @Override
-    public void onActivityCreated(@Nullable Bundle savedInstanceState) {
-        super.onActivityCreated(savedInstanceState);
+    public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
+        super.onViewCreated(view, savedInstanceState);
         context = getContext();
         activity = getActivity();
         mMediaBrowser = new MediaBrowserCompat(getContext(), new ComponentName(context, PlayerService.class), mConnectionCallbacks, null);

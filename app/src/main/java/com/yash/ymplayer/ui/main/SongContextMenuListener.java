@@ -2,6 +2,8 @@ package com.yash.ymplayer.ui.main;
 
 import android.support.v4.media.MediaBrowserCompat;
 
+import androidx.activity.result.ActivityResultLauncher;
+import androidx.activity.result.IntentSenderRequest;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.yash.ymplayer.util.SongsListAdapter;
@@ -19,5 +21,5 @@ public interface SongContextMenuListener {
 
     void shareSong(MediaBrowserCompat.MediaItem item);
 
-    boolean deleteFromStorage(MediaBrowserCompat.MediaItem item);
+    boolean deleteFromStorage(MediaBrowserCompat.MediaItem item, ActivityResultLauncher<IntentSenderRequest> launcher);
 }

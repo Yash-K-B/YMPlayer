@@ -1,5 +1,6 @@
 package com.yash.ymplayer;
 
+import android.app.Activity;
 import android.content.ComponentName;
 import android.content.ContentUris;
 import android.content.Context;
@@ -14,7 +15,11 @@ import android.support.v4.media.session.PlaybackStateCompat;
 import android.util.Log;
 import android.view.MenuItem;
 import android.view.View;
+import android.widget.Toast;
 
+import androidx.activity.result.ActivityResultLauncher;
+import androidx.activity.result.IntentSenderRequest;
+import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.lifecycle.Observer;
@@ -106,7 +111,7 @@ public class ListExpandActivity extends BaseActivity {
             @Override
             public void onChanged(List<MediaBrowserCompat.MediaItem> songs) {
                 binding.listProgress.setVisibility(View.GONE);
-                SongsListAdapter adapter = new SongsListAdapter(context, songs, new SongListAdapter.OnItemClickListener() {
+                SongsListAdapter adapter = new SongsListAdapter(context, launcher, songs, new SongListAdapter.OnItemClickListener() {
                     @Override
                     public void onClick(View v, MediaBrowserCompat.MediaItem song) {
                         if (song.isBrowsable())
@@ -122,6 +127,14 @@ public class ListExpandActivity extends BaseActivity {
         });
     }
 
+    private final ActivityResultLauncher<IntentSenderRequest> launcher = registerForActivityResult(
+            new ActivityResultContracts.StartIntentSenderForResult(),
+            result -> {
+                if (result.getResultCode() == Activity.RESULT_OK) {
+                    Toast.makeText(context, "File deleted successfully", Toast.LENGTH_SHORT).show();
+                }
+            });
+
     void albumTracks() {
         String[] parts = parentId.split("[/]");
         Glide.with(context).load(ContentUris.withAppendedId(Uri.parse("content://media/external/audio/albumart"), Long.parseLong(parts[parts.length - 1]))).placeholder(R.drawable.album_art_placeholder).into(binding.appBarImage);
@@ -130,7 +143,7 @@ public class ListExpandActivity extends BaseActivity {
             @Override
             public void onChanged(List<MediaBrowserCompat.MediaItem> songs) {
                 binding.listProgress.setVisibility(View.GONE);
-                SongsListAdapter adapter = new SongsListAdapter(context, songs, new SongListAdapter.OnItemClickListener() {
+                SongsListAdapter adapter = new SongsListAdapter(context, launcher, songs, new SongListAdapter.OnItemClickListener() {
                     @Override
                     public void onClick(View v, MediaBrowserCompat.MediaItem song) {
                         if (song.isBrowsable())
@@ -147,13 +160,14 @@ public class ListExpandActivity extends BaseActivity {
         });
     }
 
+
     void playListTracks() {
         viewModel.getAllPlaylists(mMediaBrowser, parentId);
         viewModel.allPlaylists.observe(ListExpandActivity.this, new Observer<List<MediaBrowserCompat.MediaItem>>() {
             @Override
             public void onChanged(List<MediaBrowserCompat.MediaItem> songs) {
                 binding.listProgress.setVisibility(View.GONE);
-                SongsListAdapter adapter = new SongsListAdapter(context, songs, new SongListAdapter.OnItemClickListener() {
+                SongsListAdapter adapter = new SongsListAdapter(context, launcher, songs, new SongListAdapter.OnItemClickListener() {
                     @Override
                     public void onClick(View v, MediaBrowserCompat.MediaItem song) {
                         if (song.isBrowsable())

@@ -1,5 +1,6 @@
 package com.yash.ymplayer.ui.main;
 
+import android.app.Activity;
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
@@ -18,7 +19,13 @@ import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.Toast;
 
+import androidx.activity.result.ActivityResult;
+import androidx.activity.result.ActivityResultCallback;
+import androidx.activity.result.ActivityResultLauncher;
+import androidx.activity.result.IntentSenderRequest;
+import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.appcompat.widget.SearchView;
@@ -76,8 +83,8 @@ public class AllSongs extends Fragment {
     }
 
     @Override
-    public void onActivityCreated(@Nullable Bundle savedInstanceState) {
-        super.onActivityCreated(savedInstanceState);
+    public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
+        super.onViewCreated(view, savedInstanceState);
         context = getContext();
         activity = getActivity();
         mMediaBrowser = new MediaBrowserCompat(context, new ComponentName(context, PlayerService.class), mConnectionCallbacks, null);
@@ -122,7 +129,7 @@ public class AllSongs extends Fragment {
                 songs.clear();
                 mMediaController = new MediaControllerCompat(context, mMediaBrowser.getSessionToken());
                 mMediaController.registerCallback(mMediaControllerCallbacks);
-                songsAdapter = new SongsListAdapter(context, songs, new SongListAdapter.OnItemClickListener() {
+                songsAdapter = new SongsListAdapter(context,launcher, songs, new SongListAdapter.OnItemClickListener() {
                     @Override
                     public void onClick(View v, MediaBrowserCompat.MediaItem song) {
                         mMediaController.getTransportControls().playFromMediaId(song.getDescription().getMediaId(), null);
@@ -160,6 +167,14 @@ public class AllSongs extends Fragment {
 
         }
     };
+
+    private final ActivityResultLauncher<IntentSenderRequest> launcher = registerForActivityResult(
+            new ActivityResultContracts.StartIntentSenderForResult(),
+            result -> {
+                if (result.getResultCode() == Activity.RESULT_OK) {
+                    Toast.makeText(context, "File deleted successfully", Toast.LENGTH_SHORT).show();
+                }
+            });
 
     public MediaControllerCompat.Callback mMediaControllerCallbacks = new MediaControllerCompat.Callback() {
         @Override

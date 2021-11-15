@@ -64,8 +64,8 @@ public class LocalSongs extends Fragment {
     }
 
     @Override
-    public void onActivityCreated(@Nullable Bundle savedInstanceState) {
-        super.onActivityCreated(savedInstanceState);
+    public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
+        super.onViewCreated(view, savedInstanceState);
         Log.d(TAG, "onActivityCreated: LocalSongs");
         context = getContext();
         ((ActivityActionProvider) getActivity()).setCustomToolbar(binding.toolbar, "Local Library");
@@ -80,7 +80,6 @@ public class LocalSongs extends Fragment {
         }).attach();
         binding.viewPager.registerOnPageChangeCallback(viewPagerPageChangeCallback);
         binding.viewPager.setOffscreenPageLimit(1);
-
     }
 
     @Override
