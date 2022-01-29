@@ -185,18 +185,17 @@ public class SearchActivity extends BaseActivity {
                                     if (title.contains(text)) {
                                         filteredModelList.add(model);
                                     }
-
-                                    handler.post(() -> {
-                                        if (filteredModelList.isEmpty()) {
-                                            searchBinding.searchListSongsContainer.setVisibility(View.GONE);
-                                            searchBinding.songsHeading.setVisibility(View.GONE);
-                                        } else {
-                                            searchBinding.searchListSongsContainer.setVisibility(View.VISIBLE);
-                                            searchBinding.songsHeading.setVisibility(View.VISIBLE);
-                                        }
-                                        searchListSongAdapter.updateList(filteredModelList);
-                                    });
                                 }
+                                handler.post(() -> {
+                                    if (filteredModelList.isEmpty()) {
+                                        searchBinding.searchListSongsContainer.setVisibility(View.GONE);
+                                        searchBinding.songsHeading.setVisibility(View.GONE);
+                                    } else {
+                                        searchBinding.searchListSongsContainer.setVisibility(View.VISIBLE);
+                                        searchBinding.songsHeading.setVisibility(View.VISIBLE);
+                                    }
+                                    searchListSongAdapter.updateList(filteredModelList);
+                                });
                             }
                         });
                         executorService.execute(new RunnableWithParams(text) {
@@ -208,18 +207,17 @@ public class SearchActivity extends BaseActivity {
                                     if (!title.isEmpty() && title.contains(text)) {
                                         filteredModelList.add(model);
                                     }
-
-                                    handler.post(() -> {
-                                        if (filteredModelList.isEmpty()) {
-                                            searchBinding.searchListArtistsContainer.setVisibility(View.GONE);
-                                            searchBinding.artistsHeading.setVisibility(View.GONE);
-                                        } else {
-                                            searchBinding.searchListArtistsContainer.setVisibility(View.VISIBLE);
-                                            searchBinding.artistsHeading.setVisibility(View.VISIBLE);
-                                        }
-                                        searchListArtistAdapter.updateList(filteredModelList);
-                                    });
                                 }
+                                handler.post(() -> {
+                                    if (filteredModelList.isEmpty()) {
+                                        searchBinding.searchListArtistsContainer.setVisibility(View.GONE);
+                                        searchBinding.artistsHeading.setVisibility(View.GONE);
+                                    } else {
+                                        searchBinding.searchListArtistsContainer.setVisibility(View.VISIBLE);
+                                        searchBinding.artistsHeading.setVisibility(View.VISIBLE);
+                                    }
+                                    searchListArtistAdapter.updateList(filteredModelList);
+                                });
                             }
                         });
                         executorService.execute(new RunnableWithParams(text) {
@@ -231,25 +229,21 @@ public class SearchActivity extends BaseActivity {
                                     if (title.contains(text)) {
                                         filteredModelList.add(model);
                                     }
-
-                                    handler.post(() -> {
-                                        if (filteredModelList.isEmpty()) {
-                                            searchBinding.searchListAlbumsContainer.setVisibility(View.GONE);
-                                            searchBinding.albumsHeading.setVisibility(View.GONE);
-                                        } else {
-                                            searchBinding.searchListAlbumsContainer.setVisibility(View.VISIBLE);
-                                            searchBinding.albumsHeading.setVisibility(View.VISIBLE);
-                                        }
-                                        searchListAlbumAdapter.updateList(filteredModelList);
-                                    });
                                 }
+                                handler.post(() -> {
+                                    if (filteredModelList.isEmpty()) {
+                                        searchBinding.searchListAlbumsContainer.setVisibility(View.GONE);
+                                        searchBinding.albumsHeading.setVisibility(View.GONE);
+                                    } else {
+                                        searchBinding.searchListAlbumsContainer.setVisibility(View.VISIBLE);
+                                        searchBinding.albumsHeading.setVisibility(View.VISIBLE);
+                                    }
+                                    searchListAlbumAdapter.updateList(filteredModelList);
+                                });
                             }
                         });
                     }
                 });
-//                searchBinding.searchListSongsContainer.scrollToPosition(0);
-//                searchBinding.searchListArtistsContainer.scrollToPosition(0);
-//                searchBinding.searchListAlbumsContainer.scrollToPosition(0);
 
                 return true;
             }
@@ -262,6 +256,13 @@ public class SearchActivity extends BaseActivity {
         });
         return super.onCreateOptionsMenu(menu);
     }
+
+
+
+
+
+
+
 
 
     Runnable search = new Runnable() {
@@ -292,7 +293,7 @@ public class SearchActivity extends BaseActivity {
     }
 
 
-    private MediaBrowserCompat.ConnectionCallback connectionCallback = new MediaBrowserCompat.ConnectionCallback() {
+    private final MediaBrowserCompat.ConnectionCallback connectionCallback = new MediaBrowserCompat.ConnectionCallback() {
         @Override
         public void onConnected() {
             viewModel.refreshSearchData(SearchActivity.this, mediaBrowser);

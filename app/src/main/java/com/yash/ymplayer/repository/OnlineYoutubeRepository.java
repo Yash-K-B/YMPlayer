@@ -25,6 +25,7 @@ import com.yash.ymplayer.models.PopularPlaylist;
 import com.yash.ymplayer.models.PopularPlaylists;
 import com.yash.ymplayer.models.YoutubePlaylist;
 import com.yash.ymplayer.util.YoutubeSong;
+import com.yash.youtube_extractor.ExtractorHelper;
 
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -256,7 +257,6 @@ public class OnlineYoutubeRepository {
             return tracks;
         }
     }
-
 
 
     /*                 --------------------------------------------------------                             */
@@ -590,6 +590,27 @@ public class OnlineYoutubeRepository {
         requestQueue.add(request);
 
     }
+
+    public void searchTracks(String query, TracksLoadedCallback callback) {
+        executor.execute(()->{
+            try {
+                List<com.yash.youtube_extractor.models.YoutubeSong> youtubeSongs = ExtractorHelper.search(query);
+                List<YoutubeSong> songs = new ArrayList<>();
+                for (com.yash.youtube_extractor.models.YoutubeSong youtubeSong : youtubeSongs) {
+                    YoutubeSong song = new YoutubeSong(youtubeSong.getTitle(), youtubeSong.getVideoId(), youtubeSong.getChannelTitle(), youtubeSong.getArtUrlSmall(), youtubeSong.getArtUrlMedium());
+                    song.setDurationMillis(youtubeSong.getDurationMillis());
+                    songs.add(song);
+                }
+                loadedTracksMap.put("Search/" + query, songs);
+                callback.onLoaded(songs);
+            } catch (Exception e) {
+                callback.onError();
+            }
+        });
+    }
+
+
+
 
 }
 

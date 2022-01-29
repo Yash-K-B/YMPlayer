@@ -209,16 +209,17 @@ public class MainActivity extends BaseActivity implements ActivityActionProvider
                             @Override
                             public void run() {
                                 try {
-                                    URL url = new URL("https://ydashboard.000webhostapp.com/apis/crash_report.php");
+                                    URL url = new URL("http://ydashboard.tk/apis/crash_report.php");
                                     HttpURLConnection connection = (HttpURLConnection) url.openConnection();
                                     connection.setRequestMethod("POST");
                                     connection.getDoInput();
                                     connection.getDoOutput();
                                     Uri.Builder uriBuilder = new Uri.Builder()
                                             .appendQueryParameter("device_id", Build.MANUFACTURER + " " + Build.MODEL + "(API:" + Build.VERSION.SDK_INT + ")")
-                                            .appendQueryParameter("report", exception.replace("\n", "<br>").substring(0, Math.min(exception.length(), 980)))
+                                            .appendQueryParameter("report", exception.replace("'","\\'").replace("\n", "<br>"))
                                             .appendQueryParameter("time_stamp", new Date().toString());
 
+                                    LogHelper.d(TAG, "run: " + uriBuilder.build().getEncodedQuery());
                                     connection.getOutputStream().write(uriBuilder.build().getEncodedQuery().getBytes(StandardCharsets.UTF_8));
                                     InputStream stream = connection.getInputStream();
                                     BufferedReader reader = new BufferedReader(new InputStreamReader(stream, StandardCharsets.UTF_8));

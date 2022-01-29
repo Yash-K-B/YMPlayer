@@ -55,14 +55,14 @@ public class DeviceAudioProvider implements AudioProvider {
         List<MediaBrowserCompat.MediaItem> allSongs = new ArrayList<>();
         if (songsCursor == null) return allSongs;
         while (songsCursor.moveToNext()) {
-            long mediaId = songsCursor.getLong(songsCursor.getColumnIndex(MediaStore.Audio.Media._ID));
-            String title = songsCursor.getString(songsCursor.getColumnIndex(MediaStore.Audio.Media.TITLE));
-            String artist = songsCursor.getString(songsCursor.getColumnIndex(MediaStore.Audio.Media.ARTIST));
+            long mediaId = songsCursor.getLong(songsCursor.getColumnIndexOrThrow(MediaStore.Audio.Media._ID));
+            String title = songsCursor.getString(songsCursor.getColumnIndexOrThrow(MediaStore.Audio.Media.TITLE));
+            String artist = songsCursor.getString(songsCursor.getColumnIndexOrThrow(MediaStore.Audio.Media.ARTIST));
             artist = (artist == null || artist.equalsIgnoreCase("<unknown>")) ? "Unknown Artist" : artist;
-            String artistId = songsCursor.getString(songsCursor.getColumnIndex(MediaStore.Audio.Media.ARTIST_ID));
-            String album = songsCursor.getString(songsCursor.getColumnIndex(MediaStore.Audio.Media.ALBUM));
+            String artistId = songsCursor.getString(songsCursor.getColumnIndexOrThrow(MediaStore.Audio.Media.ARTIST_ID));
+            String album = songsCursor.getString(songsCursor.getColumnIndexOrThrow(MediaStore.Audio.Media.ALBUM));
             album = (album == null || album.equalsIgnoreCase("<unknown>")) ? "Unknown Album" : album;
-            String albumId = songsCursor.getString(songsCursor.getColumnIndex(MediaStore.Audio.Media.ALBUM_ID));
+            String albumId = songsCursor.getString(songsCursor.getColumnIndexOrThrow(MediaStore.Audio.Media.ALBUM_ID));
             Bundle extras = new Bundle();
             extras.putString(Keys.EXTRA_ALBUM_ID, albumId);
             extras.putString(Keys.EXTRA_ARTIST_ID, artistId);
@@ -90,12 +90,12 @@ public class DeviceAudioProvider implements AudioProvider {
         List<MediaBrowserCompat.MediaItem> songs = new ArrayList<>();
         if (songsCursor == null) return songs;
         while (songsCursor.moveToNext()) {
-            long mediaId = songsCursor.getLong(songsCursor.getColumnIndex(MediaStore.Audio.Media._ID));
-            String title = songsCursor.getString(songsCursor.getColumnIndex(MediaStore.Audio.Media.TITLE));
-            String artist = songsCursor.getString(songsCursor.getColumnIndex(MediaStore.Audio.Media.ARTIST));
+            long mediaId = songsCursor.getLong(songsCursor.getColumnIndexOrThrow(MediaStore.Audio.Media._ID));
+            String title = songsCursor.getString(songsCursor.getColumnIndexOrThrow(MediaStore.Audio.Media.TITLE));
+            String artist = songsCursor.getString(songsCursor.getColumnIndexOrThrow(MediaStore.Audio.Media.ARTIST));
             artist = (artist == null || artist.equalsIgnoreCase("<unknown>")) ? "Unknown Artist" : artist;
-            String artistId = songsCursor.getString(songsCursor.getColumnIndex(MediaStore.Audio.Media.ARTIST_ID));
-            String album = songsCursor.getString(songsCursor.getColumnIndex(MediaStore.Audio.Media.ALBUM));
+            String artistId = songsCursor.getString(songsCursor.getColumnIndexOrThrow(MediaStore.Audio.Media.ARTIST_ID));
+            String album = songsCursor.getString(songsCursor.getColumnIndexOrThrow(MediaStore.Audio.Media.ALBUM));
             album = (album == null || album.equalsIgnoreCase("<unknown>")) ? "Unknown Album" : album;
             Bundle extras = new Bundle();
             extras.putString(Keys.EXTRA_ARTIST_ID, artistId);
@@ -123,13 +123,13 @@ public class DeviceAudioProvider implements AudioProvider {
         List<MediaBrowserCompat.MediaItem> songs = new ArrayList<>();
         if (songsCursor == null) return songs;
         while (songsCursor.moveToNext()) {
-            long mediaId = songsCursor.getLong(songsCursor.getColumnIndex(MediaStore.Audio.Media._ID));
-            String title = songsCursor.getString(songsCursor.getColumnIndex(MediaStore.Audio.Media.TITLE));
-            String artist = songsCursor.getString(songsCursor.getColumnIndex(MediaStore.Audio.Media.ARTIST));
+            long mediaId = songsCursor.getLong(songsCursor.getColumnIndexOrThrow(MediaStore.Audio.Media._ID));
+            String title = songsCursor.getString(songsCursor.getColumnIndexOrThrow(MediaStore.Audio.Media.TITLE));
+            String artist = songsCursor.getString(songsCursor.getColumnIndexOrThrow(MediaStore.Audio.Media.ARTIST));
             artist = (artist == null || artist.equalsIgnoreCase("<unknown>")) ? "Unknown Artist" : artist;
-            String album = songsCursor.getString(songsCursor.getColumnIndex(MediaStore.Audio.Media.ALBUM));
+            String album = songsCursor.getString(songsCursor.getColumnIndexOrThrow(MediaStore.Audio.Media.ALBUM));
             album = (album == null || album.equalsIgnoreCase("<unknown>")) ? "Unknown Album" : album;
-            String albumId = songsCursor.getString(songsCursor.getColumnIndex(MediaStore.Audio.Media.ALBUM_ID));
+            String albumId = songsCursor.getString(songsCursor.getColumnIndexOrThrow(MediaStore.Audio.Media.ALBUM_ID));
             Bundle extras = new Bundle();
             extras.putString(Keys.EXTRA_ALBUM_ID, albumId);
             MediaBrowserCompat.MediaItem item = new MediaBrowserCompat.MediaItem(new MediaDescriptionCompat.Builder()
@@ -190,11 +190,11 @@ public class DeviceAudioProvider implements AudioProvider {
         List<MediaBrowserCompat.MediaItem> allAlbums = new ArrayList<>();
         if (albumsCursor == null) return allAlbums;
         while (albumsCursor.moveToNext()) {
-            long albumId = albumsCursor.getLong(albumsCursor.getColumnIndex(MediaStore.Audio.Albums._ID));
-            String album = albumsCursor.getString(albumsCursor.getColumnIndex(MediaStore.Audio.Albums.ALBUM));
+            long albumId = albumsCursor.getLong(albumsCursor.getColumnIndexOrThrow(MediaStore.Audio.Albums._ID));
+            String album = albumsCursor.getString(albumsCursor.getColumnIndexOrThrow(MediaStore.Audio.Albums.ALBUM));
             album = (album == null || album.equalsIgnoreCase("<unknown>")) ? "Unknown Album" : album;
-            String artist = albumsCursor.getString(albumsCursor.getColumnIndex(MediaStore.Audio.Albums.ARTIST));
-            int numberOfSongs = albumsCursor.getInt(albumsCursor.getColumnIndex(MediaStore.Audio.Albums.NUMBER_OF_SONGS));
+            String artist = albumsCursor.getString(albumsCursor.getColumnIndexOrThrow(MediaStore.Audio.Albums.ARTIST));
+            int numberOfSongs = albumsCursor.getInt(albumsCursor.getColumnIndexOrThrow(MediaStore.Audio.Albums.NUMBER_OF_SONGS));
             MediaBrowserCompat.MediaItem item = new MediaBrowserCompat.MediaItem(new MediaDescriptionCompat.Builder()
                     .setMediaId("ALBUMS/" + albumId)
                     .setTitle(album)
@@ -237,11 +237,11 @@ public class DeviceAudioProvider implements AudioProvider {
         List<MediaBrowserCompat.MediaItem> allArtists = new ArrayList<>();
         if (artistsCursor == null) return allArtists;
         while (artistsCursor.moveToNext()) {
-            String artistId = artistsCursor.getString(artistsCursor.getColumnIndex(MediaStore.Audio.Artists._ID));
-            String artist = artistsCursor.getString(artistsCursor.getColumnIndex(MediaStore.Audio.Artists.ARTIST));
+            String artistId = artistsCursor.getString(artistsCursor.getColumnIndexOrThrow(MediaStore.Audio.Artists._ID));
+            String artist = artistsCursor.getString(artistsCursor.getColumnIndexOrThrow(MediaStore.Audio.Artists.ARTIST));
             artist = (artist == null || artist.equalsIgnoreCase("<unknown>")) ? "Unknown Artist" : artist;
-            int numberOfTracks = artistsCursor.getInt(artistsCursor.getColumnIndex(MediaStore.Audio.Artists.NUMBER_OF_TRACKS));
-            int numberOfAlbums = artistsCursor.getInt(artistsCursor.getColumnIndex(MediaStore.Audio.Artists.NUMBER_OF_ALBUMS));
+            int numberOfTracks = artistsCursor.getInt(artistsCursor.getColumnIndexOrThrow(MediaStore.Audio.Artists.NUMBER_OF_TRACKS));
+            int numberOfAlbums = artistsCursor.getInt(artistsCursor.getColumnIndexOrThrow(MediaStore.Audio.Artists.NUMBER_OF_ALBUMS));
             MediaBrowserCompat.MediaItem item = new MediaBrowserCompat.MediaItem(new MediaDescriptionCompat.Builder()
                     .setMediaId("ARTISTS/" + artistId)
                     .setTitle(artist)
@@ -284,9 +284,9 @@ public class DeviceAudioProvider implements AudioProvider {
         List<MediaBrowserCompat.MediaItem> allPlaylists = new ArrayList<>();
         if (playlistCursor == null) return allPlaylists;
         while (playlistCursor.moveToNext()) {
-            String playlistId = playlistCursor.getString(playlistCursor.getColumnIndex(MediaStore.Audio.Playlists._ID));
-            String playlist = playlistCursor.getString(playlistCursor.getColumnIndex(MediaStore.Audio.Playlists.NAME));
-            String addedDate = playlistCursor.getString(playlistCursor.getColumnIndex(MediaStore.Audio.PlaylistsColumns.DATE_ADDED));
+            String playlistId = playlistCursor.getString(playlistCursor.getColumnIndexOrThrow(MediaStore.Audio.Playlists._ID));
+            String playlist = playlistCursor.getString(playlistCursor.getColumnIndexOrThrow(MediaStore.Audio.Playlists.NAME));
+            String addedDate = playlistCursor.getString(playlistCursor.getColumnIndexOrThrow(MediaStore.Audio.PlaylistsColumns.DATE_ADDED));
             MediaBrowserCompat.MediaItem item = new MediaBrowserCompat.MediaItem(new MediaDescriptionCompat.Builder()
                     .setMediaId("PLAYLISTS/" + playlistId)
                     .setTitle(playlist)
@@ -305,12 +305,12 @@ public class DeviceAudioProvider implements AudioProvider {
         Cursor playlistSongsCursor = resolver.query(MediaStore.Audio.Playlists.Members.getContentUri("external", playlistId), getPlaylistSongsProjection(), MediaStore.Audio.Media.IS_MUSIC + "!=0", null, null);
         if (playlistSongsCursor == null) return playlistSongs;
         while (playlistSongsCursor.moveToNext()) {
-            String id = playlistSongsCursor.getString(playlistSongsCursor.getColumnIndex(MediaStore.Audio.Playlists.Members.AUDIO_ID));
-            String title = playlistSongsCursor.getString(playlistSongsCursor.getColumnIndex(MediaStore.Audio.Media.TITLE));
-            String artist = playlistSongsCursor.getString(playlistSongsCursor.getColumnIndex(MediaStore.Audio.Media.ARTIST));
-            String artistId = playlistSongsCursor.getString(playlistSongsCursor.getColumnIndex(MediaStore.Audio.Media.ARTIST_ID));
-            String album = playlistSongsCursor.getString(playlistSongsCursor.getColumnIndex(MediaStore.Audio.Media.ALBUM));
-            String albumId = playlistSongsCursor.getString(playlistSongsCursor.getColumnIndex(MediaStore.Audio.Media.ALBUM_ID));
+            String id = playlistSongsCursor.getString(playlistSongsCursor.getColumnIndexOrThrow(MediaStore.Audio.Playlists.Members.AUDIO_ID));
+            String title = playlistSongsCursor.getString(playlistSongsCursor.getColumnIndexOrThrow(MediaStore.Audio.Media.TITLE));
+            String artist = playlistSongsCursor.getString(playlistSongsCursor.getColumnIndexOrThrow(MediaStore.Audio.Media.ARTIST));
+            String artistId = playlistSongsCursor.getString(playlistSongsCursor.getColumnIndexOrThrow(MediaStore.Audio.Media.ARTIST_ID));
+            String album = playlistSongsCursor.getString(playlistSongsCursor.getColumnIndexOrThrow(MediaStore.Audio.Media.ALBUM));
+            String albumId = playlistSongsCursor.getString(playlistSongsCursor.getColumnIndexOrThrow(MediaStore.Audio.Media.ALBUM_ID));
             Bundle extras = new Bundle();
             extras.putString(Keys.EXTRA_ARTIST_ID, artistId);
             extras.putString(Keys.EXTRA_ALBUM_ID, albumId);
@@ -332,12 +332,12 @@ public class DeviceAudioProvider implements AudioProvider {
         List<MediaBrowserCompat.MediaItem> lastAddedSongs = new ArrayList<>();
         if (lastAddedCursor == null) return lastAddedSongs;
         while (lastAddedCursor.moveToNext()) {
-            String mediaId = lastAddedCursor.getString(lastAddedCursor.getColumnIndex(MediaStore.Audio.Media._ID));
-            String title = lastAddedCursor.getString(lastAddedCursor.getColumnIndex(MediaStore.Audio.Media.TITLE));
-            String artist = lastAddedCursor.getString(lastAddedCursor.getColumnIndex(MediaStore.Audio.Media.ARTIST));
-            String artistId = lastAddedCursor.getString(lastAddedCursor.getColumnIndex(MediaStore.Audio.Media.ARTIST_ID));
-            String album = lastAddedCursor.getString(lastAddedCursor.getColumnIndex(MediaStore.Audio.Media.ALBUM));
-            String albumId = lastAddedCursor.getString(lastAddedCursor.getColumnIndex(MediaStore.Audio.Media.ALBUM_ID));
+            String mediaId = lastAddedCursor.getString(lastAddedCursor.getColumnIndexOrThrow(MediaStore.Audio.Media._ID));
+            String title = lastAddedCursor.getString(lastAddedCursor.getColumnIndexOrThrow(MediaStore.Audio.Media.TITLE));
+            String artist = lastAddedCursor.getString(lastAddedCursor.getColumnIndexOrThrow(MediaStore.Audio.Media.ARTIST));
+            String artistId = lastAddedCursor.getString(lastAddedCursor.getColumnIndexOrThrow(MediaStore.Audio.Media.ARTIST_ID));
+            String album = lastAddedCursor.getString(lastAddedCursor.getColumnIndexOrThrow(MediaStore.Audio.Media.ALBUM));
+            String albumId = lastAddedCursor.getString(lastAddedCursor.getColumnIndexOrThrow(MediaStore.Audio.Media.ALBUM_ID));
             Bundle extras = new Bundle();
             extras.putString(Keys.EXTRA_ARTIST_ID, artistId);
             extras.putString(Keys.EXTRA_ALBUM_ID, albumId);
@@ -369,10 +369,10 @@ public class DeviceAudioProvider implements AudioProvider {
                 songsCursor = resolver.query(getSongsUri(), getSongsProjection(), getSongsSelection(), null, getSongsSortOrder());
                 if (songsCursor == null) return items;
                 while (songsCursor.moveToNext()) {
-                    String id = songsCursor.getString(songsCursor.getColumnIndex(MediaStore.Audio.Media._ID));
-                    String title = songsCursor.getString(songsCursor.getColumnIndex(MediaStore.Audio.Media.TITLE));
-                    String artist = songsCursor.getString(songsCursor.getColumnIndex(MediaStore.Audio.Media.ARTIST));
-                    String album = songsCursor.getString(songsCursor.getColumnIndex(MediaStore.Audio.Media.ALBUM));
+                    String id = songsCursor.getString(songsCursor.getColumnIndexOrThrow(MediaStore.Audio.Media._ID));
+                    String title = songsCursor.getString(songsCursor.getColumnIndexOrThrow(MediaStore.Audio.Media.TITLE));
+                    String artist = songsCursor.getString(songsCursor.getColumnIndexOrThrow(MediaStore.Audio.Media.ARTIST));
+                    String album = songsCursor.getString(songsCursor.getColumnIndexOrThrow(MediaStore.Audio.Media.ALBUM));
                     MediaSessionCompat.QueueItem item = new MediaSessionCompat.QueueItem(new MediaDescriptionCompat.Builder()
                             .setMediaId(id)
                             .setTitle(title)
@@ -388,10 +388,10 @@ public class DeviceAudioProvider implements AudioProvider {
                 songsCursor = resolver.query(getSongsUri(), getSongsProjection(), getArtistSongsSelection(artistId), null, getSongsSortOrder());
                 if (songsCursor == null) return items;
                 while (songsCursor.moveToNext()) {
-                    String id = songsCursor.getString(songsCursor.getColumnIndex(MediaStore.Audio.Media._ID));
-                    String title = songsCursor.getString(songsCursor.getColumnIndex(MediaStore.Audio.Media.TITLE));
-                    String artist = songsCursor.getString(songsCursor.getColumnIndex(MediaStore.Audio.Media.ARTIST));
-                    String album = songsCursor.getString(songsCursor.getColumnIndex(MediaStore.Audio.Media.ALBUM));
+                    String id = songsCursor.getString(songsCursor.getColumnIndexOrThrow(MediaStore.Audio.Media._ID));
+                    String title = songsCursor.getString(songsCursor.getColumnIndexOrThrow(MediaStore.Audio.Media.TITLE));
+                    String artist = songsCursor.getString(songsCursor.getColumnIndexOrThrow(MediaStore.Audio.Media.ARTIST));
+                    String album = songsCursor.getString(songsCursor.getColumnIndexOrThrow(MediaStore.Audio.Media.ALBUM));
                     MediaSessionCompat.QueueItem item = new MediaSessionCompat.QueueItem(new MediaDescriptionCompat.Builder()
                             .setMediaId(id)
                             .setTitle(title)
@@ -407,10 +407,10 @@ public class DeviceAudioProvider implements AudioProvider {
                 songsCursor = resolver.query(getSongsUri(), getSongsProjection(), getAlbumSongsSelection(albumId), null, getSongsSortOrder());
                 if (songsCursor == null) return items;
                 while (songsCursor.moveToNext()) {
-                    String id = songsCursor.getString(songsCursor.getColumnIndex(MediaStore.Audio.Media._ID));
-                    String title = songsCursor.getString(songsCursor.getColumnIndex(MediaStore.Audio.Media.TITLE));
-                    String artist = songsCursor.getString(songsCursor.getColumnIndex(MediaStore.Audio.Media.ARTIST));
-                    String album = songsCursor.getString(songsCursor.getColumnIndex(MediaStore.Audio.Media.ALBUM));
+                    String id = songsCursor.getString(songsCursor.getColumnIndexOrThrow(MediaStore.Audio.Media._ID));
+                    String title = songsCursor.getString(songsCursor.getColumnIndexOrThrow(MediaStore.Audio.Media.TITLE));
+                    String artist = songsCursor.getString(songsCursor.getColumnIndexOrThrow(MediaStore.Audio.Media.ARTIST));
+                    String album = songsCursor.getString(songsCursor.getColumnIndexOrThrow(MediaStore.Audio.Media.ALBUM));
                     MediaSessionCompat.QueueItem item = new MediaSessionCompat.QueueItem(new MediaDescriptionCompat.Builder()
                             .setMediaId(id)
                             .setTitle(title)
@@ -435,10 +435,10 @@ public class DeviceAudioProvider implements AudioProvider {
         if (songsCursor == null) return items;
         long queueId = 0;
         while (songsCursor.moveToNext()) {
-            String id = songsCursor.getString(songsCursor.getColumnIndex(MediaStore.Audio.Media._ID));
-            String title = songsCursor.getString(songsCursor.getColumnIndex(MediaStore.Audio.Media.TITLE));
-            String artist = songsCursor.getString(songsCursor.getColumnIndex(MediaStore.Audio.Media.ARTIST));
-            String album = songsCursor.getString(songsCursor.getColumnIndex(MediaStore.Audio.Media.ALBUM));
+            String id = songsCursor.getString(songsCursor.getColumnIndexOrThrow(MediaStore.Audio.Media._ID));
+            String title = songsCursor.getString(songsCursor.getColumnIndexOrThrow(MediaStore.Audio.Media.TITLE));
+            String artist = songsCursor.getString(songsCursor.getColumnIndexOrThrow(MediaStore.Audio.Media.ARTIST));
+            String album = songsCursor.getString(songsCursor.getColumnIndexOrThrow(MediaStore.Audio.Media.ALBUM));
             MediaSessionCompat.QueueItem item = new MediaSessionCompat.QueueItem(new MediaDescriptionCompat.Builder()
                     .setMediaId(id)
                     .setTitle(title)
@@ -480,10 +480,10 @@ public class DeviceAudioProvider implements AudioProvider {
         if (songsCursor == null) return items;
         long queueId = 0;
         while (songsCursor.moveToNext()) {
-            String mediaID = songsCursor.getString(songsCursor.getColumnIndex(MediaStore.Audio.Media._ID));
-            String title = songsCursor.getString(songsCursor.getColumnIndex(MediaStore.Audio.Media.TITLE));
-            String artist = songsCursor.getString(songsCursor.getColumnIndex(MediaStore.Audio.Media.ARTIST));
-            String album = songsCursor.getString(songsCursor.getColumnIndex(MediaStore.Audio.Media.ALBUM));
+            String mediaID = songsCursor.getString(songsCursor.getColumnIndexOrThrow(MediaStore.Audio.Media._ID));
+            String title = songsCursor.getString(songsCursor.getColumnIndexOrThrow(MediaStore.Audio.Media.TITLE));
+            String artist = songsCursor.getString(songsCursor.getColumnIndexOrThrow(MediaStore.Audio.Media.ARTIST));
+            String album = songsCursor.getString(songsCursor.getColumnIndexOrThrow(MediaStore.Audio.Media.ALBUM));
             MediaSessionCompat.QueueItem item = new MediaSessionCompat.QueueItem(new MediaDescriptionCompat.Builder()
                     .setMediaId(mediaID)
                     .setTitle(title)
@@ -503,10 +503,10 @@ public class DeviceAudioProvider implements AudioProvider {
         if (songsCursor == null) return items;
         long queueId = 0;
         while (songsCursor.moveToNext()) {
-            String id = songsCursor.getString(songsCursor.getColumnIndex(MediaStore.Audio.Media._ID));
-            String title = songsCursor.getString(songsCursor.getColumnIndex(MediaStore.Audio.Media.TITLE));
-            String artist = songsCursor.getString(songsCursor.getColumnIndex(MediaStore.Audio.Media.ARTIST));
-            String album = songsCursor.getString(songsCursor.getColumnIndex(MediaStore.Audio.Media.ALBUM));
+            String id = songsCursor.getString(songsCursor.getColumnIndexOrThrow(MediaStore.Audio.Media._ID));
+            String title = songsCursor.getString(songsCursor.getColumnIndexOrThrow(MediaStore.Audio.Media.TITLE));
+            String artist = songsCursor.getString(songsCursor.getColumnIndexOrThrow(MediaStore.Audio.Media.ARTIST));
+            String album = songsCursor.getString(songsCursor.getColumnIndexOrThrow(MediaStore.Audio.Media.ALBUM));
             MediaSessionCompat.QueueItem item = new MediaSessionCompat.QueueItem(new MediaDescriptionCompat.Builder()
                     .setMediaId(id)
                     .setTitle(title)
@@ -528,10 +528,10 @@ public class DeviceAudioProvider implements AudioProvider {
         if (songsCursor == null) return items;
         long queueId = 0;
         while (songsCursor.moveToNext()) {
-            String id = songsCursor.getString(songsCursor.getColumnIndex(MediaStore.Audio.Playlists.Members.AUDIO_ID));
-            String title = songsCursor.getString(songsCursor.getColumnIndex(MediaStore.Audio.Media.TITLE));
-            String artist = songsCursor.getString(songsCursor.getColumnIndex(MediaStore.Audio.Media.ARTIST));
-            String album = songsCursor.getString(songsCursor.getColumnIndex(MediaStore.Audio.Media.ALBUM));
+            String id = songsCursor.getString(songsCursor.getColumnIndexOrThrow(MediaStore.Audio.Playlists.Members.AUDIO_ID));
+            String title = songsCursor.getString(songsCursor.getColumnIndexOrThrow(MediaStore.Audio.Media.TITLE));
+            String artist = songsCursor.getString(songsCursor.getColumnIndexOrThrow(MediaStore.Audio.Media.ARTIST));
+            String album = songsCursor.getString(songsCursor.getColumnIndexOrThrow(MediaStore.Audio.Media.ALBUM));
             MediaSessionCompat.QueueItem item = new MediaSessionCompat.QueueItem(new MediaDescriptionCompat.Builder()
                     .setMediaId(id)
                     .setTitle(title)

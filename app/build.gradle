@@ -84,9 +84,9 @@ dependencies {
 
     implementation 'com.afollestad.material-dialogs:core:3.3.0'
 
-    implementation 'com.github.Yash-K-B:youtubeextractor:1.1.5'
+    implementation 'com.github.Yash-K-B:YoutubeExtractor:1.1.6'
 
-    implementation 'com.github.Yash-K-B:Logging:1.0.4'
+    implementation 'com.github.Yash-K-B:Logging:1.0.5'
 
     implementation 'com.mostafagazar:customshapeimageview:1.0.4'
 }
