@@ -9,12 +9,6 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:theme="@style/ThemeOverlay.AppCompat.Dark">
-
-        <androidx.appcompat.widget.Toolbar
-            android:id="@+id/toolbar"
-            android:layout_width="match_parent"
-            android:layout_height="?attr/actionBarSize" />
-
         <ProgressBar
             android:id="@+id/progressBar"
             style="@style/Base.Widget.AppCompat.ProgressBar.Horizontal"

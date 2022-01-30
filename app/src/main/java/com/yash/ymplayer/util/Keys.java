@@ -39,6 +39,7 @@ public interface Keys {
         String AUDIO_SESSION_CHANGED = "audioSessionChanged";
         String TOGGLE_EQUALIZER_STATE = "toggleEqualizerState";
         String PLAYBACK_QUALITY_CHANGED = "qualityChanged";
+        String CLOSE_PLAYBACK = "closePlayback";
     }
 
     interface Fragments {
@@ -102,5 +103,10 @@ public interface Keys {
         String EXTRA_VIDEO_ID = "videoId";
         String EXTRA_TASK_ID = "taskId";
         String EXTRA_BITRATE = "bitrate";
+    }
+
+    interface Notification{
+        String CHANNEL_ID = "YMNotification";
+        CharSequence CHANNEL_NAME = "YM Notification";
     }
 }

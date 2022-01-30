@@ -28,6 +28,7 @@ import androidx.recyclerview.widget.DividerItemDecoration;
 import androidx.recyclerview.widget.LinearLayoutManager;
 
 import com.bumptech.glide.Glide;
+import com.yash.ymplayer.databinding.BasePlayerActivityBinding;
 import com.yash.ymplayer.databinding.ListExpandActivityBinding;
 import com.yash.ymplayer.repository.Repository;
 import com.yash.ymplayer.ui.main.LocalViewModel;
@@ -39,7 +40,7 @@ import com.yash.ymplayer.util.SongsListAdapter;
 
 import java.util.List;
 
-public class ListExpandActivity extends BaseActivity {
+public class ListExpandActivity extends BasePlayerActivity {
     private static final String TAG = "debug";
     ListExpandActivityBinding binding;
     MediaBrowserCompat mMediaBrowser;
@@ -51,21 +52,30 @@ public class ListExpandActivity extends BaseActivity {
     Context context;
 
     @Override
-    protected void onCreate(@Nullable Bundle savedInstanceState) {
-        super.onCreate(savedInstanceState);
+    protected void onCreate(@Nullable Bundle savedInstanceState, MediaBrowserCompat mediaBrowser, BasePlayerActivityBinding playerActivityBinding) {
         binding = ListExpandActivityBinding.inflate(getLayoutInflater());
-        setContentView(binding.getRoot());
+        playerActivityBinding.container.addView(binding.getRoot());
         viewModel = new ViewModelProvider(ListExpandActivity.this).get(LocalViewModel.class);
-        mMediaBrowser = new MediaBrowserCompat(this, new ComponentName(this, PlayerService.class), mConnectionCallbacks, null);
-        mMediaBrowser.connect();
+        mMediaBrowser = mediaBrowser;
         Intent intent = getIntent();
         parentId = intent.getStringExtra(Keys.EXTRA_PARENT_ID);
         type = intent.getStringExtra(Keys.EXTRA_TYPE);
         title = intent.getStringExtra(Keys.EXTRA_TITLE);
-        setSupportActionBar(binding.toolbar);
-        getSupportActionBar().setTitle(title);
+        setCustomToolbar(binding.toolbar, title);
         getSupportActionBar().setDisplayHomeAsUpEnabled(true);
         context = this;
+    }
+
+    @Override
+    protected void onConnected(MediaControllerCompat mediaController) {
+        mMediaController = mediaController;
+        if (type.equalsIgnoreCase("artist")) {
+            artistTracks();
+        } else if (type.equalsIgnoreCase("album")) {
+            albumTracks();
+        } else if (type.equalsIgnoreCase("playlist")) {
+            playListTracks();
+        }
     }
 
     @Override
@@ -85,25 +95,6 @@ public class ListExpandActivity extends BaseActivity {
         mMediaBrowser.disconnect();
     }
 
-    private MediaBrowserCompat.ConnectionCallback mConnectionCallbacks = new MediaBrowserCompat.ConnectionCallback() {
-        @Override
-        public void onConnected() {
-            try {
-                mMediaController = new MediaControllerCompat(ListExpandActivity.this, mMediaBrowser.getSessionToken());
-                mMediaController.registerCallback(mMediaControllerCallbacks);
-
-                if (type.equalsIgnoreCase("artist")) {
-                    artistTracks();
-                } else if (type.equalsIgnoreCase("album")) {
-                    albumTracks();
-                } else if (type.equalsIgnoreCase("playlist")) {
-                    playListTracks();
-                }
-            } catch (RemoteException e) {
-                e.printStackTrace();
-            }
-        }
-    };
 
     void artistTracks() {
         viewModel.getAllArtists(mMediaBrowser, parentId);
@@ -182,23 +173,6 @@ public class ListExpandActivity extends BaseActivity {
             }
         });
     }
-
-    MediaControllerCompat.Callback mMediaControllerCallbacks = new MediaControllerCompat.Callback() {
-        @Override
-        public void onPlaybackStateChanged(PlaybackStateCompat state) {
-            super.onPlaybackStateChanged(state);
-        }
-
-        @Override
-        public void onMetadataChanged(MediaMetadataCompat metadata) {
-            super.onMetadataChanged(metadata);
-        }
-
-        @Override
-        public void onAudioInfoChanged(MediaControllerCompat.PlaybackInfo info) {
-            super.onAudioInfoChanged(info);
-        }
-    };
 
     @Override
     public boolean onOptionsItemSelected(@NonNull MenuItem item) {

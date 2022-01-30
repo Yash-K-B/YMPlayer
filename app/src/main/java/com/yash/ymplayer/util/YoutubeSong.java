@@ -3,8 +3,8 @@ package com.yash.ymplayer.util;
 import android.net.Uri;
 
 public class YoutubeSong {
-    String title,videoId,channelTitle,channelDesc;
-    String art_url_small,art_url_medium;
+    String title, videoId, channelTitle, channelDesc;
+    String art_url_small, art_url_medium;
     Uri audioUri;
     long durationMillis;
 
@@ -78,5 +78,12 @@ public class YoutubeSong {
 
     public void setArt_url_medium(String art_url_medium) {
         this.art_url_medium = art_url_medium;
+    }
+
+    @Override
+    public String toString() {
+        return "YoutubeSong{" +
+                "videoId='" + videoId + '\'' +
+                '}';
     }
 }

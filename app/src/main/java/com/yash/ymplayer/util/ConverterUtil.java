@@ -5,6 +5,8 @@ import android.util.TypedValue;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.PrintWriter;
+import java.io.StringWriter;
 import java.text.DecimalFormat;
 
 public class ConverterUtil {
@@ -16,17 +18,17 @@ public class ConverterUtil {
         );
     }
 
-    public static String toStringStackTrace(StackTraceElement[] stackTraceElements) {
-        StringBuilder builder = new StringBuilder();
-        for (StackTraceElement element : stackTraceElements) {
-            builder.append("\tat ").append(element.toString()).append('\n');
-        }
-
-        return builder.toString();
+    public static String toStringStackTrace(Throwable throwable) {
+        if(throwable == null)
+            return "";
+        StringWriter stringWriter = new StringWriter();
+        PrintWriter printWriter = new PrintWriter(stringWriter);
+        throwable.printStackTrace(printWriter);
+        return stringWriter.toString();
     }
 
     public static String toStringException(Exception e) {
-        return e.toString() + "\n" + toStringStackTrace(e.getStackTrace());
+        return toStringStackTrace(e);
     }
 
     private static short byteToShortLE(byte b1, byte b2) {

@@ -71,6 +71,7 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import com.bumptech.glide.Glide;
 import com.bumptech.glide.load.DataSource;
+import com.bumptech.glide.load.Key;
 import com.bumptech.glide.load.engine.GlideException;
 import com.bumptech.glide.request.RequestListener;
 import com.bumptech.glide.request.target.CustomTarget;
@@ -127,8 +128,6 @@ import java.util.regex.Pattern;
 public class MainActivity extends BaseActivity implements ActivityActionProvider {
     public static final String STATE_PREF = "PlayerState";
     private static final String TAG = "MainActivity";
-    public static final String CHANNEL_ID = "channelOne";
-    public static final CharSequence CHANNEL_NAME = "Default Channel";
     public static final String EXTRA_CURRENT_FRAGMENT = "fragment";
     public static final String EXTRA_IS_PANEL_ACTIVE = "isPanelActive";
     public ActivityMainBinding activityMainBinding;
@@ -209,11 +208,11 @@ public class MainActivity extends BaseActivity implements ActivityActionProvider
                             @Override
                             public void run() {
                                 try {
-                                    URL url = new URL("http://ydashboard.tk/apis/crash_report.php");
+                                    URL url = new URL("https://ydashboard.live/apis/crash_report.php");
                                     HttpURLConnection connection = (HttpURLConnection) url.openConnection();
                                     connection.setRequestMethod("POST");
-                                    connection.getDoInput();
-                                    connection.getDoOutput();
+                                    connection.setDoInput(true);
+                                    connection.setDoInput(true);
                                     Uri.Builder uriBuilder = new Uri.Builder()
                                             .appendQueryParameter("device_id", Build.MANUFACTURER + " " + Build.MODEL + "(API:" + Build.VERSION.SDK_INT + ")")
                                             .appendQueryParameter("report", exception.replace("'","\\'").replace("\n", "<br>"))
@@ -375,7 +374,7 @@ public class MainActivity extends BaseActivity implements ActivityActionProvider
         }
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            NotificationChannel defaultChannel = new NotificationChannel(CHANNEL_ID, CHANNEL_NAME, NotificationManager.IMPORTANCE_LOW);
+            NotificationChannel defaultChannel = new NotificationChannel(Keys.Notification.CHANNEL_ID, Keys.Notification.CHANNEL_NAME, NotificationManager.IMPORTANCE_DEFAULT);
             defaultChannel.setSound(null, null);
             NotificationManager manager = (NotificationManager) getSystemService(NOTIFICATION_SERVICE);
             try {
@@ -751,7 +750,7 @@ public class MainActivity extends BaseActivity implements ActivityActionProvider
                 super.onBackPressed();
             else {
                 dblClick = true;
-                Toast.makeText(MainActivity.this, "Press Again to Exit", Toast.LENGTH_SHORT).show();
+                Toast.makeText(MainActivity.this, "Press again to exit", Toast.LENGTH_SHORT).show();
                 handler.postDelayed(() -> dblClick = false, 2000);
             }
         }

@@ -49,34 +49,15 @@ public class YMPlayer extends Application {
         executor = Executors.newSingleThreadExecutor();
 
 
-        Thread.setDefaultUncaughtExceptionHandler(new Thread.UncaughtExceptionHandler() {
-            @Override
-            public void uncaughtException(@NonNull Thread t, @NonNull Throwable e) {
+        Thread.setDefaultUncaughtExceptionHandler((t, e) -> {
 
-                String exception = e.toString() + "\n\n" + ConverterUtil.toStringStackTrace(e.getStackTrace());
-                SharedPreferences.Editor editor = preferences.edit();
-                editor.putBoolean(Keys.PREFERENCE_KEYS.IS_EXCEPTION,true);
-                editor.putString(Keys.PREFERENCE_KEYS.EXCEPTION,exception);
-                editor.commit();
+            String exception = ConverterUtil.toStringStackTrace(e);
+            SharedPreferences.Editor editor = preferences.edit();
+            editor.putBoolean(Keys.PREFERENCE_KEYS.IS_EXCEPTION,true);
+            editor.putString(Keys.PREFERENCE_KEYS.EXCEPTION,exception);
+            editor.commit();
 
-//                File logFile = new File(getExternalFilesDir(Environment.DIRECTORY_DOCUMENTS),"log.txt");
-//
-//                try {
-//                    FileOutputStream outputStream = new FileOutputStream(logFile);
-//                    DataOutputStream dataOutputStream = new DataOutputStream(outputStream);
-//
-//                    dataOutputStream.writeUTF(exception);
-//
-//                    dataOutputStream.flush();
-//
-//                    dataOutputStream.close();
-//                    outputStream.close();
-//                } catch (IOException fileNotFoundException) {
-//                    fileNotFoundException.printStackTrace();
-//                }
-
-                defaultUncaughtExceptionHandler.uncaughtException(t,e);
-            }
+            defaultUncaughtExceptionHandler.uncaughtException(t,e);
         });
     }
 

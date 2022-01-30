@@ -22,6 +22,7 @@ import androidx.recyclerview.widget.GridLayoutManager;
 import androidx.recyclerview.widget.LinearLayoutManager;
 
 import com.yash.ymplayer.databinding.ActivitySearchBinding;
+import com.yash.ymplayer.databinding.BasePlayerActivityBinding;
 import com.yash.ymplayer.ui.main.SearchViewModel;
 import com.yash.ymplayer.util.SearchListAdapter;
 
@@ -30,7 +31,7 @@ import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
-public class SearchActivity extends BaseActivity {
+public class SearchActivity extends BasePlayerActivity {
     private static final String TAG = "debug";
     public static final String SONGS_TAG = "songs";
     public static final String ARTISTS_TAG = "artists";
@@ -51,16 +52,14 @@ public class SearchActivity extends BaseActivity {
     private final Handler handler = new Handler(Looper.getMainLooper());
 
     @Override
-    protected void onCreate(@Nullable Bundle savedInstanceState) {
-        super.onCreate(savedInstanceState);
+    protected void onCreate(@Nullable Bundle savedInstanceState, MediaBrowserCompat mediaBrowser, BasePlayerActivityBinding playerActivityBinding) {
         searchBinding = ActivitySearchBinding.inflate(getLayoutInflater());
-        setContentView(searchBinding.getRoot());
-        setSupportActionBar(searchBinding.toolbar);
+        playerActivityBinding.container.addView(searchBinding.getRoot());
+        setCustomToolbar(searchBinding.toolbar, "Search");
         getSupportActionBar().setDisplayHomeAsUpEnabled(true);
         long duration = 5000;
         viewModel = new ViewModelProvider(this).get(SearchViewModel.class);
-        mediaBrowser = new MediaBrowserCompat(this, new ComponentName(this, PlayerService.class), connectionCallback, null);
-        mediaBrowser.connect();
+        this.mediaBrowser = mediaBrowser;
         executorService = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors() > 3 ? Runtime.getRuntime().availableProcessors() - 2 : 1);
 
         searchListSongAdapter = new SearchListAdapter(this, new SearchListAdapter.OnItemClickListener() {
@@ -69,7 +68,6 @@ public class SearchActivity extends BaseActivity {
                 if (song.isPlayable()) {
                     searchView.clearFocus();
                     mediaController.getTransportControls().playFromMediaId(song.getMediaId(), null);
-                    finish();
                 }
             }
         }, SearchListAdapter.ItemType.SONGS, searchBinding.songsHeading, searchBinding.searchListSongsContainer);
@@ -90,7 +88,7 @@ public class SearchActivity extends BaseActivity {
                     intent.putExtra("type", "album");
                     intent.putExtra("imageId", id);
                     startActivity(intent);
-                    finish();
+//                    finish();
                 }
             }
         }, SearchListAdapter.ItemType.ALBUMS, searchBinding.albumsHeading, searchBinding.searchListAlbumsContainer);
@@ -110,7 +108,7 @@ public class SearchActivity extends BaseActivity {
                     intent.putExtra("parent_id", song.getMediaId());
                     intent.putExtra("type", "artist");
                     startActivity(intent);
-                    finish();
+//                    finish();
                 }
             }
         }, SearchListAdapter.ItemType.SONGS, searchBinding.artistsHeading, searchBinding.searchListArtistsContainer);
@@ -126,7 +124,18 @@ public class SearchActivity extends BaseActivity {
         searchBinding.songsHeading.setVisibility(View.GONE);
         searchBinding.albumsHeading.setVisibility(View.GONE);
         searchBinding.artistsHeading.setVisibility(View.GONE);
+    }
 
+    @Override
+    protected void onConnected(MediaControllerCompat mediaController) {
+        this.mediaController = mediaController;
+        viewModel.refreshSearchData(SearchActivity.this, mediaBrowser);
+        viewModel.allSearchData.observe(SearchActivity.this, new Observer<List<List<MediaBrowserCompat.MediaItem>>>() {
+            @Override
+            public void onChanged(List<List<MediaBrowserCompat.MediaItem>> lists) {
+                SearchActivity.this.lists = lists;
+            }
+        });
     }
 
     @Override
@@ -258,21 +267,6 @@ public class SearchActivity extends BaseActivity {
     }
 
 
-
-
-
-
-
-
-
-    Runnable search = new Runnable() {
-        @Override
-        public void run() {
-
-
-        }
-    };
-
     @Override
     public boolean onOptionsItemSelected(@NonNull MenuItem item) {
         if (item.getItemId() == android.R.id.home)
@@ -285,33 +279,6 @@ public class SearchActivity extends BaseActivity {
         super.finish();
         overridePendingTransition(android.R.anim.fade_in, android.R.anim.fade_out);
     }
-
-    @Override
-    protected void onDestroy() {
-        super.onDestroy();
-        mediaBrowser.disconnect();
-    }
-
-
-    private final MediaBrowserCompat.ConnectionCallback connectionCallback = new MediaBrowserCompat.ConnectionCallback() {
-        @Override
-        public void onConnected() {
-            viewModel.refreshSearchData(SearchActivity.this, mediaBrowser);
-            try {
-                mediaController = new MediaControllerCompat(SearchActivity.this, mediaBrowser.getSessionToken());
-                viewModel.allSearchData.observe(SearchActivity.this, new Observer<List<List<MediaBrowserCompat.MediaItem>>>() {
-                    @Override
-                    public void onChanged(List<List<MediaBrowserCompat.MediaItem>> lists) {
-                        SearchActivity.this.lists = lists;
-                    }
-                });
-            } catch (RemoteException e) {
-                e.printStackTrace();
-            }
-
-        }
-
-    };
 
 
     abstract static class RunnableWithParams implements Runnable {

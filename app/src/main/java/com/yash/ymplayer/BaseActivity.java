@@ -23,6 +23,7 @@ public abstract class BaseActivity extends AppCompatActivity {
 
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
+        LogHelper.d(TAG, "onCreate: BaseAct");
         preferences = PreferenceManager.getDefaultSharedPreferences(this);
         String theme_name = preferences.getString("theme", "blue") + preferences.getString("background", "light");
         Log.d(TAG, "onCreate: theme:" + theme_name);

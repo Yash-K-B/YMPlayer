@@ -95,7 +95,6 @@ public class PlayerService extends MediaBrowserServiceCompat implements PlayerHe
     public static final String METADATA_KEY_LIKE = "like";
     public static final String MEDIA_ID = "mediaId";
     private static final String TAG = "PlayerService";
-    private static final String CHANNEL_ID = "channelOne";
     public static final String METADATA_KEY_FAVOURITE = "favourite";
     MediaSessionCompat mSession;
     PlaybackStateCompat.Builder mPlaybackStateBuilder;
@@ -743,6 +742,22 @@ public class PlayerService extends MediaBrowserServiceCompat implements PlayerHe
                     setPlayWhenReady(true);
                     LogHelper.d(TAG, "onCustomAction: PLAYBACK_QUALITY_CHANGED");
                     break;
+
+                case Keys.Action.CLOSE_PLAYBACK:
+                    queuePos = -1;
+                    playingQueue.clear();
+                    mediaIdLists.clear();
+                    mediaSources.clear();
+                    mSession.setMetadata(null);
+                    mSession.setQueueTitle("");
+                    currentMediaIdOrVideoId = null;
+                    if (player != null) {
+                        player.release();
+                        player = null;
+                    }
+                    setPlaybackState(PlaybackStateCompat.STATE_NONE);
+                    stopForeground(true);
+                    break;
                 default:
             }
 
@@ -1065,8 +1080,8 @@ public class PlayerService extends MediaBrowserServiceCompat implements PlayerHe
         notificationIntent.addCategory(Intent.CATEGORY_LAUNCHER);
         notificationIntent.setAction(Intent.ACTION_MAIN);
         PendingIntent notificationPendingIntent = PendingIntent.getActivity(this, 11, notificationIntent, PendingIntent.FLAG_UPDATE_CURRENT);
-        Notification notification = new NotificationCompat.Builder(this, CHANNEL_ID)
-                .setSmallIcon(R.drawable.icon_notif)
+        Notification notification = new NotificationCompat.Builder(this, Keys.Notification.CHANNEL_ID)
+                .setSmallIcon(R.drawable.icon_notification_24)
                 .setStyle(new androidx.media.app.NotificationCompat.MediaStyle().setMediaSession(mSession.getSessionToken()).setShowActionsInCompactView(0, 1, 2))
                 .setContentTitle(metadata.getText(MediaMetadataCompat.METADATA_KEY_TITLE))
                 .setContentText(metadata.getText(MediaMetadataCompat.METADATA_KEY_ARTIST))
@@ -1271,7 +1286,13 @@ public class PlayerService extends MediaBrowserServiceCompat implements PlayerHe
                     } else {
                         long start = SystemClock.currentThreadTimeMillis(), end;
                         LogHelper.d(TAG, "resolveDataSpec: call to extractor");
-                        VideoDetails videoDetails = extractor.extract(uriId);
+                        VideoDetails videoDetails = null;
+                        try {
+                            videoDetails = extractor.extract(uriId);
+                        } catch (Exception e) {
+                            videoDetails = extractor.extract(uriId);
+                        }
+
                         end = SystemClock.currentThreadTimeMillis();
                         LogHelper.d(TAG, "resolveDataSpec: Exec time :" + (end - start) / 1000.0 + "s");
 

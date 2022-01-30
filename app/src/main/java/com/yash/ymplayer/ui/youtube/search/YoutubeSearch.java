@@ -22,63 +22,44 @@ import androidx.recyclerview.widget.LinearLayoutManager;
 
 import com.yash.logging.LogHelper;
 import com.yash.ymplayer.BaseActivity;
+import com.yash.ymplayer.BasePlayerActivity;
 import com.yash.ymplayer.PlayerService;
 import com.yash.ymplayer.PlaylistExpandActivity;
 import com.yash.ymplayer.R;
 import com.yash.ymplayer.SearchActivity;
 import com.yash.ymplayer.databinding.ActivitySearchBinding;
 import com.yash.ymplayer.databinding.ActivityUtubeSearchBinding;
+import com.yash.ymplayer.databinding.BasePlayerActivityBinding;
 import com.yash.ymplayer.repository.OnlineYoutubeRepository;
 import com.yash.ymplayer.ui.youtube.YoutubeTracksAdapter;
 import com.yash.ymplayer.util.YoutubeSong;
 
 import java.util.List;
 
-public class YoutubeSearch extends BaseActivity {
+public class YoutubeSearch extends BasePlayerActivity {
     private static final String TAG = "YoutubeSearch";
     ActivityUtubeSearchBinding utubeSearchBinding;
     SearchView searchView;
-    MediaBrowserCompat mediaBrowser;
     MediaControllerCompat mediaController;
 
     @Override
-    protected void onCreate(@Nullable Bundle savedInstanceState) {
-        super.onCreate(savedInstanceState);
+    protected void onCreate(@Nullable Bundle savedInstanceState, MediaBrowserCompat mediaBrowser, BasePlayerActivityBinding playerActivityBinding) {
         utubeSearchBinding = ActivityUtubeSearchBinding.inflate(getLayoutInflater());
-        setContentView(utubeSearchBinding.getRoot());
-        setSupportActionBar(utubeSearchBinding.toolbar);
-        getSupportActionBar().setDisplayHomeAsUpEnabled(true);
+        playerActivityBinding.container.addView(utubeSearchBinding.getRoot());
+        setCustomToolbar(null, "Search");
         long duration = 5000;
         utubeSearchBinding.progressBar.setVisibility(View.INVISIBLE);
-        mediaBrowser = new MediaBrowserCompat(this, new ComponentName(this, PlayerService.class), connectionCallback, null);
-        mediaBrowser.connect();
+    }
 
+    @Override
+    protected void onConnected(MediaControllerCompat mediaController) {
+        this.mediaController = mediaController;
     }
 
     @Override
     public void refresh() {
 
     }
-
-    @Override
-    protected void onDestroy() {
-        super.onDestroy();
-        mediaBrowser.disconnect();
-    }
-
-
-    private final MediaBrowserCompat.ConnectionCallback connectionCallback = new MediaBrowserCompat.ConnectionCallback() {
-        @Override
-        public void onConnected() {
-            try {
-                mediaController = new MediaControllerCompat(YoutubeSearch.this, mediaBrowser.getSessionToken());
-            } catch (RemoteException e) {
-                e.printStackTrace();
-            }
-
-        }
-
-    };
 
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
@@ -109,7 +90,7 @@ public class YoutubeSearch extends BaseActivity {
                                 @Override
                                 public void onClick(YoutubeSong song) {
                                     String id = "Search/" + query + "|" + song.getVideoId();
-                                    LogHelper.d(TAG, "onClick: uri" + song.getVideoId());
+                                    LogHelper.d(TAG, "onClick: uri" + song.getVideoId() + " mediaController: "+ mediaController);
                                     if (mediaController != null)
                                         mediaController.getTransportControls().playFromUri(Uri.parse(id), null);
                                 }

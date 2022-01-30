@@ -235,7 +235,7 @@ public class DownloadService extends Service {
                 downloadFileIntent.putExtra(Keys.DownloadManager.EXTRA_ACTION, "pause");
                 downloadFileIntent.putExtra(Keys.DownloadManager.EXTRA_VIDEO_ID, videoId);
                 PendingIntent dFilePendingIntent = PendingIntent.getService(DownloadService.this, 10023, downloadFileIntent, PendingIntent.FLAG_UPDATE_CURRENT);
-                notificationBuilder = new NotificationCompat.Builder(DownloadService.this, MainActivity.CHANNEL_ID)
+                notificationBuilder = new NotificationCompat.Builder(DownloadService.this, Keys.Notification.CHANNEL_ID)
                         .setSmallIcon(R.drawable.ic_cloud_download)
                         .setColor(Color.BLUE)
                         .setContentTitle(videoDetails.getVideoData().getTitle())
