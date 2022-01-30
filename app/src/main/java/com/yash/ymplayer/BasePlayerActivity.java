@@ -2,6 +2,7 @@ package com.yash.ymplayer;
 
 import android.content.ComponentName;
 import android.content.ContentUris;
+import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.graphics.Color;
@@ -24,6 +25,7 @@ import android.support.v4.media.session.PlaybackStateCompat;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
+import android.view.inputmethod.InputMethodManager;
 import android.widget.ImageView;
 import android.widget.SeekBar;
 import android.widget.Toast;
@@ -147,6 +149,8 @@ public abstract class BasePlayerActivity extends BaseActivity implements Activit
         });
         playerView.setState(BottomSheetBehavior.STATE_HIDDEN);
         basePlayerActivityBinding.playerTop.setOnClickListener(v -> {
+            InputMethodManager imm = (InputMethodManager)getSystemService(Context.INPUT_METHOD_SERVICE);
+            imm.hideSoftInputFromWindow(v.getWindowToken(), 0);
             if (playerView.getState() == BottomSheetBehavior.STATE_COLLAPSED)
                 playerView.setState(BottomSheetBehavior.STATE_EXPANDED);
         });

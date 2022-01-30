@@ -230,7 +230,6 @@ public class OnlineYoutubeRepository {
         return mediaItems;
     }
 
-
     public interface TopTracksLoadedCallback {
         void onLoaded(List<YoutubeSong> tracks, String prevToken, String nextToken);
     }
@@ -539,6 +538,60 @@ public class OnlineYoutubeRepository {
 
     }
 
+    public List<MediaSessionCompat.QueueItem> getPlayingQueueSingle(String uri) {
+        String id = uri.split("[|]")[0];
+        String videoId = uri.split("[|]")[1];
+        if ("TOP_TRACKS".equals(id)) {
+            List<MediaSessionCompat.QueueItem> mediaItems = new ArrayList<>();
+            long queueId = 0L;
+            if (topTracksCache != null) {
+                for (String key : topTracksCache.keySet())
+                    for (YoutubeSong song : topTracksCache.get(key).getTracks()) {
+                        if (song.getVideoId().equals(videoId)) {
+                            Bundle extras = new Bundle();
+                            extras.putLong("duration", song.getDurationMillis());
+                            MediaSessionCompat.QueueItem queueItem = new MediaSessionCompat.QueueItem(new MediaDescriptionCompat.Builder()
+                                    .setMediaId(song.getVideoId())
+                                    .setTitle(song.getTitle())
+                                    .setSubtitle(song.getChannelTitle())
+                                    .setDescription(song.getChannelDesc())
+                                    .setIconUri(Uri.parse(song.getArt_url_medium()))
+                                    .setExtras(extras)
+                                    .build()
+                                    , queueId++);
+                            mediaItems.add(queueItem);
+                        }
+                    }
+            }
+            return mediaItems;
+        } else {
+            List<MediaSessionCompat.QueueItem> mediaItems = new ArrayList<>();
+            long queueId = 0L;
+            if (loadedTracksMap != null) {
+                if (loadedTracksMap.containsKey(id)) {
+                    for (YoutubeSong song : Objects.requireNonNull(loadedTracksMap.get(id))) {
+                        if (song.getVideoId().equals(videoId)) {
+                            Bundle extras = new Bundle();
+                            extras.putLong("duration", song.getDurationMillis());
+                            MediaSessionCompat.QueueItem queueItem = new MediaSessionCompat.QueueItem(new MediaDescriptionCompat.Builder()
+                                    .setMediaId(song.getVideoId())
+                                    .setTitle(song.getTitle())
+                                    .setSubtitle(song.getChannelTitle())
+                                    .setDescription(song.getChannelDesc())
+                                    .setIconUri(Uri.parse(song.getArt_url_medium()))
+                                    .setExtras(extras)
+                                    .build()
+                                    , queueId++);
+                            mediaItems.add(queueItem);
+                        }
+                    }
+                } else LogHelper.d(TAG, "getPlayingQueueSingle: No result found");
+            }
+            return mediaItems;
+        }
+
+    }
+
 
 
 
@@ -592,7 +645,7 @@ public class OnlineYoutubeRepository {
     }
 
     public void searchTracks(String query, TracksLoadedCallback callback) {
-        executor.execute(()->{
+        executor.execute(() -> {
             try {
                 List<com.yash.youtube_extractor.models.YoutubeSong> youtubeSongs = ExtractorHelper.search(query);
                 List<YoutubeSong> songs = new ArrayList<>();
@@ -608,8 +661,6 @@ public class OnlineYoutubeRepository {
             }
         });
     }
-
-
 
 
 }

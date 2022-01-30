@@ -2,6 +2,7 @@ package com.yash.ymplayer.ui.youtube.toptracks;
 
 import android.content.Context;
 import android.content.Intent;
+import android.net.Uri;
 import android.os.Bundle;
 import android.support.v4.media.session.MediaControllerCompat;
 import android.view.LayoutInflater;
@@ -65,6 +66,9 @@ public class TopTracksAdapter extends PagedListAdapter<YoutubeSong, TopTracksAda
                 Intent downloadIntent;
                 switch (item.getItemId()){
                     case R.id.play_single:
+                        Bundle extra = new Bundle();
+                        extra.putBoolean(Keys.PLAY_SINGLE, true);
+                        mediaController.getTransportControls().playFromUri(Uri.parse("TOP_TRACKS|" +song.getVideoId()), extra);
                         return true;
                     case R.id.download128kbps:
                          downloadIntent = new Intent(context,DownloadService.class);

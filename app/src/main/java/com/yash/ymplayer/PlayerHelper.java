@@ -9,7 +9,7 @@ public interface PlayerHelper {
     /**
      *  Retrieve and create Playing Queue and set it to the MediaSession
      */
-    void setOnlinePlayingQueue(String uri);
+    void setOnlinePlayingQueue(String uri, Bundle extras);
 
     /**
      *

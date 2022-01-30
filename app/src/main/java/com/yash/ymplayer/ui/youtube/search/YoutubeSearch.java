@@ -32,6 +32,7 @@ import com.yash.ymplayer.databinding.ActivityUtubeSearchBinding;
 import com.yash.ymplayer.databinding.BasePlayerActivityBinding;
 import com.yash.ymplayer.repository.OnlineYoutubeRepository;
 import com.yash.ymplayer.ui.youtube.YoutubeTracksAdapter;
+import com.yash.ymplayer.util.Keys;
 import com.yash.ymplayer.util.YoutubeSong;
 
 import java.util.List;
@@ -93,6 +94,13 @@ public class YoutubeSearch extends BasePlayerActivity {
                                     LogHelper.d(TAG, "onClick: uri" + song.getVideoId() + " mediaController: "+ mediaController);
                                     if (mediaController != null)
                                         mediaController.getTransportControls().playFromUri(Uri.parse(id), null);
+                                }
+
+                                @Override
+                                public void onPlaySingle(YoutubeSong song) {
+                                    Bundle extra = new Bundle();
+                                    extra.putBoolean(Keys.PLAY_SINGLE, true);
+                                    mediaController.getTransportControls().playFromUri(Uri.parse("Search/" + query + "|" + song.getVideoId()), extra);
                                 }
                             });
                             utubeSearchBinding.progressBar.setVisibility(View.INVISIBLE);
