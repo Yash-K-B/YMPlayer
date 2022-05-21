@@ -68,7 +68,8 @@ import com.google.android.exoplayer2.upstream.DefaultDataSourceFactory;
 import com.google.android.exoplayer2.upstream.ResolvingDataSource;
 import com.google.android.exoplayer2.util.Util;
 import com.yash.logging.LogHelper;
-import com.yash.ymplayer.data.UriCache;
+import com.yash.ymplayer.cache.impl.UriCache;
+import com.yash.ymplayer.models.YoutubeSongUriDetail;
 import com.yash.ymplayer.repository.OnlineYoutubeRepository;
 import com.yash.ymplayer.repository.Repository;
 import com.yash.ymplayer.storage.AudioProvider;
@@ -1287,8 +1288,7 @@ public class PlayerService extends MediaBrowserServiceCompat implements PlayerHe
             public DataSpec resolveDataSpec(DataSpec dataSpec) throws IOException {
                 try {
 
-                    LogHelper.d(TAG, "resolveDataSpec: =======================================================================================================================================================");
-                    LogHelper.d(TAG, "resolveDataSpec: " + dataSpec.uri);
+                    LogHelper.d(TAG, String.format("resolving data spec for : ===================================%s===================================================================================================================", dataSpec.uri));
                     boolean isMatch = mediaIdPattern.matcher(dataSpec.uri.toString()).matches();
                     String uriId = dataSpec.uri.toString();
                     LogHelper.d(TAG, "resolveDataSpec: " + dataSpec.toString());
@@ -1297,14 +1297,18 @@ public class PlayerService extends MediaBrowserServiceCompat implements PlayerHe
                         return dataSpec.withUri(ContentUris.withAppendedId(MediaStore.Audio.Media.EXTERNAL_CONTENT_URI, Long.parseLong(uriId)));
 
                     int quality = Integer.parseInt(Objects.requireNonNull(appPreferences.getString(Keys.PREFERENCE_KEYS.PLAYBACK_QUALITY, "2")));
-                    LogHelper.d(TAG, "resolveDataSpec: quality:" + quality);
 
+                    LogHelper.d(TAG, "resolveDataSpec: found youtube song with videoId: " + uriId + "  & quality:" + quality);
+                    LogHelper.d(TAG, "resolveDataSpec: available in cache : " + uriCache.contain(uriId));
                     Uri audioUri = null;
                     int index = mediaIdLists.indexOf(uriId);
-                    if (uriCache.isInCache(uriId, quality)) {
+                    if (uriCache.contain(uriId)) {
+                        YoutubeSongUriDetail uriDetail = uriCache.get(uriId);
                         if (playingQueue.get(index).getDescription().getExtras() == null || !playingQueue.get(index).getDescription().getExtras().containsKey(Keys.EXTRA_LENGTH))
-                            updatePlayingQueueItemLength(index, uriCache.getLength(uriId));
-                        return dataSpec.withUri(uriCache.getUri(uriId, quality));
+                            updatePlayingQueueItemLength(index, uriDetail.getLength());
+                        Uri uri = uriDetail.getUri(quality);
+                        LogHelper.d(TAG, "resolveDataSpec: found cached uri: " + uri);
+                        return dataSpec.withUri(uri);
                     } else {
                         long start = SystemClock.currentThreadTimeMillis(), end;
                         LogHelper.d(TAG, "resolveDataSpec: call to extractor");
@@ -1324,19 +1328,19 @@ public class PlayerService extends MediaBrowserServiceCompat implements PlayerHe
                             switch (audioStreams.size()) {
                                 case 1:
                                     audioUri = Uri.parse(audioStreams.get(0).getUrl());
-                                    uriCache.pushUri(dataSpec.uri.toString(), audioStreams.get(0).getUrl(), audioStreams.get(0).getUrl(), audioStreams.get(0).getUrl(), songLength);
+                                    uriCache.put(dataSpec.uri.toString(), new YoutubeSongUriDetail(dataSpec.uri.toString(), audioStreams.get(0).getUrl(), audioStreams.get(0).getUrl(), audioStreams.get(0).getUrl(), songLength));
                                     break;
                                 case 2:
                                     audioUri = Uri.parse(audioStreams.get(quality / 2).getUrl());
-                                    uriCache.pushUri(dataSpec.uri.toString(), audioStreams.get(0).getUrl(), audioStreams.get(1).getUrl(), audioStreams.get(1).getUrl(), songLength);
+                                    uriCache.put(dataSpec.uri.toString(), new YoutubeSongUriDetail(dataSpec.uri.toString(), audioStreams.get(0).getUrl(), audioStreams.get(1).getUrl(), audioStreams.get(1).getUrl(), songLength));
                                     break;
                                 case 3:
                                     audioUri = Uri.parse(audioStreams.get(quality - 1).getUrl());
-                                    uriCache.pushUri(dataSpec.uri.toString(), audioStreams.get(0).getUrl(), audioStreams.get(1).getUrl(), audioStreams.get(2).getUrl(), songLength);
+                                    uriCache.put(dataSpec.uri.toString(), new YoutubeSongUriDetail(dataSpec.uri.toString(), audioStreams.get(0).getUrl(), audioStreams.get(1).getUrl(), audioStreams.get(2).getUrl(), songLength));
                                     break;
                                 case 4:
                                     audioUri = Uri.parse(audioStreams.get(quality).getUrl());
-                                    uriCache.pushUri(dataSpec.uri.toString(), audioStreams.get(1).getUrl(), audioStreams.get(2).getUrl(), audioStreams.get(3).getUrl(), songLength);
+                                    uriCache.put(dataSpec.uri.toString(), new YoutubeSongUriDetail(dataSpec.uri.toString(), audioStreams.get(1).getUrl(), audioStreams.get(2).getUrl(), audioStreams.get(3).getUrl(), songLength));
                                     LogHelper.d(TAG, "resolveDataSpec: quality:" + quality + " selected bitrate:" + audioStreams.get(quality).getBitrate());
                                     for (int i = 0; i < 4; i++)
                                         LogHelper.d(TAG, "resolveDataSpec: bitrate : " + audioStreams.get(i).getBitrate());

@@ -42,7 +42,6 @@ public class QueueListAdapter extends RecyclerView.Adapter<QueueListAdapter.Queu
 
     @Override
     public void onBindViewHolder(@NonNull QueueItemHolder holder, int position) {
-        LogHelper.d(TAG, "onBindViewHolder: "+position);
         songs.get(position).setColor((position == activePosition) ? Color.GREEN : color);
         holder.bindQueueItem(songs.get(position), listener, holder);
     }
