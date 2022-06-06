@@ -715,10 +715,15 @@ public class PlayerService extends MediaBrowserServiceCompat implements PlayerHe
                     break;
 
                 case Keys.Action.TOGGLE_FAVOURITE:
-                    String mediaId = extractId(playingQueue.get(queuePos).getDescription().getMediaId());
-                    String artwork = mediaIdPattern.matcher(mediaId).matches() ? null : String.valueOf(playingQueue.get(queuePos).getDescription().getIconUri());
+                    MediaDescriptionCompat description = playingQueue.get(queuePos).getDescription();
+                    if (description == null || ConverterUtil.toString(description.getMediaId()) == null) {
+                        Toast.makeText(PlayerService.this, "Something went wrong!!!", Toast.LENGTH_SHORT).show();
+                        return;
+                    }
+                    String mediaId = extractId(ConverterUtil.toString(description.getMediaId()));
+                    String artwork = mediaIdPattern.matcher(mediaId).matches() ? null : String.valueOf(description.getIconUri());
                     if (mSession.getController().getMetadata().getLong(PlayerService.METADATA_KEY_FAVOURITE) == 0) {
-                        Repository.getInstance(PlayerService.this).addToPlaylist(new MediaItem(mediaId, playingQueue.get(queuePos).getDescription().getTitle().toString(), playingQueue.get(queuePos).getDescription().getSubtitle().toString(), playingQueue.get(queuePos).getDescription().getDescription().toString(), Keys.PLAYLISTS.FAVOURITES, artwork));
+                        Repository.getInstance(PlayerService.this).addToPlaylist(new MediaItem(mediaId, ConverterUtil.toString(description.getTitle()), ConverterUtil.toString(description.getSubtitle()), ConverterUtil.toString(description.getDescription()), Keys.PLAYLISTS.FAVOURITES, artwork));
                     } else {
                         Repository.getInstance(PlayerService.this).removeFromPlaylist(mediaId, Keys.PLAYLISTS.FAVOURITES);
                     }

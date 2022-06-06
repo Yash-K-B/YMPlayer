@@ -19,7 +19,7 @@ public class ConverterUtil {
     }
 
     public static String toStringStackTrace(Throwable throwable) {
-        if(throwable == null)
+        if (throwable == null)
             return "";
         StringWriter stringWriter = new StringWriter();
         PrintWriter printWriter = new PrintWriter(stringWriter);
@@ -98,5 +98,11 @@ public class ConverterUtil {
         } else {
             return fileSize + " B";
         }
+    }
+
+    public static String toString(Object obj) {
+        if (obj == null)
+            return null;
+        return String.valueOf(obj);
     }
 }
