@@ -7,7 +7,7 @@
     android:layout_height="match_parent"
     tools:openDrawer="start">
 
-    <com.sothree.slidinguppanel.SlidingUpPanelLayout
+    <androidx.coordinatorlayout.widget.CoordinatorLayout
         android:id="@+id/sliding_layout"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
@@ -53,7 +53,10 @@
             android:layout_height="match_parent"
             android:background="#000000"
             android:gravity="bottom"
-            android:theme="@style/ThemeOverlay.AppCompat.Dark">
+            android:theme="@style/ThemeOverlay.AppCompat.Dark"
+            app:behavior_hideable="true"
+            app:behavior_peekHeight="58dp"
+            app:layout_behavior="com.google.android.material.bottomsheet.BottomSheetBehavior">
 
             <androidx.coordinatorlayout.widget.CoordinatorLayout
                 android:layout_width="match_parent"
@@ -475,7 +478,7 @@
         </RelativeLayout>
 
 
-    </com.sothree.slidinguppanel.SlidingUpPanelLayout>
+    </androidx.coordinatorlayout.widget.CoordinatorLayout>
 
     <com.google.android.material.navigation.NavigationView
         android:id="@+id/nav_view"

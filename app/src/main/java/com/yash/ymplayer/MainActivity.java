@@ -144,8 +144,8 @@ public class MainActivity extends BaseActivity implements ActivityActionProvider
     long currentBufferedPosition;
     MediaMetadataRetriever retriever = new MediaMetadataRetriever();
     String currentAlbumArtUri = null;
-    boolean isPanelTopVisible = false;
     BottomSheetBehavior bottomSheetBehavior;
+    BottomSheetBehavior playerView;
     List<Song> songs = new ArrayList<>();
     QueueListAdapter adapter;
     int previousPlayingPosition = -1;
@@ -195,42 +195,36 @@ public class MainActivity extends BaseActivity implements ActivityActionProvider
             AlertDialog.Builder builder = new AlertDialog.Builder(this);
             builder.setTitle("Exception")
                     .setView(scrollView)
-                    .setOnDismissListener(new DialogInterface.OnDismissListener() {
-                        @Override
-                        public void onDismiss(DialogInterface dialog) {
-                            SharedPreferences.Editor editor = defaultSharedPreferences.edit();
-                            editor.putBoolean(Keys.PREFERENCE_KEYS.IS_EXCEPTION, false);
-                            editor.apply();
-                        }
+                    .setOnDismissListener(dialog -> {
+                        SharedPreferences.Editor editor = defaultSharedPreferences.edit();
+                        editor.putBoolean(Keys.PREFERENCE_KEYS.IS_EXCEPTION, false);
+                        editor.apply();
                     })
                     .setPositiveButton("SEND", (dialog, which) -> {
-                        executor.execute(new Runnable() {
-                            @Override
-                            public void run() {
-                                try {
-                                    URL url = new URL("https://ydashboard.live/apis/crash_report.php");
-                                    HttpURLConnection connection = (HttpURLConnection) url.openConnection();
-                                    connection.setRequestMethod("POST");
-                                    connection.setDoInput(true);
-                                    connection.setDoInput(true);
-                                    Uri.Builder uriBuilder = new Uri.Builder()
-                                            .appendQueryParameter("device_id", Build.MANUFACTURER + " " + Build.MODEL + "(API:" + Build.VERSION.SDK_INT + ")")
-                                            .appendQueryParameter("report", exception.replace("'","\\'").replace("\n", "<br>"))
-                                            .appendQueryParameter("time_stamp", new Date().toString());
+                        executor.execute(() -> {
+                            try {
+                                URL url = new URL("https://ydashboard.live/apis/crash_report.php");
+                                HttpURLConnection connection = (HttpURLConnection) url.openConnection();
+                                connection.setRequestMethod("POST");
+                                connection.setDoInput(true);
+                                connection.setDoInput(true);
+                                Uri.Builder uriBuilder = new Uri.Builder()
+                                        .appendQueryParameter("device_id", Build.MANUFACTURER + " " + Build.MODEL + "(API:" + Build.VERSION.SDK_INT + ")")
+                                        .appendQueryParameter("report", exception.replace("'","\\'").replace("\n", "<br>"))
+                                        .appendQueryParameter("time_stamp", new Date().toString());
 
-                                    LogHelper.d(TAG, "run: " + uriBuilder.build().getEncodedQuery());
-                                    connection.getOutputStream().write(uriBuilder.build().getEncodedQuery().getBytes(StandardCharsets.UTF_8));
-                                    InputStream stream = connection.getInputStream();
-                                    BufferedReader reader = new BufferedReader(new InputStreamReader(stream, StandardCharsets.UTF_8));
-                                    String r;
-                                    StringBuilder res = new StringBuilder();
-                                    while ((r = reader.readLine()) != null) {
-                                        res.append(r);
-                                    }
-                                    LogHelper.d(TAG, res.toString());
-                                } catch (IOException e) {
-                                    LogHelper.d(TAG, ConverterUtil.toStringException(e));
+                                LogHelper.d(TAG, "run: " + uriBuilder.build().getEncodedQuery());
+                                connection.getOutputStream().write(uriBuilder.build().getEncodedQuery().getBytes(StandardCharsets.UTF_8));
+                                InputStream stream = connection.getInputStream();
+                                BufferedReader reader = new BufferedReader(new InputStreamReader(stream, StandardCharsets.UTF_8));
+                                String r;
+                                StringBuilder res = new StringBuilder();
+                                while ((r = reader.readLine()) != null) {
+                                    res.append(r);
                                 }
+                                LogHelper.d(TAG, res.toString());
+                            } catch (IOException e) {
+                                LogHelper.d(TAG, ConverterUtil.toStringException(e));
                             }
                         });
                         dialog.dismiss();
@@ -241,10 +235,22 @@ public class MainActivity extends BaseActivity implements ActivityActionProvider
         }
 
         currentFragment = (getIntent().getStringExtra(EXTRA_CURRENT_FRAGMENT) != null) ? (getIntent().getStringExtra(EXTRA_CURRENT_FRAGMENT)) : "localSongs";
-        activityMainBinding.slidingLayout.setPanelState(SlidingUpPanelLayout.PanelState.HIDDEN);
-        activityMainBinding.slidingLayout.addPanelSlideListener(new SlidingUpPanelLayout.PanelSlideListener() {
+        playerView = BottomSheetBehavior.from(activityMainBinding.player);
+        activityMainBinding.player.setOnClickListener(v -> playerView.setState(BottomSheetBehavior.STATE_EXPANDED));
+        playerView.setState(BottomSheetBehavior.STATE_HIDDEN);
+        playerView.addBottomSheetCallback(new BottomSheetBehavior.BottomSheetCallback() {
             @Override
-            public void onPanelSlide(View panel, float slideOffset) {
+            public void onStateChanged(@NonNull View bottomSheet, int newState) {
+                if (newState != BottomSheetBehavior.STATE_HIDDEN && newState != BottomSheetBehavior.STATE_EXPANDED)
+                    activityMainBinding.songTitle.setSelected(true);
+                if (newState == BottomSheetBehavior.STATE_HIDDEN) {
+                    if (mediaController != null)
+                        mediaController.getTransportControls().sendCustomAction(Keys.Action.CLOSE_PLAYBACK, null);
+                }
+            }
+
+            @Override
+            public void onSlide(@NonNull View bottomSheet, float slideOffset) {
                 if (slideOffset > 0.5f) {
                     activityMainBinding.trackTitle.setSelected(true);
                     activityMainBinding.songTitle.setSelected(false);
@@ -258,15 +264,6 @@ public class MainActivity extends BaseActivity implements ActivityActionProvider
                 activityMainBinding.playerTop.setAlpha(slideOffset >= 0.5f ? 0f : (1.0f - slideOffset * 2));
                 activityMainBinding.playerTopBack.setAlpha(slideOffset <= 0.5f ? 0f : ((slideOffset - 0.5f) * 2));
                 activityMainBinding.playerTop.setVisibility(0.95f <= slideOffset ? View.INVISIBLE : View.VISIBLE);
-            }
-
-            @Override
-            public void onPanelStateChanged(View panel, SlidingUpPanelLayout.PanelState previousState, SlidingUpPanelLayout.PanelState newState) {
-                if (newState != SlidingUpPanelLayout.PanelState.HIDDEN && newState != SlidingUpPanelLayout.PanelState.EXPANDED)
-                    activityMainBinding.songTitle.setSelected(true);
-                if (newState == SlidingUpPanelLayout.PanelState.COLLAPSED || newState == SlidingUpPanelLayout.PanelState.HIDDEN)
-                    if (bottomSheetBehavior.getState() != BottomSheetBehavior.STATE_COLLAPSED)
-                        bottomSheetBehavior.setState(BottomSheetBehavior.STATE_COLLAPSED);
             }
         });
         ((TextView) activityMainBinding.navView.getHeaderView(0).findViewById(R.id.nav_header_text)).setText(defaultSharedPreferences.getString("user_name", "User@YMPlayer"));
@@ -608,10 +605,8 @@ public class MainActivity extends BaseActivity implements ActivityActionProvider
 
         @Override
         public void onPlaybackStateChanged(PlaybackStateCompat state) {
-            if (activityMainBinding.slidingLayout.getPanelState() == SlidingUpPanelLayout.PanelState.HIDDEN) {
-                handler.postDelayed(() -> {
-                    activityMainBinding.slidingLayout.setPanelState(SlidingUpPanelLayout.PanelState.EXPANDED);
-                }, 200);
+            if (playerView.getState() == BottomSheetBehavior.STATE_HIDDEN && state.getState() != PlaybackStateCompat.STATE_NONE) {
+                handler.post(() -> playerView.setState(BottomSheetBehavior.STATE_COLLAPSED));
             }
             if (state == null) return;
             long activeQueueItemId = state.getActiveQueueItemId();
@@ -654,7 +649,7 @@ public class MainActivity extends BaseActivity implements ActivityActionProvider
                     break;
                 case PlaybackStateCompat.STATE_NONE:
                     stopScheduledFutureUpdate();
-                    handler.postDelayed(() -> activityMainBinding.slidingLayout.setPanelState(SlidingUpPanelLayout.PanelState.HIDDEN), 300);
+                    runOnUiThread(() -> playerView.setState(BottomSheetBehavior.STATE_HIDDEN));
                     break;
             }
 
@@ -737,8 +732,8 @@ public class MainActivity extends BaseActivity implements ActivityActionProvider
 
         if (bottomSheetBehavior.getState() == BottomSheetBehavior.STATE_EXPANDED)
             bottomSheetBehavior.setState(BottomSheetBehavior.STATE_COLLAPSED);
-        else if (activityMainBinding.slidingLayout.getPanelState() == SlidingUpPanelLayout.PanelState.EXPANDED)
-            activityMainBinding.slidingLayout.setPanelState(SlidingUpPanelLayout.PanelState.COLLAPSED);
+        else if (playerView.getState() == BottomSheetBehavior.STATE_EXPANDED)
+            playerView.setState(BottomSheetBehavior.STATE_COLLAPSED);
         else if (!getSupportFragmentManager().getFragments().contains(getSupportFragmentManager().findFragmentByTag(Keys.Fragments.LOCAL_SONGS))) {
             getSupportFragmentManager().beginTransaction().replace(activityMainBinding.container.getId(), new LocalSongs(), Keys.Fragments.LOCAL_SONGS).commit();
             activityMainBinding.navView.setCheckedItem(R.id.localSongs);
@@ -1023,7 +1018,7 @@ public class MainActivity extends BaseActivity implements ActivityActionProvider
             activityMainBinding.playPauseBtn.setImageResource(mediaController.getPlaybackState().getState() == PlaybackStateCompat.STATE_PLAYING ? R.drawable.icon_pause_circle : R.drawable.icon_play_circle);
             activityMainBinding.maxDuration.setText(formatMillis(mediaController.getMetadata().getLong(MediaMetadataCompat.METADATA_KEY_DURATION)));
             activityMainBinding.musicProgress.setMax((int) mediaController.getMetadata().getLong(MediaMetadataCompat.METADATA_KEY_DURATION));
-            activityMainBinding.slidingLayout.setPanelState(SlidingUpPanelLayout.PanelState.COLLAPSED);
+            playerView.setState(BottomSheetBehavior.STATE_COLLAPSED);
 //            int pos = (int) mediaController.getMetadata().getLong(MediaMetadataCompat.METADATA_KEY_TRACK_NUMBER);
 //            notifyCurrentPlayingSong(pos);
             activityMainBinding.favouriteBtn.setImageResource(mediaController.getMetadata().getLong(PlayerService.METADATA_KEY_FAVOURITE) == 0 ? R.drawable.icon_favourite_off : R.drawable.icon_favourite);
@@ -1057,7 +1052,7 @@ public class MainActivity extends BaseActivity implements ActivityActionProvider
         activityMainBinding.favouriteBtn.setOnClickListener(toggleFavouriteListener);
         activityMainBinding.musicProgress.setOnSeekBarChangeListener(progressListener);
         activityMainBinding.closeBottomSheet.setOnClickListener(closeBottomSheetListener);
-        activityMainBinding.minimize.setOnClickListener(v -> activityMainBinding.slidingLayout.setPanelState(SlidingUpPanelLayout.PanelState.COLLAPSED));
+        activityMainBinding.minimize.setOnClickListener(v -> playerView.setState(BottomSheetBehavior.STATE_COLLAPSED));
         activityMainBinding.shareThis.setOnClickListener(shareSongListener);
         activityMainBinding.equalizer.setOnClickListener(openEqualizerListener);
     }

@@ -13,4 +13,5 @@
 .settings/
 app/debug/
 app/release/
-.idea/
+gradle
+.idea/*
