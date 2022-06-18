@@ -27,6 +27,8 @@ public interface MediaItemDao {
     @Delete
     void delete(MediaItem item);
 
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    void replace(MediaItem item);
 
     @Query("Select * from MEDIAITEM")
     List<MediaItem> getAll();
@@ -36,6 +38,9 @@ public interface MediaItemDao {
 
     @Query("select * from MediaItem where playlist = :playlist")
     List<MediaItem> getMediaItemsOfPlaylist(String playlist);
+
+    @Query("select * from MediaItem where playlist = :playlist order by id desc")
+    List<MediaItem> getMediaItemsOfPlaylistDesc(String playlist);
 
     @Query("select playlist from PLAYLIST")
     List<PlayListObject> getPlaylists();
@@ -49,7 +54,7 @@ public interface MediaItemDao {
     @Query("Delete from PlayList where playlist = :playlist")
     void deletePlaylist(String playlist);
 
-    @Query("Select count(*) from mediaitem where mediaId = :mediaId and playlist = :playlist")
+    @Query("Select count(id) from mediaitem where mediaId = :mediaId and playlist = :playlist")
     long isAddedTo(String mediaId,String playlist);
 
     @Query("delete from mediaitem where mediaId = :mediaId and playlist = :playlist")

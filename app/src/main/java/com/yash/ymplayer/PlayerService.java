@@ -57,6 +57,7 @@ import com.google.android.exoplayer2.Player;
 import com.google.android.exoplayer2.SimpleExoPlayer;
 import com.google.android.exoplayer2.Timeline;
 import com.google.android.exoplayer2.analytics.AnalyticsListener;
+import com.google.android.exoplayer2.audio.AudioListener;
 import com.google.android.exoplayer2.extractor.DefaultExtractorsFactory;
 import com.google.android.exoplayer2.extractor.ExtractorsFactory;
 import com.google.android.exoplayer2.source.ConcatenatingMediaSource;
@@ -68,6 +69,7 @@ import com.google.android.exoplayer2.upstream.DefaultDataSourceFactory;
 import com.google.android.exoplayer2.upstream.ResolvingDataSource;
 import com.google.android.exoplayer2.util.Util;
 import com.yash.logging.LogHelper;
+import com.yash.logging.utils.ExceptionUtil;
 import com.yash.ymplayer.cache.impl.UriCache;
 import com.yash.ymplayer.models.YoutubeSongUriDetail;
 import com.yash.ymplayer.repository.OnlineYoutubeRepository;
@@ -85,6 +87,7 @@ import com.yash.youtube_extractor.models.StreamingData;
 import com.yash.youtube_extractor.models.VideoDetails;
 
 import java.io.IOException;
+import java.security.Key;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
@@ -1042,6 +1045,7 @@ public class PlayerService extends MediaBrowserServiceCompat implements PlayerHe
         try {
             long playingMediaDuration = 0L;
 
+            addToLastPlayed(currentItem);
 
             if (mediaIdPattern.matcher(currentItem.getDescription().getMediaId()).matches()) {
                 albumArtUri = ContentUris.withAppendedId(MediaStore.Audio.Media.EXTERNAL_CONTENT_URI, Long.parseLong(currentItem.getDescription().getMediaId()));
@@ -1273,6 +1277,26 @@ public class PlayerService extends MediaBrowserServiceCompat implements PlayerHe
         }
 
     };
+
+    private void addToLastPlayed(MediaSessionCompat.QueueItem queueItem) {
+        if (queueItem == null)
+            return;
+        try {
+            String[] splits = queueItem.getDescription().getMediaId() != null ? queueItem.getDescription().getMediaId().split("[/|]") : new String[0];
+            String playlist = Keys.PLAYLISTS.LAST_PLAYED;
+            String mediaId = splits[splits.length - 1];
+            String title = String.valueOf(queueItem.getDescription().getTitle());
+            String artist = String.valueOf(queueItem.getDescription().getSubtitle());
+            String album = String.valueOf(queueItem.getDescription().getDescription());
+            String artwork = String.valueOf(queueItem.getDescription().getIconUri());
+            MediaItem item = new MediaItem(mediaId, title, artist, album, playlist, artwork);
+
+            LogHelper.d(TAG, "addToLastPlayed: "+ item.getPlaylist());
+            Repository.getInstance(PlayerService.this).addLastPlayed(item);
+        } catch (Exception e) {
+            LogHelper.d(TAG, "Exception while adding to last played : \n" + ExceptionUtil.getStackStrace(e));
+        }
+    }
 
 //    MediaSource getMediaSource(String mediaId) {
 //        LogHelper.d(TAG, "MediaSource Media ID:" + mediaId);

@@ -5,11 +5,19 @@
     android:layout_height="match_parent"
     tools:context=".DownloadFragment">
 
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="40dp"
+        android:gravity="center"
+        android:textStyle="bold"
+        android:text="No downloads available"
+        android:layout_marginTop="50dp"/>
+
     <androidx.recyclerview.widget.RecyclerView
         android:id="@+id/downloads"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        tools:itemCount="10"
-        tools:listitem="@layout/download_item"/>
+        tools:itemCount="0"
+        tools:listitem="@layout/download_item" />
 
 </FrameLayout>

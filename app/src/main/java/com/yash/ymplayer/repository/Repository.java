@@ -58,7 +58,8 @@ public class Repository {
         RoomDatabase.Callback databaseCallback = new RoomDatabase.Callback() {
             @Override
             public void onCreate(@NonNull SupportSQLiteDatabase db) {
-                db.execSQL("insert into playlist values('Favourites')");
+                db.execSQL("insert into playlist values('" + Keys.PLAYLISTS.FAVOURITES + "')");
+                db.execSQL("insert into playlist values('" + Keys.PLAYLISTS.LAST_PLAYED + "')");
             }
 
             @Override
@@ -66,7 +67,7 @@ public class Repository {
                 super.onOpen(db);
             }
         };
-        provider = Room.databaseBuilder(context, PlaylistMediaProvider.class, "Playlists").allowMainThreadQueries().fallbackToDestructiveMigration().addCallback(databaseCallback).build();
+        provider = Room.databaseBuilder(context, PlaylistMediaProvider.class, "Playlists.db").allowMainThreadQueries().fallbackToDestructiveMigration().addCallback(databaseCallback).build();
         offlineProvider = new OfflineMediaProvider(context);
         audioProvider = new DeviceAudioProvider(context);
         mediaItemDao = provider.getMediaItemDao();
@@ -97,6 +98,17 @@ public class Repository {
             }
         } else if (playlist.equals("LAST_ADDED")) {
             return audioProvider.getLastAdded();
+        } else if (playlist.equals("LAST_PLAYED")) {
+            for (MediaItem item : mediaItemDao.getMediaItemsOfPlaylistDesc(Keys.PLAYLISTS.LAST_PLAYED)) {
+                MediaBrowserCompat.MediaItem song = new MediaBrowserCompat.MediaItem(new MediaDescriptionCompat.Builder()
+                        .setMediaId(mediaId + "|" + item.getMediaId())
+                        .setTitle(item.getName())
+                        .setIconUri(item.getArtwork() == null ? null : Uri.parse(item.getArtwork()))
+                        .setSubtitle(item.getArtist())
+                        .setDescription(item.getAlbum())
+                        .build(), MediaBrowserCompat.MediaItem.FLAG_PLAYABLE);
+                songs.add(song);
+            }
         } else {
             return audioProvider.getPlaylistSongs(mediaId);
         }
@@ -129,6 +141,10 @@ public class Repository {
         return mediaItemDao.insert(item);
     }
 
+    public void addLastPlayed(MediaItem item) {
+        mediaItemDao.replace(item);
+    }
+
     public long createPlaylist(String playlist) {
         return mediaItemDao.insert(new PlayList(playlist));
     }
@@ -147,15 +163,25 @@ public class Repository {
                                 .setSubtitle(item.getArtist())
                                 .setIconUri(item.getArtwork() == null ? null : Uri.parse(item.getArtwork()))
                                 .setDescription(item.getAlbum())
-                                .build(), i);
+                                .build(), i++);
                         items.add(song);
                     }
                     break;
                 case "LAST_ADDED":
                     items.addAll(audioProvider.getLastAddedQueue());
                     break;
-                case "RECENT":
-
+                case "LAST_PLAYED":
+                    i = 0;
+                    for (MediaItem item : mediaItemDao.getMediaItemsOfPlaylistDesc(Keys.PLAYLISTS.LAST_PLAYED)) {
+                        MediaSessionCompat.QueueItem song = new MediaSessionCompat.QueueItem(new MediaDescriptionCompat.Builder()
+                                .setMediaId(item.getMediaId())
+                                .setTitle(item.getName())
+                                .setIconUri(item.getArtwork() == null ? null : Uri.parse(item.getArtwork()))
+                                .setSubtitle(item.getArtist())
+                                .setDescription(item.getAlbum())
+                                .build(), i++);
+                        items.add(song);
+                    }
                     break;
                 default:
                     items.addAll(audioProvider.getPlaylistSongsQueue(mediaId));

@@ -69,9 +69,10 @@ public class DownloadFragment extends Fragment {
         return downloadBinding.getRoot();
     }
 
+
     @Override
-    public void onActivityCreated(@Nullable Bundle savedInstanceState) {
-        super.onActivityCreated(savedInstanceState);
+    public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
+        super.onViewCreated(view, savedInstanceState);
         ((ActivityActionProvider) context).setCustomToolbar(null, "Downloads");
         int numFiles = preferences.getInt(Keys.PREFERENCE_KEYS.TOTAL_DOWNLOADS, 0);
         for (int i = numFiles - 1; i >= 0; i--) {
@@ -92,7 +93,6 @@ public class DownloadFragment extends Fragment {
         });
         downloadBinding.downloads.setLayoutManager(new LinearLayoutManager(context));
         downloadBinding.downloads.setAdapter(adapter);
-
     }
 
     public static class DownloadFileAdapter extends RecyclerView.Adapter<DownloadFileAdapter.DownloadFileViewHolder> {

@@ -67,6 +67,7 @@ public interface Keys {
 
     interface PLAYLISTS {
         String FAVOURITES = "Favourites";
+        String LAST_PLAYED = "LastPlayed";
     }
 
     enum PLAYING_MODE {

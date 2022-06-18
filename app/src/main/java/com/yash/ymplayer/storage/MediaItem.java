@@ -16,6 +16,7 @@ public class MediaItem {
     String album;
     String playlist;
     String artwork;
+    Long timeStamp;
 
 
 //    public MediaItem(String mediaId, String name, String artist, String album, String playlist) {
@@ -33,6 +34,7 @@ public class MediaItem {
         this.album = album;
         this.playlist = playlist;
         this.artwork = artwork;
+        this.timeStamp = System.currentTimeMillis();
     }
 
     public String getMediaId() {
