@@ -1,6 +1,8 @@
 package com.yash.ymplayer;
 
 import android.Manifest;
+import android.animation.TimeInterpolator;
+import android.animation.ValueAnimator;
 import android.app.AlertDialog;
 import android.app.NotificationChannel;
 import android.app.NotificationManager;
@@ -45,11 +47,14 @@ import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.animation.DecelerateInterpolator;
+import android.view.animation.LinearInterpolator;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
 import android.widget.HorizontalScrollView;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
+import android.widget.RelativeLayout;
 import android.widget.ScrollView;
 import android.widget.SeekBar;
 import android.widget.TextView;
@@ -60,6 +65,7 @@ import androidx.annotation.Nullable;
 import androidx.appcompat.app.ActionBarDrawerToggle;
 import androidx.appcompat.widget.Toolbar;
 import androidx.constraintlayout.widget.ConstraintLayout;
+import androidx.coordinatorlayout.widget.CoordinatorLayout;
 import androidx.core.content.FileProvider;
 import androidx.core.view.GravityCompat;
 import androidx.drawerlayout.widget.DrawerLayout;
@@ -95,6 +101,8 @@ import com.yash.ymplayer.util.Keys;
 import com.yash.ymplayer.util.QueueListAdapter;
 import com.yash.ymplayer.util.Song;
 
+import org.json.JSONObject;
+
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.File;
@@ -115,7 +123,9 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -203,18 +213,23 @@ public class MainActivity extends BaseActivity implements ActivityActionProvider
                     .setPositiveButton("SEND", (dialog, which) -> {
                         executor.execute(() -> {
                             try {
-                                URL url = new URL("https://ydashboard.live/apis/crash_report.php");
+                                URL url = new URL("https://y-dashboard.herokuapp.com/v1/createException");
                                 HttpURLConnection connection = (HttpURLConnection) url.openConnection();
                                 connection.setRequestMethod("POST");
+                                connection.setRequestProperty("Accept", "application/json");
+                                connection.setRequestProperty("Content-Type", "application/json");
                                 connection.setDoInput(true);
                                 connection.setDoInput(true);
-                                Uri.Builder uriBuilder = new Uri.Builder()
-                                        .appendQueryParameter("device_id", Build.MANUFACTURER + " " + Build.MODEL + "(API:" + Build.VERSION.SDK_INT + ")")
-                                        .appendQueryParameter("report", exception.replace("'","\\'").replace("\n", "<br>"))
-                                        .appendQueryParameter("time_stamp", new Date().toString());
-
-                                LogHelper.d(TAG, "run: " + uriBuilder.build().getEncodedQuery());
-                                connection.getOutputStream().write(uriBuilder.build().getEncodedQuery().getBytes(StandardCharsets.UTF_8));
+                                Map<String, String> payloadMap = new HashMap<>();
+                                payloadMap.put("deviceId", Build.MANUFACTURER + " " + Build.MODEL + "(API:" + Build.VERSION.SDK_INT + ")");
+                                payloadMap.put("exceptionMessage", exception.replace("'", "\\'"));
+                                payloadMap.put("timestamp", new Date().toString());
+                                JSONObject payload = new JSONObject(payloadMap);
+                                LogHelper.d(TAG, "payload of exception: " + payload);
+                                OutputStream outputStream = connection.getOutputStream();
+                                outputStream.write(payload.toString().getBytes(StandardCharsets.UTF_8));
+                                outputStream.close();
+                                connection.connect();
                                 InputStream stream = connection.getInputStream();
                                 BufferedReader reader = new BufferedReader(new InputStreamReader(stream, StandardCharsets.UTF_8));
                                 String r;
@@ -241,6 +256,7 @@ public class MainActivity extends BaseActivity implements ActivityActionProvider
         playerView.addBottomSheetCallback(new BottomSheetBehavior.BottomSheetCallback() {
             @Override
             public void onStateChanged(@NonNull View bottomSheet, int newState) {
+                expandOrCompressMainLayout(newState);
                 if (newState != BottomSheetBehavior.STATE_HIDDEN && newState != BottomSheetBehavior.STATE_EXPANDED)
                     activityMainBinding.songTitle.setSelected(true);
                 if (newState == BottomSheetBehavior.STATE_HIDDEN) {
@@ -413,6 +429,32 @@ public class MainActivity extends BaseActivity implements ActivityActionProvider
 
     }
 
+    private void expandOrCompressMainLayout(int newState) {
+        LogHelper.d(TAG, "expandOrCompressMainLayout: " + newState);
+        CoordinatorLayout.LayoutParams layoutParams = (CoordinatorLayout.LayoutParams) activityMainBinding.contentViewer.getLayoutParams();
+        if (newState == BottomSheetBehavior.STATE_COLLAPSED) {
+            if (layoutParams.bottomMargin != 0)
+                return;
+            ValueAnimator valueAnimator = ValueAnimator.ofInt(0, (int) ConverterUtil.getPx(this, 58));
+            valueAnimator.addUpdateListener(valueAnimator1 -> {
+                layoutParams.bottomMargin = (int) valueAnimator1.getAnimatedValue();
+                activityMainBinding.contentViewer.setLayoutParams(layoutParams);
+            });
+            valueAnimator.setInterpolator(new DecelerateInterpolator());
+            valueAnimator.start();
+        } else if (newState == BottomSheetBehavior.STATE_HIDDEN) {
+            if (layoutParams.bottomMargin == 0)
+                return;
+            ValueAnimator valueAnimator = ValueAnimator.ofInt((int) ConverterUtil.getPx(this, 58), 0);
+            valueAnimator.addUpdateListener(valueAnimator1 -> {
+                layoutParams.bottomMargin = (int) valueAnimator1.getAnimatedValue();
+                activityMainBinding.contentViewer.setLayoutParams(layoutParams);
+            });
+            valueAnimator.setInterpolator(new LinearInterpolator());
+            valueAnimator.start();
+        }
+    }
+
     @Override
     public void refresh() {
         startActivity(new Intent(this, MainActivity.class).putExtra(EXTRA_CURRENT_FRAGMENT, currentFragment));
@@ -444,12 +486,12 @@ public class MainActivity extends BaseActivity implements ActivityActionProvider
                     Glide.with(MainActivity.this).load(isUriSufficient ? songArt : retriever.getEmbeddedPicture()).placeholder(R.drawable.album_art_placeholder).into(new CustomTarget<Drawable>() {
                         @Override
                         public void onResourceReady(@NonNull Drawable resource, @Nullable Transition<? super Drawable> transition) {
-                           setSongArt(resource);
+                            setSongArt(resource);
                         }
 
                         @Override
                         public void onLoadFailed(@Nullable Drawable errorDrawable) {
-                           setSongArt();
+                            setSongArt();
                         }
 
                         @Override
@@ -582,7 +624,7 @@ public class MainActivity extends BaseActivity implements ActivityActionProvider
                     @Override
                     public void onLoadFailed(@Nullable Drawable errorDrawable) {
                         LogHelper.d(TAG, "onLoadFailed: uri:" + currentAlbumArtUri);
-                       setSongArt();
+                        setSongArt();
                     }
 
                     @Override
@@ -1400,8 +1442,6 @@ public class MainActivity extends BaseActivity implements ActivityActionProvider
         activityMainBinding.songArt.setImageDrawable(resource);
         activityMainBinding.songArt.setBlur(3);
         activityMainBinding.songArt2.setImageDrawable(resource);
-        activityMainBinding.songArt2.getLayoutParams().height = (int) ConverterUtil.getPx(this, resource.getIntrinsicHeight());
-        activityMainBinding.songArt2.requestLayout();
         activityMainBinding.playerBlurBackground.setImageDrawable(resource);
         activityMainBinding.playerBlurBackground.setBlur(4);
     }

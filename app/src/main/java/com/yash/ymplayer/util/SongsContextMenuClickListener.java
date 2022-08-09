@@ -75,12 +75,12 @@ public class SongsContextMenuClickListener implements SongContextMenuListener {
         ContentResolver resolver = context.getContentResolver();
         Cursor cursor = resolver.query(MediaStore.Audio.Playlists.EXTERNAL_CONTENT_URI, new String[]{MediaStore.Audio.Playlists._ID, MediaStore.Audio.Playlists.NAME}, MediaStore.Audio.Playlists.NAME + " = '" + playlist + "'", null, null);
         cursor.moveToFirst();
-        long id = cursor.getLong(cursor.getColumnIndex(MediaStore.Audio.Playlists._ID));
+        long id = cursor.getLong(cursor.getColumnIndexOrThrow(MediaStore.Audio.Playlists._ID));
         cursor.close();
         Uri uri = MediaStore.Audio.Playlists.Members.getContentUri("external", id);
         Cursor cur = resolver.query(uri, new String[]{MediaStore.Audio.Playlists.Members.PLAY_ORDER}, null, null, null);
         cur.moveToLast();
-        final int base = cur.getCount() == 0 ? -1 : cur.getInt(cur.getColumnIndex(MediaStore.Audio.Playlists.Members.PLAY_ORDER));
+        final int base = cur.getCount() == 0 ? -1 : cur.getInt(cur.getColumnIndexOrThrow(MediaStore.Audio.Playlists.Members.PLAY_ORDER));
         cur.close();
         ContentValues values = new ContentValues();
         values.put(MediaStore.Audio.Playlists.Members.PLAY_ORDER, base + 1);

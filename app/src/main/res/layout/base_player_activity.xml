@@ -12,6 +12,7 @@
     app:umanoShadowHeight="4dp">
 
     <androidx.coordinatorlayout.widget.CoordinatorLayout
+        android:id="@+id/contentViewer"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         tools:context=".MainActivity">
@@ -98,18 +99,18 @@
                 <ImageView
                     android:id="@+id/songArt2"
                     android:layout_width="0dp"
-                    android:layout_height="wrap_content"
+                    android:layout_height="0dp"
                     android:layout_marginStart="40dp"
                     android:layout_marginEnd="40dp"
                     android:background="@drawable/circular_album_art_bg"
-                    android:scaleType="centerCrop"
+                    android:scaleType="fitCenter"
+                    android:adjustViewBounds="true"
                     android:src="@drawable/album_art_placeholder"
                     app:layout_constraintBottom_toBottomOf="@+id/songArt"
                     app:layout_constraintEnd_toEndOf="@+id/songArt"
                     app:layout_constraintHorizontal_bias="0.0"
                     app:layout_constraintStart_toStartOf="@+id/songArt"
-                    app:layout_constraintTop_toTopOf="@+id/songArt"
-                    app:svg_raw_resource="@raw/play_icon" />
+                    app:layout_constraintTop_toTopOf="@+id/songArt" />
 
                 <LinearLayout
                     android:id="@+id/track_title_layout"

@@ -1,10 +1,14 @@
 package com.yash.ymplayer.util;
 
 import android.app.AlertDialog;
+import android.content.ContentResolver;
 import android.content.ContentUris;
+import android.content.ContentValues;
 import android.content.Context;
 import android.graphics.drawable.Drawable;
 import android.media.MediaMetadataRetriever;
+import android.net.Uri;
+import android.os.Build;
 import android.os.Handler;
 import android.os.Looper;
 import android.provider.MediaStore;
@@ -14,9 +18,8 @@ import android.view.LayoutInflater;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.Filter;
-import android.widget.Filterable;
 import android.widget.PopupMenu;
+import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -25,16 +28,18 @@ import androidx.recyclerview.widget.RecyclerView;
 import com.bumptech.glide.Glide;
 import com.bumptech.glide.request.target.CustomTarget;
 import com.bumptech.glide.request.transition.Transition;
+import com.yash.logging.LogHelper;
+import com.yash.ymplayer.BuildConfig;
 import com.yash.ymplayer.R;
+import com.yash.ymplayer.databinding.CreatePlaylistBinding;
 import com.yash.ymplayer.databinding.ItemMusicBinding;
 import com.yash.ymplayer.databinding.ItemPlayingQueueBinding;
 import com.yash.ymplayer.databinding.ItemPlaylistBinding;
 import com.yash.ymplayer.repository.Repository;
 import com.yash.ymplayer.ui.main.AlbumOrArtistContextMenuListener;
-import com.yash.ymplayer.ui.main.SongContextMenuListener;
 
 import java.util.ArrayList;
-import java.util.Collection;
+import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadPoolExecutor;
@@ -142,6 +147,47 @@ public class SongListAdapter extends RecyclerView.Adapter<SongListAdapter.SongVi
                 binding.iconPlaylist.setImageResource(R.drawable.icon_favourite);
             else if ("Last Added".equals(song.getDescription().getTitle() + ""))
                 binding.iconPlaylist.setImageResource(R.drawable.icon_last_added);
+            else if ("Last Played".equals(song.getDescription().getTitle() + ""))
+                binding.iconPlaylist.setImageResource(R.drawable.icon_last_added);
+            else {
+                PopupMenu menu = new PopupMenu(context, binding.more);
+                menu.inflate(R.menu.playlist_context_menu_user);
+                menu.setOnMenuItemClickListener(item -> {
+                    ContentResolver resolver = context.getContentResolver();
+                    String where = MediaStore.Audio.Playlists._ID + "=?";
+                    switch (item.getItemId()) {
+                        case R.id.rename:
+                            AlertDialog.Builder builder = new AlertDialog.Builder(context);
+                            CreatePlaylistBinding playlistBinding = CreatePlaylistBinding.inflate(LayoutInflater.from(context));
+                            builder.setTitle("Rename playlist")
+                                    .setView(playlistBinding.getRoot())
+                                    .setPositiveButton("SAVE", (dialog, which) -> {
+                                        ContentValues values = new ContentValues();
+                                        String newName = String.valueOf(playlistBinding.playlistName.getText());
+                                        LogHelper.d(TAG, "bindPlaylist: Playlist renamed to " + newName);
+                                        values.put(MediaStore.Audio.Playlists.NAME, newName);
+                                        Uri uri = MediaStore.Audio.Playlists.EXTERNAL_CONTENT_URI;
+                                        resolver.update(uri, values, where, new String[]{CommonUtil.extractId(song.getMediaId())});
+                                        notifyItemChanged(getAdapterPosition());
+                                    })
+                                    .setNegativeButton("CANCEL", (dialog, which) -> {
+                                        dialog.dismiss();
+                                    });
+                            AlertDialog dialog = builder.create();
+                            dialog.show();
+                            return true;
+                        case R.id.remove:
+                            resolver.delete(MediaStore.Audio.Playlists.EXTERNAL_CONTENT_URI, where, new String[]{CommonUtil.extractId(song.getMediaId())});
+                            songs.remove(getAdapterPosition());
+                            notifyItemRemoved(getAdapterPosition());
+                            Toast.makeText(context, "Playlist "+ song.getDescription().getTitle() + " has been deleted successfully", Toast.LENGTH_SHORT).show();
+                            return true;
+                        default:
+                            return false;
+                    }
+                });
+                binding.more.setOnClickListener(v -> menu.show());
+            }
             binding.playlistTitle.setText(song.getDescription().getTitle());
             itemView.setOnClickListener(new View.OnClickListener() {
                 @Override

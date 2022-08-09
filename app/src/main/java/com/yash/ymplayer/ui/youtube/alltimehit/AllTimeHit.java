@@ -66,7 +66,8 @@ public class AllTimeHit extends Fragment {
             Intent intent = new Intent(context, PlaylistExpandActivity.class);
             intent.putExtra(Keys.EXTRA_PARENT_ID, playlist.getId());
             intent.putExtra(Keys.EXTRA_TITLE, playlist.getSnippet().getLocalized().getTitle());
-            intent.putExtra(Keys.EXTRA_ART_URL, playlist.getSnippet().getThumbnails().getStandard().getUrl());
+            String url = playlist.getSnippet().getThumbnails().getStandard() == null ? playlist.getSnippet().getThumbnails().getMedium().getUrl() : playlist.getSnippet().getThumbnails().getStandard().getUrl();
+            intent.putExtra(Keys.EXTRA_ART_URL, url);
             //ActivityOptions options = ActivityOptions.makeSceneTransitionAnimation(activity,v.getRoot(),"list_name");
             context.startActivity(intent);
         });

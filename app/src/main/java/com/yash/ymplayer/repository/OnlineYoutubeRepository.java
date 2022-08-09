@@ -79,18 +79,30 @@ public class OnlineYoutubeRepository {
             callback.onLoaded(cache.getTracks(), cache.getPrevPageToken(), cache.getNextPageToken());
         } else {
             JsonObjectRequest jsonObjectRequest = new JsonObjectRequest(GET, url, null, response -> {
+                String responseJson = response.toString();
+                LogHelper.d(TAG, "topTracks: response found : " + responseJson);
                 Gson gson = new Gson();
-                YoutubePlaylist playlist = gson.fromJson(response.toString(), YoutubePlaylist.class);
+                YoutubePlaylist playlist = gson.fromJson(responseJson, YoutubePlaylist.class);
                 List<YoutubeSong> tracks = new ArrayList<>();
                 LogHelper.d(TAG, "onResponse: prevPageToken : " + playlist.getPrevPageToken());
                 for (int i = 0; i < playlist.getItems().size(); i++) {
+                    YoutubePlaylist.PlayListItem.Snippet snippet = playlist.getItems().get(i).getSnippet();
+                    if (snippet == null || "Deleted video".equals(snippet.getTitle()))
+                        continue;
                     //LogHelper.d(TAG, "onResponse: " + playlist.getItems().get(i).getSnippet().getTitle());
-                    String title = playlist.getItems().get(i).getSnippet().getTitle();
-                    String videoId = playlist.getItems().get(i).getSnippet().getResourceId().getVideoId();
-                    String channelName = playlist.getItems().get(i).getSnippet().getChannelTitle();
-                    String art_small = playlist.getItems().get(i).getSnippet().getThumbnails().getDefault().getUrl();
-                    String art_medium = playlist.getItems().get(i).getSnippet().getThumbnails().getMedium().getUrl();
-                    YoutubeSong song = new YoutubeSong(title, videoId, channelName, art_small, art_medium);
+                    String title = snippet.getTitle();
+                    String videoId = snippet.getResourceId().getVideoId();
+                    String channelName = snippet.getChannelTitle();
+                    YoutubePlaylist.PlayListItem.Snippet.Thumbnails thumbnails = snippet.getThumbnails();
+                    String art_small = null;
+                    String art_medium = null;
+                    String art_high = null;
+                    if (thumbnails != null) {
+                        art_small = thumbnails.getDefault() != null ? thumbnails.getDefault().getUrl() : null;
+                        art_medium = thumbnails.getMedium() != null ? thumbnails.getMedium().getUrl() : null;
+                        art_high = thumbnails.getHigh() != null ? thumbnails.getHigh().getUrl() : null;
+                    }
+                    YoutubeSong song = new YoutubeSong(title, videoId, channelName, art_small, art_medium, art_high);
                     song.setChannelDesc("Top Tracks");
                     tracks.add(song);
                 }
@@ -378,12 +390,23 @@ public class OnlineYoutubeRepository {
             LogHelper.d(TAG, "onResponse: prevPageToken : " + playlist.getPrevPageToken());
             for (int i = 0; i < playlist.getItems().size(); i++) {
                 //LogHelper.d(TAG, "onResponse: " + playlist.getItems().get(i).getSnippet().getTitle());
-                String title = playlist.getItems().get(i).getSnippet().getTitle();
-                String videoId = playlist.getItems().get(i).getSnippet().getResourceId().getVideoId();
-                String channelName = playlist.getItems().get(i).getSnippet().getChannelTitle();
-                String art_small = playlist.getItems().get(i).getSnippet().getThumbnails().getDefault().getUrl();
-                String art_medium = playlist.getItems().get(i).getSnippet().getThumbnails().getMedium().getUrl();
-                YoutubeSong song = new YoutubeSong(title, videoId, channelName, art_small, art_medium);
+                YoutubePlaylist.PlayListItem.Snippet snippet = playlist.getItems().get(i).getSnippet();
+                if (snippet == null || "Deleted video".equals(snippet.getTitle()))
+                    continue;
+                //LogHelper.d(TAG, "onResponse: " + playlist.getItems().get(i).getSnippet().getTitle());
+                String title = snippet.getTitle();
+                String videoId = snippet.getResourceId().getVideoId();
+                String channelName = snippet.getChannelTitle();
+                YoutubePlaylist.PlayListItem.Snippet.Thumbnails thumbnails = snippet.getThumbnails();
+                String art_small = null;
+                String art_medium = null;
+                String art_high = null;
+                if (thumbnails != null) {
+                    art_small = thumbnails.getDefault() != null ? thumbnails.getDefault().getUrl() : null;
+                    art_medium = thumbnails.getMedium() != null ? thumbnails.getMedium().getUrl() : null;
+                    art_high = thumbnails.getHigh() != null ? thumbnails.getHigh().getUrl() : null;
+                }
+                YoutubeSong song = new YoutubeSong(title, videoId, channelName, art_small, art_medium, art_high);
                 song.setChannelDesc(desc);
                 tracks.add(song);
             }
@@ -650,7 +673,7 @@ public class OnlineYoutubeRepository {
                 List<com.yash.youtube_extractor.models.YoutubeSong> youtubeSongs = ExtractorHelper.search(query);
                 List<YoutubeSong> songs = new ArrayList<>();
                 for (com.yash.youtube_extractor.models.YoutubeSong youtubeSong : youtubeSongs) {
-                    YoutubeSong song = new YoutubeSong(youtubeSong.getTitle(), youtubeSong.getVideoId(), youtubeSong.getChannelTitle(), youtubeSong.getArtUrlSmall(), youtubeSong.getArtUrlMedium());
+                    YoutubeSong song = new YoutubeSong(youtubeSong.getTitle(), youtubeSong.getVideoId(), youtubeSong.getChannelTitle(), youtubeSong.getArtUrlSmall(), youtubeSong.getArtUrlMedium(), youtubeSong.getArtUrlMedium());
                     song.setDurationMillis(youtubeSong.getDurationMillis());
                     songs.add(song);
                 }

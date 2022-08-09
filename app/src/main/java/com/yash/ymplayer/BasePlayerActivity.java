@@ -1,5 +1,6 @@
 package com.yash.ymplayer;
 
+import android.animation.ValueAnimator;
 import android.content.ComponentName;
 import android.content.ContentUris;
 import android.content.Context;
@@ -34,6 +35,7 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.ActionBarDrawerToggle;
 import androidx.appcompat.widget.Toolbar;
+import androidx.coordinatorlayout.widget.CoordinatorLayout;
 import androidx.core.view.GravityCompat;
 import androidx.preference.PreferenceManager;
 import androidx.recyclerview.widget.DividerItemDecoration;
@@ -122,6 +124,7 @@ public abstract class BasePlayerActivity extends BaseActivity implements Activit
         playerView.addBottomSheetCallback(new BottomSheetBehavior.BottomSheetCallback() {
             @Override
             public void onStateChanged(@NonNull View bottomSheet, int newState) {
+                expandOrCompressMainLayout(newState);
                 if (newState != BottomSheetBehavior.STATE_HIDDEN && newState != BottomSheetBehavior.STATE_EXPANDED)
                     basePlayerActivityBinding.songTitle.setSelected(true);
                 if (newState == BottomSheetBehavior.STATE_HIDDEN) {
@@ -191,6 +194,30 @@ public abstract class BasePlayerActivity extends BaseActivity implements Activit
     abstract protected void onCreate(@Nullable Bundle savedInstanceState, MediaBrowserCompat mediaBrowser, BasePlayerActivityBinding playerActivityBinding);
 
     abstract protected void onConnected(MediaControllerCompat mediaController);
+
+    private void expandOrCompressMainLayout(int newState) {
+        LogHelper.d(TAG, "expandOrCompressMainLayout: " + newState);
+        CoordinatorLayout.LayoutParams layoutParams = (CoordinatorLayout.LayoutParams) basePlayerActivityBinding.contentViewer.getLayoutParams();
+        if (newState == BottomSheetBehavior.STATE_COLLAPSED) {
+            if(layoutParams.bottomMargin != 0)
+                return;
+            ValueAnimator valueAnimator = ValueAnimator.ofInt(0, (int) ConverterUtil.getPx(this, 58));
+            valueAnimator.addUpdateListener(valueAnimator1 -> {
+                layoutParams.bottomMargin = (int) valueAnimator1.getAnimatedValue();
+                basePlayerActivityBinding.contentViewer.setLayoutParams(layoutParams);
+            });
+            valueAnimator.start();
+        } else if (newState == BottomSheetBehavior.STATE_HIDDEN) {
+            if(layoutParams.bottomMargin == 0)
+                return;
+            ValueAnimator valueAnimator = ValueAnimator.ofInt((int) ConverterUtil.getPx(this, 58), 0);
+            valueAnimator.addUpdateListener(valueAnimator1 -> {
+                layoutParams.bottomMargin = (int) valueAnimator1.getAnimatedValue();
+                basePlayerActivityBinding.contentViewer.setLayoutParams(layoutParams);
+            });
+            valueAnimator.start();
+        }
+    }
 
     @Override
     protected void onResume() {
@@ -865,8 +892,6 @@ public abstract class BasePlayerActivity extends BaseActivity implements Activit
         basePlayerActivityBinding.songArt.setImageDrawable(resource);
         basePlayerActivityBinding.songArt.setBlur(3);
         basePlayerActivityBinding.songArt2.setImageDrawable(resource);
-        basePlayerActivityBinding.songArt2.getLayoutParams().height = (int) ConverterUtil.getPx(this, resource.getIntrinsicHeight());
-        basePlayerActivityBinding.songArt2.requestLayout();
         basePlayerActivityBinding.playerBlurBackground.setImageDrawable(resource);
         basePlayerActivityBinding.playerBlurBackground.setBlur(4);
     }

@@ -5,6 +5,7 @@ import android.content.ContentUris;
 import android.content.Context;
 import android.database.Cursor;
 import android.net.Uri;
+import android.os.Build;
 import android.os.Bundle;
 import android.provider.MediaStore;
 import android.support.v4.media.MediaBrowserCompat;
@@ -17,6 +18,7 @@ import androidx.annotation.NonNull;
 import androidx.media.MediaBrowserServiceCompat;
 
 import com.yash.logging.LogHelper;
+import com.yash.ymplayer.BuildConfig;
 import com.yash.ymplayer.util.Keys;
 
 import org.jetbrains.annotations.Contract;
@@ -280,21 +282,43 @@ public class DeviceAudioProvider implements AudioProvider {
      */
     @Override
     public List<MediaBrowserCompat.MediaItem> getAllPlaylists() {
-        Cursor playlistCursor = resolver.query(MediaStore.Audio.Playlists.EXTERNAL_CONTENT_URI, new String[]{MediaStore.Audio.Playlists._ID, MediaStore.Audio.Playlists.NAME, MediaStore.Audio.PlaylistsColumns.DATE_ADDED}, null, null, null);
-        List<MediaBrowserCompat.MediaItem> allPlaylists = new ArrayList<>();
-        if (playlistCursor == null) return allPlaylists;
-        while (playlistCursor.moveToNext()) {
-            String playlistId = playlistCursor.getString(playlistCursor.getColumnIndexOrThrow(MediaStore.Audio.Playlists._ID));
-            String playlist = playlistCursor.getString(playlistCursor.getColumnIndexOrThrow(MediaStore.Audio.Playlists.NAME));
-            String addedDate = playlistCursor.getString(playlistCursor.getColumnIndexOrThrow(MediaStore.Audio.PlaylistsColumns.DATE_ADDED));
-            MediaBrowserCompat.MediaItem item = new MediaBrowserCompat.MediaItem(new MediaDescriptionCompat.Builder()
-                    .setMediaId("PLAYLISTS/" + playlistId)
-                    .setTitle(playlist)
-                    .build(), MediaBrowserCompat.MediaItem.FLAG_BROWSABLE);
-            allPlaylists.add(item);
+        if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            Cursor playlistCursor = resolver.query(MediaStore.Audio.Playlists.EXTERNAL_CONTENT_URI, new String[]{MediaStore.Audio.Playlists._ID, MediaStore.Audio.Playlists.NAME, MediaStore.Audio.PlaylistsColumns.DATE_ADDED, MediaStore.Audio.PlaylistsColumns.OWNER_PACKAGE_NAME}, null, null, null);
+            List<MediaBrowserCompat.MediaItem> allPlaylists = new ArrayList<>();
+            if (playlistCursor == null) return allPlaylists;
+            while (playlistCursor.moveToNext()) {
+                String playlistId = playlistCursor.getString(playlistCursor.getColumnIndexOrThrow(MediaStore.Audio.Playlists._ID));
+                String playlist = playlistCursor.getString(playlistCursor.getColumnIndexOrThrow(MediaStore.Audio.Playlists.NAME));
+                String addedDate = playlistCursor.getString(playlistCursor.getColumnIndexOrThrow(MediaStore.Audio.PlaylistsColumns.DATE_ADDED));
+                String ownerPackageName = playlistCursor.getString(playlistCursor.getColumnIndexOrThrow(MediaStore.Audio.PlaylistsColumns.OWNER_PACKAGE_NAME));
+                if(!BuildConfig.APPLICATION_ID.equalsIgnoreCase(ownerPackageName))
+                    continue;
+                MediaBrowserCompat.MediaItem item = new MediaBrowserCompat.MediaItem(new MediaDescriptionCompat.Builder()
+                        .setMediaId("PLAYLISTS/" + playlistId)
+                        .setTitle(playlist)
+                        .build(), MediaBrowserCompat.MediaItem.FLAG_BROWSABLE);
+                allPlaylists.add(item);
+            }
+            playlistCursor.close();
+            return allPlaylists;
+        } else {
+            Cursor playlistCursor = resolver.query(MediaStore.Audio.Playlists.EXTERNAL_CONTENT_URI, new String[]{MediaStore.Audio.Playlists._ID, MediaStore.Audio.Playlists.NAME, MediaStore.Audio.PlaylistsColumns.DATE_ADDED}, null, null, null);
+            List<MediaBrowserCompat.MediaItem> allPlaylists = new ArrayList<>();
+            if (playlistCursor == null) return allPlaylists;
+            while (playlistCursor.moveToNext()) {
+                String playlistId = playlistCursor.getString(playlistCursor.getColumnIndexOrThrow(MediaStore.Audio.Playlists._ID));
+                String playlist = playlistCursor.getString(playlistCursor.getColumnIndexOrThrow(MediaStore.Audio.Playlists.NAME));
+                String addedDate = playlistCursor.getString(playlistCursor.getColumnIndexOrThrow(MediaStore.Audio.PlaylistsColumns.DATE_ADDED));
+                MediaBrowserCompat.MediaItem item = new MediaBrowserCompat.MediaItem(new MediaDescriptionCompat.Builder()
+                        .setMediaId("PLAYLISTS/" + playlistId)
+                        .setTitle(playlist)
+                        .build(), MediaBrowserCompat.MediaItem.FLAG_BROWSABLE);
+                allPlaylists.add(item);
+            }
+            playlistCursor.close();
+            return allPlaylists;
         }
-        playlistCursor.close();
-        return allPlaylists;
+
     }
 
     @Override

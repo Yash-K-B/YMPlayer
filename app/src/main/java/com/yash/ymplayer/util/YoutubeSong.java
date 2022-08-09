@@ -4,16 +4,17 @@ import android.net.Uri;
 
 public class YoutubeSong {
     String title, videoId, channelTitle, channelDesc;
-    String art_url_small, art_url_medium;
+    String art_url_small, art_url_medium, art_url_high;
     Uri audioUri;
     long durationMillis;
 
-    public YoutubeSong(String title, String videoId, String channelTitle, String art_url_small, String art_url_medium) {
+    public YoutubeSong(String title, String videoId, String channelTitle, String art_url_small, String art_url_medium, String art_url_high) {
         this.title = title;
         this.videoId = videoId;
         this.channelTitle = channelTitle;
         this.art_url_small = art_url_small;
         this.art_url_medium = art_url_medium;
+        this.art_url_high = art_url_high;
     }
 
     public String getChannelDesc() {

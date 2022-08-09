@@ -77,16 +77,13 @@ public class Playlists extends Fragment implements PlaylistUpdateListener {
         super.onViewCreated(view, savedInstanceState);
         mMediaBrowser = new MediaBrowserCompat(getContext(), new ComponentName(getContext(), PlayerService.class), mConnectionCallbacks, null);
         mMediaBrowser.connect();
-        adapter = new SongListAdapter(getContext(), songs, new SongListAdapter.OnItemClickListener() {
-            @Override
-            public void onClick(View v, MediaBrowserCompat.MediaItem song) {
-                if (song.isBrowsable()) {
-                    Intent intent = new Intent(getActivity(), ListExpandActivity.class);
-                    intent.putExtra(Keys.EXTRA_PARENT_ID, song.getMediaId());
-                    intent.putExtra(Keys.EXTRA_TYPE, "playlist");
-                    intent.putExtra(Keys.EXTRA_TITLE, song.getDescription().getTitle());
-                    startActivity(intent);
-                }
+        adapter = new SongListAdapter(getContext(), songs, (v, song) -> {
+            if (song.isBrowsable()) {
+                Intent intent = new Intent(getActivity(), ListExpandActivity.class);
+                intent.putExtra(Keys.EXTRA_PARENT_ID, song.getMediaId());
+                intent.putExtra(Keys.EXTRA_TYPE, "playlist");
+                intent.putExtra(Keys.EXTRA_TITLE, song.getDescription().getTitle());
+                startActivity(intent);
             }
         }, new AlbumOrArtistContextMenuClickListener(getContext(), mMediaController), 2);
         playlistsBinding.playlists.setAdapter(adapter);
