@@ -119,10 +119,8 @@ public class TopTracks extends Fragment {
                 adapter = new TopTracksAdapter(context, new TopTracksAdapter.OnClickListener() {
                     @Override
                     public void onClick(YoutubeSong song) {
-                        Uri audioUri = Uri.parse("TOP_TRACKS|" + song.getVideoId());
-                        if (audioUri != null)
-                            mediaController.getTransportControls().playFromUri(audioUri, null);
-                        else LogHelper.d(TAG, "Click Track: No Audio Uri Found");
+                        String audioUri = "TOP_TRACKS|" + song.getVideoId();
+                        mediaController.getTransportControls().playFromMediaId(audioUri, null);
                     }
                 }, mediaController);
                 topTracksBinding.topTracksContainer.setAdapter(adapter);

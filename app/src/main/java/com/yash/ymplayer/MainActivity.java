@@ -88,6 +88,7 @@ import com.google.android.material.navigation.NavigationView;
 import com.naman14.androidlame.AndroidLame;
 import com.naman14.androidlame.LameBuilder;
 import com.sothree.slidinguppanel.SlidingUpPanelLayout;
+import com.yash.ymplayer.constant.Constants;
 import com.yash.ymplayer.databinding.ActivityMainBinding;
 import com.yash.ymplayer.equaliser.DialogEqualizerFragment;
 import com.yash.logging.LogHelper;
@@ -167,6 +168,7 @@ public class MainActivity extends BaseActivity implements ActivityActionProvider
     String queueTitle;
     DialogEqualizerFragment dialogEqualizerFragment;
     Pattern offlineAudioPattern;
+    Pattern deviceUriPattern;
 
 
     @Override
@@ -176,11 +178,11 @@ public class MainActivity extends BaseActivity implements ActivityActionProvider
         setContentView(activityMainBinding.getRoot());
         startService(new Intent(this, PlayerService.class));
         setCustomToolbar(null, null);
-//        activityMainBinding.songArt.setClipToOutline(true);
         bottomSheetBehavior = BottomSheetBehavior.from(activityMainBinding.playlists);
         preferences = getSharedPreferences(STATE_PREF, MODE_PRIVATE);
         defaultSharedPreferences = PreferenceManager.getDefaultSharedPreferences(this);
         offlineAudioPattern = Pattern.compile("[0-9]+");
+        deviceUriPattern = Pattern.compile(Constants.DEVICE_URI_PREFIX_REGEX);
 
 
         //Display Exception (If any)
@@ -426,7 +428,23 @@ public class MainActivity extends BaseActivity implements ActivityActionProvider
 
         mediaBrowser = new MediaBrowserCompat(this, new ComponentName(this, PlayerService.class), connectionCallback, null);
         mediaBrowser.connect();
+    }
 
+    private void playIfIntentHasData(Intent intent) {
+        LogHelper.d(TAG, "playIfIntentHasData: " + intent);
+        if (mediaController != null && intent.getData() != null) {
+
+            Uri data = intent.getData();
+            Bundle extras = new Bundle();
+            mediaController.getTransportControls().playFromUri(data, extras);
+        }
+
+    }
+
+    @Override
+    protected void onNewIntent(Intent intent) {
+        super.onNewIntent(intent);
+        playIfIntentHasData(intent);
     }
 
     private void expandOrCompressMainLayout(int newState) {
@@ -478,7 +496,7 @@ public class MainActivity extends BaseActivity implements ActivityActionProvider
                 executor.submit(() -> {
                     String songArt = mediaController.getMetadata().getString(MediaMetadataCompat.METADATA_KEY_ALBUM_ART_URI);
                     boolean isUriSufficient = true;
-                    if (songArt != null && songArt.contains(MediaStore.Audio.Media.EXTERNAL_CONTENT_URI.toString())) {
+                    if (songArt != null && deviceUriPattern.matcher(songArt).matches()) {
                         retriever.setDataSource(MainActivity.this, Uri.parse(songArt));
                         isUriSufficient = false;
                     }
@@ -609,7 +627,7 @@ public class MainActivity extends BaseActivity implements ActivityActionProvider
                 currentAlbumArtUri = metadata.getString(MediaMetadataCompat.METADATA_KEY_ALBUM_ART_URI);
                 LogHelper.d(TAG, "onMetadataChanged: AlbumArt Uri:" + currentAlbumArtUri);
                 boolean isUriSufficient = true;
-                if (currentAlbumArtUri != null && currentAlbumArtUri.contains(MediaStore.Audio.Media.EXTERNAL_CONTENT_URI.toString())) {
+                if (currentAlbumArtUri != null &&  deviceUriPattern.matcher(currentAlbumArtUri).matches()) {
                     retriever.setDataSource(MainActivity.this, Uri.parse(currentAlbumArtUri));
                     isUriSufficient = false;
                 }
@@ -985,6 +1003,9 @@ public class MainActivity extends BaseActivity implements ActivityActionProvider
 
         mediaController.sendCommand(Keys.COMMAND.AUDIO_SESSION_ID, null, resultReceiver);
 
+        // Play music if some one requested
+        playIfIntentHasData(getIntent());
+
         switch (mediaController.getShuffleMode()) {
             case PlaybackStateCompat.SHUFFLE_MODE_NONE:
                 activityMainBinding.shuffleBtn.setImageResource(R.drawable.exo_icon_shuffle_off);
@@ -1026,7 +1047,7 @@ public class MainActivity extends BaseActivity implements ActivityActionProvider
             currentMediaId = mediaController.getMetadata().getString(MediaMetadataCompat.METADATA_KEY_MEDIA_ID);
             currentAlbumArtUri = mediaController.getMetadata().getString(MediaMetadataCompat.METADATA_KEY_ALBUM_ART_URI);
             boolean isSufficient = true;
-            if (currentAlbumArtUri.contains(MediaStore.Audio.Media.EXTERNAL_CONTENT_URI.toString())) {
+            if (deviceUriPattern.matcher(currentAlbumArtUri).matches()) {
                 isSufficient = false;
                 retriever.setDataSource(this, Uri.parse(currentAlbumArtUri));
             }

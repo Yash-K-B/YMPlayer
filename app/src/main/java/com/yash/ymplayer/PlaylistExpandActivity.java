@@ -77,7 +77,7 @@ public class PlaylistExpandActivity extends BasePlayerActivity {
     }
 
     void load(MediaControllerCompat mediaController) {
-        if(mediaController == null)
+        if (mediaController == null)
             return;
         OnlineYoutubeRepository.getInstance(PlaylistExpandActivity.this).getTracks(playlistId, title, "-1", new OnlineYoutubeRepository.TracksLoadedCallback() {
             @Override
@@ -88,14 +88,14 @@ public class PlaylistExpandActivity extends BasePlayerActivity {
                     public void onClick(YoutubeSong song) {
                         String id = playlistId + "|" + song.getVideoId();
                         LogHelper.d(TAG, "onClick: uri" + id);
-                        mediaController.getTransportControls().playFromUri(Uri.parse(id), null);
+                        mediaController.getTransportControls().playFromMediaId(id, null);
                     }
 
                     @Override
                     public void onPlaySingle(YoutubeSong song) {
                         Bundle extra = new Bundle();
                         extra.putBoolean(Keys.PLAY_SINGLE, true);
-                        mediaController.getTransportControls().playFromUri(Uri.parse(playlistId + "|" + song.getVideoId()), extra);
+                        mediaController.getTransportControls().playFromMediaId(playlistId + "|" + song.getVideoId(), extra);
                     }
                 });
                 activityBinding.list.setLayoutManager(new LinearLayoutManager(PlaylistExpandActivity.this));

@@ -16,6 +16,7 @@ import androidx.room.RoomDatabase;
 import androidx.sqlite.db.SupportSQLiteDatabase;
 
 import com.yash.ymplayer.storage.DeviceAudioProvider;
+import com.yash.ymplayer.storage.FileAudioProvider;
 import com.yash.ymplayer.storage.MediaItem;
 import com.yash.ymplayer.storage.MediaItemDao;
 import com.yash.ymplayer.storage.OfflineMediaProvider;
@@ -42,6 +43,7 @@ public class Repository {
     Context context;
     ExecutorService executor = Executors.newSingleThreadExecutor();
     DeviceAudioProvider audioProvider;
+    FileAudioProvider fileAudioProvider;
 
     public static Repository getInstance(Context context) {
         if (instance == null)
@@ -70,6 +72,7 @@ public class Repository {
         provider = Room.databaseBuilder(context, PlaylistMediaProvider.class, "Playlists.db").allowMainThreadQueries().fallbackToDestructiveMigration().addCallback(databaseCallback).build();
         offlineProvider = new OfflineMediaProvider(context);
         audioProvider = new DeviceAudioProvider(context);
+        fileAudioProvider = new FileAudioProvider(context);
         mediaItemDao = provider.getMediaItemDao();
         this.context = context;
         Log.d(TAG, "Repository: New Instance");
@@ -187,6 +190,10 @@ public class Repository {
                     items.addAll(audioProvider.getPlaylistSongsQueue(mediaId));
                     break;
             }
+        } else if(mediaId.contains("URI")) {
+            String[] parts = mediaId.split("[|]", 2);
+            items.addAll(fileAudioProvider.getPlayingQueue(Uri.parse(parts[1])));
+
         } else {
             Log.d(TAG, "getCurrentPlayingQueue: OfflineProvider");
             items.addAll(audioProvider.getPlayingQueue(mediaId));

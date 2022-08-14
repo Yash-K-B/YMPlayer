@@ -383,8 +383,17 @@ public class PlayerService extends MediaBrowserServiceCompat implements PlayerHe
 
         @Override
         public void onPlayFromUri(Uri uri, Bundle extras) {
+            LogHelper.d(TAG, "onPlayFromUri: " + uri);
             playingMode = Keys.PLAYING_MODE.ONLINE;
             currentMediaIdOrVideoId = uri.toString();
+            setPlayingQueueFromUri(uri, extras);
+            resolveQueuePosition(extractId(currentMediaIdOrVideoId));
+            dispatchPlayRequest();
+        }
+
+        public void onPlayFromYoutube(String videoId, Bundle extras) {
+            playingMode = Keys.PLAYING_MODE.ONLINE;
+            currentMediaIdOrVideoId = videoId;
             setOnlinePlayingQueue(currentMediaIdOrVideoId, extras);
             resolveQueuePosition(extractId(currentMediaIdOrVideoId));
             dispatchPlayRequest();
@@ -400,13 +409,12 @@ public class PlayerService extends MediaBrowserServiceCompat implements PlayerHe
         @Override
         public void onPlayFromMediaId(String mediaId, Bundle extras) {
             LogHelper.d(TAG, "onPlayFromMediaId: extra: " + extras + " mediaId: " + mediaId);
-            playingMode = Keys.PLAYING_MODE.OFFLINE;
             String id = extractId(mediaId);
             if (!mediaIdPattern.matcher(id).matches()) {
-                onPlayFromUri(Uri.parse(mediaId), extras);
+                onPlayFromYoutube(mediaId, extras);
                 return;
             }
-
+            playingMode = Keys.PLAYING_MODE.OFFLINE;
             currentMediaIdOrVideoId = mediaId;
             setPlayingQueue(mediaId, extras);
             resolveQueuePosition(id);
@@ -901,6 +909,7 @@ public class PlayerService extends MediaBrowserServiceCompat implements PlayerHe
         return parts[parts.length - 1];
     }
 
+
     /**
      * Obtain Playing Queue and Set to mediaSession
      * The Queue includes - MediaSources, Playing QueueItem
@@ -1046,9 +1055,10 @@ public class PlayerService extends MediaBrowserServiceCompat implements PlayerHe
             long playingMediaDuration = 0L;
 
             addToLastPlayed(currentItem);
+            boolean isMediaIdPatterMatch = mediaIdPattern.matcher(currentItem.getDescription().getMediaId()).matches();
 
-            if (mediaIdPattern.matcher(currentItem.getDescription().getMediaId()).matches()) {
-                albumArtUri = ContentUris.withAppendedId(MediaStore.Audio.Media.EXTERNAL_CONTENT_URI, Long.parseLong(currentItem.getDescription().getMediaId()));
+            if (isMediaIdPatterMatch || contentUriPattern.matcher(currentItem.getDescription().getMediaId()).matches()) {
+                albumArtUri = isMediaIdPatterMatch ? ContentUris.withAppendedId(MediaStore.Audio.Media.EXTERNAL_CONTENT_URI, Long.parseLong(currentItem.getDescription().getMediaId())) : Uri.parse(currentItem.getDescription().getMediaId());
                 MediaMetadataRetriever retriever = new MediaMetadataRetriever();
                 retriever.setDataSource(this, albumArtUri);
                 byte[] data = retriever.getEmbeddedPicture();
@@ -1291,7 +1301,7 @@ public class PlayerService extends MediaBrowserServiceCompat implements PlayerHe
             String artwork = String.valueOf(queueItem.getDescription().getIconUri());
             MediaItem item = new MediaItem(mediaId, title, artist, album, playlist, artwork);
 
-            LogHelper.d(TAG, "addToLastPlayed: "+ item.getPlaylist());
+            LogHelper.d(TAG, "addToLastPlayed: " + item.getPlaylist());
             Repository.getInstance(PlayerService.this).addLastPlayed(item);
         } catch (Exception e) {
             LogHelper.d(TAG, "Exception while adding to last played : \n" + ExceptionUtil.getStackStrace(e));
@@ -1308,6 +1318,7 @@ public class PlayerService extends MediaBrowserServiceCompat implements PlayerHe
 //    }
 
     Pattern mediaIdPattern = Pattern.compile("[0-9]+");
+    Pattern contentUriPattern = Pattern.compile("(content://|file://).*");
     int prevQuality = -1;
 
     void initDataSourceFactory() {
@@ -1318,13 +1329,16 @@ public class PlayerService extends MediaBrowserServiceCompat implements PlayerHe
                 try {
 
                     LogHelper.d(TAG, String.format("resolving data spec for : ===================================%s===================================================================================================================", dataSpec.uri));
-                    boolean isMatch = mediaIdPattern.matcher(dataSpec.uri.toString()).matches();
+                    boolean isMediaIdMatch = mediaIdPattern.matcher(dataSpec.uri.toString()).matches();
+                    boolean isContentUriMatch = contentUriPattern.matcher(dataSpec.uri.getScheme()).matches();
                     String uriId = dataSpec.uri.toString();
                     LogHelper.d(TAG, "resolveDataSpec: " + dataSpec.toString());
-                    LogHelper.d(TAG, "resolveDataSpec: pattern media id: matches: " + isMatch);
-                    if (isMatch)
+                    LogHelper.d(TAG, "resolveDataSpec: pattern media id: matches: " + isMediaIdMatch);
+                    LogHelper.d(TAG, "resolveDataSpec: pattern content uri: matches: " + isContentUriMatch);
+                    if (isMediaIdMatch)
                         return dataSpec.withUri(ContentUris.withAppendedId(MediaStore.Audio.Media.EXTERNAL_CONTENT_URI, Long.parseLong(uriId)));
-
+                    else if (isContentUriMatch)
+                        return dataSpec;
                     int quality = Integer.parseInt(Objects.requireNonNull(appPreferences.getString(Keys.PREFERENCE_KEYS.PLAYBACK_QUALITY, "2")));
 
                     LogHelper.d(TAG, "resolveDataSpec: found youtube song with videoId: " + uriId + "  & quality:" + quality);
@@ -1424,6 +1438,11 @@ public class PlayerService extends MediaBrowserServiceCompat implements PlayerHe
     }
 
     @Override
+    public void addURISourceToMediaSources(Uri uri, int pos) {
+        mediaSources.addMediaSource(pos, new ProgressiveMediaSource.Factory(factory, extractorsFactory).setTag(uri.toString()).createMediaSource(uri));
+    }
+
+    @Override
     public void addToMediaSources(@Nullable String mediaId, int pos) {
         if (mediaId == null) return;
         String[] parts = mediaId.split("[/|]");
@@ -1462,6 +1481,34 @@ public class PlayerService extends MediaBrowserServiceCompat implements PlayerHe
     @Override
     public void setPlayWhenReady(boolean playWhenReady) {
         player.setPlayWhenReady(playWhenReady);
+    }
+
+    @Override
+    public void setPlayingQueueFromUri(Uri uri, Bundle extras) {
+        String queueTitle = uri.toString();
+        if (mSession.getController().getQueueTitle() != null && queueTitle.contentEquals(mSession.getController().getQueueTitle())) {
+            LogHelper.d(TAG, "setPlayingQueue: .... Queue Already set");
+            isQueueChanged = false;
+            return;
+        }
+        mSession.setQueueTitle(queueTitle);
+
+        playingQueue.clear();
+        mediaIdLists.clear();
+        if (player != null && player.isPlaying())
+            player.stop();
+        mediaSources.clear();
+        playingQueue = Repository.getInstance(this).getCurrentPlayingQueue("URI|" + uri);
+        for (int i = 0; i < playingQueue.size(); i++) {
+            String id = playingQueue.get(i).getDescription().getMediaId();
+            mediaIdLists.add(id);
+            addURISourceToMediaSources(Uri.parse(id), i);
+        }
+        mSession.setQueue(playingQueue);
+        isQueueChanged = true;
+        if (player != null)
+            player.prepare(mediaSources);
+
     }
 
 

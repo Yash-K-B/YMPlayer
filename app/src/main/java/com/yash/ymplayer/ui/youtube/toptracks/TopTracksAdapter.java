@@ -68,7 +68,7 @@ public class TopTracksAdapter extends PagedListAdapter<YoutubeSong, TopTracksAda
                     case R.id.play_single:
                         Bundle extra = new Bundle();
                         extra.putBoolean(Keys.PLAY_SINGLE, true);
-                        mediaController.getTransportControls().playFromUri(Uri.parse("TOP_TRACKS|" +song.getVideoId()), extra);
+                        mediaController.getTransportControls().playFromMediaId("TOP_TRACKS|" +song.getVideoId(), extra);
                         return true;
                     case R.id.download128kbps:
                          downloadIntent = new Intent(context,DownloadService.class);

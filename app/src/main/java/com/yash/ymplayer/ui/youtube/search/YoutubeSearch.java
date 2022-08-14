@@ -93,14 +93,14 @@ public class YoutubeSearch extends BasePlayerActivity {
                                     String id = "Search/" + query + "|" + song.getVideoId();
                                     LogHelper.d(TAG, "onClick: uri" + song.getVideoId() + " mediaController: "+ mediaController);
                                     if (mediaController != null)
-                                        mediaController.getTransportControls().playFromUri(Uri.parse(id), null);
+                                        mediaController.getTransportControls().playFromMediaId(id, null);
                                 }
 
                                 @Override
                                 public void onPlaySingle(YoutubeSong song) {
                                     Bundle extra = new Bundle();
                                     extra.putBoolean(Keys.PLAY_SINGLE, true);
-                                    mediaController.getTransportControls().playFromUri(Uri.parse("Search/" + query + "|" + song.getVideoId()), extra);
+                                    mediaController.getTransportControls().playFromMediaId("Search/" + query + "|" + song.getVideoId(), extra);
                                 }
                             });
                             utubeSearchBinding.progressBar.setVisibility(View.INVISIBLE);

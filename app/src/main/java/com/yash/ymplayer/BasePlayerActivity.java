@@ -54,6 +54,7 @@ import com.bumptech.glide.request.transition.Transition;
 import com.google.android.material.bottomsheet.BottomSheetBehavior;
 import com.sothree.slidinguppanel.SlidingUpPanelLayout;
 import com.yash.logging.LogHelper;
+import com.yash.ymplayer.constant.Constants;
 import com.yash.ymplayer.databinding.BasePlayerActivityBinding;
 import com.yash.ymplayer.equaliser.DialogEqualizerFragment;
 import com.yash.ymplayer.util.ConverterUtil;
@@ -104,6 +105,7 @@ public abstract class BasePlayerActivity extends BaseActivity implements Activit
     String queueTitle;
     DialogEqualizerFragment dialogEqualizerFragment;
     Pattern offlineAudioPattern;
+    Pattern deviceUriPattern;
 
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
@@ -113,14 +115,15 @@ public abstract class BasePlayerActivity extends BaseActivity implements Activit
         setContentView(basePlayerActivityBinding.getRoot());
         startService(new Intent(this, PlayerService.class));
         setCustomToolbar(null, null);
-//        basePlayerActivityBinding.songArt.setClipToOutline(true);
         bottomSheetBehavior = BottomSheetBehavior.from(basePlayerActivityBinding.playlists);
         preferences = getSharedPreferences(STATE_PREF, MODE_PRIVATE);
         defaultSharedPreferences = PreferenceManager.getDefaultSharedPreferences(this);
         offlineAudioPattern = Pattern.compile("[0-9]+");
+        deviceUriPattern = Pattern.compile(Constants.DEVICE_URI_PREFIX_REGEX);
 
         playerView = BottomSheetBehavior.from(basePlayerActivityBinding.player);
-        basePlayerActivityBinding.player.setOnClickListener(v -> {});
+        basePlayerActivityBinding.player.setOnClickListener(v -> {
+        });
         playerView.addBottomSheetCallback(new BottomSheetBehavior.BottomSheetCallback() {
             @Override
             public void onStateChanged(@NonNull View bottomSheet, int newState) {
@@ -152,7 +155,7 @@ public abstract class BasePlayerActivity extends BaseActivity implements Activit
         });
         playerView.setState(BottomSheetBehavior.STATE_HIDDEN);
         basePlayerActivityBinding.playerTop.setOnClickListener(v -> {
-            InputMethodManager imm = (InputMethodManager)getSystemService(Context.INPUT_METHOD_SERVICE);
+            InputMethodManager imm = (InputMethodManager) getSystemService(Context.INPUT_METHOD_SERVICE);
             imm.hideSoftInputFromWindow(v.getWindowToken(), 0);
             if (playerView.getState() == BottomSheetBehavior.STATE_COLLAPSED)
                 playerView.setState(BottomSheetBehavior.STATE_EXPANDED);
@@ -199,7 +202,7 @@ public abstract class BasePlayerActivity extends BaseActivity implements Activit
         LogHelper.d(TAG, "expandOrCompressMainLayout: " + newState);
         CoordinatorLayout.LayoutParams layoutParams = (CoordinatorLayout.LayoutParams) basePlayerActivityBinding.contentViewer.getLayoutParams();
         if (newState == BottomSheetBehavior.STATE_COLLAPSED) {
-            if(layoutParams.bottomMargin != 0)
+            if (layoutParams.bottomMargin != 0)
                 return;
             ValueAnimator valueAnimator = ValueAnimator.ofInt(0, (int) ConverterUtil.getPx(this, 58));
             valueAnimator.addUpdateListener(valueAnimator1 -> {
@@ -208,7 +211,7 @@ public abstract class BasePlayerActivity extends BaseActivity implements Activit
             });
             valueAnimator.start();
         } else if (newState == BottomSheetBehavior.STATE_HIDDEN) {
-            if(layoutParams.bottomMargin == 0)
+            if (layoutParams.bottomMargin == 0)
                 return;
             ValueAnimator valueAnimator = ValueAnimator.ofInt((int) ConverterUtil.getPx(this, 58), 0);
             valueAnimator.addUpdateListener(valueAnimator1 -> {
@@ -361,7 +364,7 @@ public abstract class BasePlayerActivity extends BaseActivity implements Activit
                 currentAlbumArtUri = metadata.getString(MediaMetadataCompat.METADATA_KEY_ALBUM_ART_URI);
                 LogHelper.d(TAG, "onMetadataChanged: AlbumArt Uri:" + currentAlbumArtUri);
                 boolean isUriSufficient = true;
-                if (currentAlbumArtUri != null && currentAlbumArtUri.contains(MediaStore.Audio.Media.EXTERNAL_CONTENT_URI.toString())) {
+                if (currentAlbumArtUri != null && deviceUriPattern.matcher(currentAlbumArtUri).matches()) {
                     retriever.setDataSource(BasePlayerActivity.this, Uri.parse(currentAlbumArtUri));
                     isUriSufficient = false;
                 }
@@ -733,7 +736,7 @@ public abstract class BasePlayerActivity extends BaseActivity implements Activit
             currentMediaId = mediaController.getMetadata().getString(MediaMetadataCompat.METADATA_KEY_MEDIA_ID);
             currentAlbumArtUri = mediaController.getMetadata().getString(MediaMetadataCompat.METADATA_KEY_ALBUM_ART_URI);
             boolean isSufficient = true;
-            if (currentAlbumArtUri.contains(MediaStore.Audio.Media.EXTERNAL_CONTENT_URI.toString())) {
+            if (deviceUriPattern.matcher(currentAlbumArtUri).matches()) {
                 isSufficient = false;
                 retriever.setDataSource(this, Uri.parse(currentAlbumArtUri));
             }
