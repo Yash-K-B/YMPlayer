@@ -1330,7 +1330,7 @@ public class PlayerService extends MediaBrowserServiceCompat implements PlayerHe
 
                     LogHelper.d(TAG, String.format("resolving data spec for : ===================================%s===================================================================================================================", dataSpec.uri));
                     boolean isMediaIdMatch = mediaIdPattern.matcher(dataSpec.uri.toString()).matches();
-                    boolean isContentUriMatch = contentUriPattern.matcher(dataSpec.uri.getScheme()).matches();
+                    boolean isContentUriMatch = contentUriPattern.matcher(dataSpec.uri.toString()).matches();
                     String uriId = dataSpec.uri.toString();
                     LogHelper.d(TAG, "resolveDataSpec: " + dataSpec.toString());
                     LogHelper.d(TAG, "resolveDataSpec: pattern media id: matches: " + isMediaIdMatch);

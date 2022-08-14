@@ -66,6 +66,7 @@ import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Locale;
 import java.util.PriorityQueue;
 import java.util.Queue;
 
@@ -97,9 +98,9 @@ public class DownloadService extends Service {
             downloader.pause(intent.getStringExtra(Keys.DownloadManager.EXTRA_VIDEO_ID));
         } else if (intent.hasExtra(Keys.DownloadManager.EXTRA_ACTION) && ("play").equals(intent.getStringExtra(Keys.DownloadManager.EXTRA_ACTION))) {
             String videoId = intent.getStringExtra(Keys.DownloadManager.EXTRA_VIDEO_ID);
-            int taskId = intent.getIntExtra(Keys.DownloadManager.EXTRA_TASK_ID,100);
-            int bitrate = intent.getIntExtra(Keys.DownloadManager.EXTRA_BITRATE,128);
-            downloader.resume(new DownloaderThread(videoId,bitrate,taskId));
+            int taskId = intent.getIntExtra(Keys.DownloadManager.EXTRA_TASK_ID, 100);
+            int bitrate = intent.getIntExtra(Keys.DownloadManager.EXTRA_BITRATE, 128);
+            downloader.resume(new DownloaderThread(videoId, bitrate, taskId));
         } else {
 
             if (!intent.hasExtra(Keys.VIDEO_ID) || !intent.hasExtra(Keys.EXTRA_DOWNLOAD_QUALITY))
@@ -137,7 +138,7 @@ public class DownloadService extends Service {
             execute();
         }
 
-        void resume(DownloaderThread thread){
+        void resume(DownloaderThread thread) {
             thread.setCallbackObject(this);
             taskQueue.add(thread);
             execute();
@@ -200,7 +201,7 @@ public class DownloadService extends Service {
             manager = (NotificationManager) getSystemService(NOTIFICATION_SERVICE);
         }
 
-        public DownloaderThread(String videoId, int bitrate,int taskId) {
+        public DownloaderThread(String videoId, int bitrate, int taskId) {
             this.videoId = videoId;
             this.bitrate = bitrate;
             this.taskId = taskId;
@@ -365,11 +366,11 @@ public class DownloadService extends Service {
                     }
 
 
-                    File outFile = new File(directory, file_name + "-"+bitrate+"Kbps.mp3");
+                    File outFile = new File(directory, file_name + "-" + bitrate + "Kbps.mp3");
                     int i = 0;
                     while (outFile.exists()) {
                         i++;
-                        outFile = new File(directory, file_name + "-" + i + "-"+bitrate+"Kbps.mp3");
+                        outFile = new File(directory, file_name + "-" + i + "-" + bitrate + "Kbps.mp3");
                     }
 
                     //Tags
@@ -544,7 +545,6 @@ public class DownloadService extends Service {
         long prevTime = -1, currentTime;
 
         void notifyProgress(int progress) {
-            LogHelper.d(TAG, "notifyProgress: ");
             if (isTerminate) return;
             currentTime = System.currentTimeMillis();
             if (prevTime == -1) prevTime = System.currentTimeMillis();
@@ -554,6 +554,7 @@ public class DownloadService extends Service {
             notificationBuilder.setProgress(100, progress, false);
             notificationBuilder.setOngoing(true);
             manager.notify(taskId, notificationBuilder.build());
+            LogHelper.d(TAG, String.format(Locale.US, "progress : %d %%", progress));
         }
 
         void notifyIndeterminateProgress() {

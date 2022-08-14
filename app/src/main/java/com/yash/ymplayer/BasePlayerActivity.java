@@ -28,6 +28,7 @@ import android.view.MenuItem;
 import android.view.View;
 import android.view.inputmethod.InputMethodManager;
 import android.widget.ImageView;
+import android.widget.PopupMenu;
 import android.widget.SeekBar;
 import android.widget.Toast;
 
@@ -57,6 +58,7 @@ import com.yash.logging.LogHelper;
 import com.yash.ymplayer.constant.Constants;
 import com.yash.ymplayer.databinding.BasePlayerActivityBinding;
 import com.yash.ymplayer.equaliser.DialogEqualizerFragment;
+import com.yash.ymplayer.util.CommonUtil;
 import com.yash.ymplayer.util.ConverterUtil;
 import com.yash.ymplayer.util.EqualizerUtil;
 import com.yash.ymplayer.util.Keys;
@@ -106,6 +108,7 @@ public abstract class BasePlayerActivity extends BaseActivity implements Activit
     DialogEqualizerFragment dialogEqualizerFragment;
     Pattern offlineAudioPattern;
     Pattern deviceUriPattern;
+    PopupMenu downloadPopup;
 
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
@@ -120,6 +123,7 @@ public abstract class BasePlayerActivity extends BaseActivity implements Activit
         defaultSharedPreferences = PreferenceManager.getDefaultSharedPreferences(this);
         offlineAudioPattern = Pattern.compile("[0-9]+");
         deviceUriPattern = Pattern.compile(Constants.DEVICE_URI_PREFIX_REGEX);
+        downloadPopup = CommonUtil.buildYoutubeDownloadPopup(this, basePlayerActivityBinding.downloadBtn, () -> currentMediaId);
 
         playerView = BottomSheetBehavior.from(basePlayerActivityBinding.player);
         basePlayerActivityBinding.player.setOnClickListener(v -> {
@@ -397,6 +401,7 @@ public abstract class BasePlayerActivity extends BaseActivity implements Activit
             basePlayerActivityBinding.favouriteBtn.setImageResource(metadata.getLong(PlayerService.METADATA_KEY_FAVOURITE) == 0 ? R.drawable.icon_favourite_off : R.drawable.icon_favourite);
 
             currentMediaId = metadata.getString(MediaMetadataCompat.METADATA_KEY_MEDIA_ID);
+            basePlayerActivityBinding.downloadBtn.setVisibility(CommonUtil.isYoutubeSong(currentMediaId)? View.VISIBLE: View.GONE);
             LogHelper.d(TAG, "onMetadataChanged: Duration:" + metadata.getLong(MediaMetadataCompat.METADATA_KEY_DURATION) / 1000 + "s");
         }
 
@@ -602,34 +607,19 @@ public abstract class BasePlayerActivity extends BaseActivity implements Activit
             mediaController.getTransportControls().setShuffleMode((mediaController.getShuffleMode() + 1) % 2);
         }
     };
-    View.OnClickListener shareSongListener = new View.OnClickListener() {
-        @Override
-        public void onClick(View v) {
-
-            String[] parts = currentMediaId.split("[|/]");
-            if (offlineAudioPattern.matcher(parts[parts.length - 1]).matches()) {
-                long mediaId = Long.parseLong(parts[parts.length - 1]);
-                Uri contentUri = ContentUris.withAppendedId(MediaStore.Audio.Media.EXTERNAL_CONTENT_URI, mediaId);
-                Intent intent = new Intent(Intent.ACTION_SEND);
-                intent.setType("audio/*");
-                intent.putExtra(Intent.EXTRA_STREAM, contentUri);
-                intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
-                startActivity(Intent.createChooser(intent, "Share Song via"));
-            } else {
-                String baseUrl = "https://youtu.be/";
-                Intent shareIntent = new Intent(Intent.ACTION_VIEW);
-                shareIntent.setData(Uri.parse(baseUrl + currentMediaId));
-                startActivity(shareIntent);
-            }
-
-        }
-    };
 
 
     View.OnClickListener toggleFavouriteListener = new View.OnClickListener() {
         @Override
         public void onClick(View v) {
             mediaController.getTransportControls().sendCustomAction(Keys.Action.TOGGLE_FAVOURITE, null);
+        }
+    };
+
+    View.OnClickListener downloadSongListener = new View.OnClickListener() {
+        @Override
+        public void onClick(View v) {
+            downloadPopup.show();
         }
     };
 
@@ -771,9 +761,8 @@ public abstract class BasePlayerActivity extends BaseActivity implements Activit
             basePlayerActivityBinding.maxDuration.setText(formatMillis(mediaController.getMetadata().getLong(MediaMetadataCompat.METADATA_KEY_DURATION)));
             basePlayerActivityBinding.musicProgress.setMax((int) mediaController.getMetadata().getLong(MediaMetadataCompat.METADATA_KEY_DURATION));
             playerView.setState(BottomSheetBehavior.STATE_COLLAPSED);
-//            int pos = (int) mediaController.getMetadata().getLong(MediaMetadataCompat.METADATA_KEY_TRACK_NUMBER);
-//            notifyCurrentPlayingSong(pos);
             basePlayerActivityBinding.favouriteBtn.setImageResource(mediaController.getMetadata().getLong(PlayerService.METADATA_KEY_FAVOURITE) == 0 ? R.drawable.icon_favourite_off : R.drawable.icon_favourite);
+            basePlayerActivityBinding.downloadBtn.setVisibility(CommonUtil.isYoutubeSong(currentMediaId)? View.VISIBLE: View.GONE);
         }
         if (mediaController.getPlaybackState() != null) {
             long activeQueuePosition = mediaController.getPlaybackState().getActiveQueueItemId();
@@ -802,10 +791,11 @@ public abstract class BasePlayerActivity extends BaseActivity implements Activit
         basePlayerActivityBinding.repeatBtn.setOnClickListener(repeatModeClickListener);
         basePlayerActivityBinding.shuffleBtn.setOnClickListener(shuffleModeListener);
         basePlayerActivityBinding.favouriteBtn.setOnClickListener(toggleFavouriteListener);
+        basePlayerActivityBinding.downloadBtn.setOnClickListener(downloadSongListener);
         basePlayerActivityBinding.musicProgress.setOnSeekBarChangeListener(progressListener);
         basePlayerActivityBinding.closeBottomSheet.setOnClickListener(closeBottomSheetListener);
         basePlayerActivityBinding.minimize.setOnClickListener(v -> playerView.setState(BottomSheetBehavior.STATE_COLLAPSED));
-        basePlayerActivityBinding.shareThis.setOnClickListener(shareSongListener);
+        basePlayerActivityBinding.shareThis.setOnClickListener(CommonUtil.buildShareSong(this, () -> currentMediaId));
         basePlayerActivityBinding.equalizer.setOnClickListener(openEqualizerListener);
     }
 

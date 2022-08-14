@@ -299,9 +299,23 @@
                         android:scaleType="centerInside"
                         android:src="@drawable/icon_favourite_off"
                         app:layout_constraintBottom_toTopOf="@+id/music_progress"
-                        app:layout_constraintEnd_toEndOf="parent"
+                        app:layout_constraintEnd_toStartOf="@+id/downloadBtn"
                         app:layout_constraintHorizontal_bias="0.5"
                         app:layout_constraintStart_toEndOf="@+id/shuffleBtn"
+                        app:tint="@android:color/white" />
+
+                    <ImageButton
+                        android:id="@+id/downloadBtn"
+                        android:layout_width="48dp"
+                        android:layout_height="48dp"
+                        android:layout_marginBottom="20dp"
+                        android:background="@drawable/ripple_click_effect"
+                        android:scaleType="centerInside"
+                        android:src="@drawable/ic_round_download_24"
+                        app:layout_constraintBottom_toTopOf="@+id/music_progress"
+                        app:layout_constraintEnd_toEndOf="parent"
+                        app:layout_constraintHorizontal_bias="0.5"
+                        app:layout_constraintStart_toEndOf="@+id/favouriteBtn"
                         app:tint="@android:color/white" />
 
                 </androidx.constraintlayout.widget.ConstraintLayout>

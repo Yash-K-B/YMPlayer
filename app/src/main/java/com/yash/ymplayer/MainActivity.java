@@ -54,6 +54,7 @@ import android.webkit.WebViewClient;
 import android.widget.HorizontalScrollView;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
+import android.widget.PopupMenu;
 import android.widget.RelativeLayout;
 import android.widget.ScrollView;
 import android.widget.SeekBar;
@@ -88,6 +89,7 @@ import com.google.android.material.navigation.NavigationView;
 import com.naman14.androidlame.AndroidLame;
 import com.naman14.androidlame.LameBuilder;
 import com.sothree.slidinguppanel.SlidingUpPanelLayout;
+import com.yash.logging.utils.ExceptionUtil;
 import com.yash.ymplayer.constant.Constants;
 import com.yash.ymplayer.databinding.ActivityMainBinding;
 import com.yash.ymplayer.equaliser.DialogEqualizerFragment;
@@ -96,6 +98,7 @@ import com.yash.ymplayer.ui.main.AboutFragment;
 import com.yash.ymplayer.ui.main.LocalSongs;
 import com.yash.ymplayer.ui.main.SettingsFragment;
 import com.yash.ymplayer.ui.youtube.YoutubeLibrary;
+import com.yash.ymplayer.util.CommonUtil;
 import com.yash.ymplayer.util.ConverterUtil;
 import com.yash.ymplayer.util.EqualizerUtil;
 import com.yash.ymplayer.util.Keys;
@@ -169,6 +172,7 @@ public class MainActivity extends BaseActivity implements ActivityActionProvider
     DialogEqualizerFragment dialogEqualizerFragment;
     Pattern offlineAudioPattern;
     Pattern deviceUriPattern;
+    PopupMenu downloadPopup;
 
 
     @Override
@@ -183,6 +187,7 @@ public class MainActivity extends BaseActivity implements ActivityActionProvider
         defaultSharedPreferences = PreferenceManager.getDefaultSharedPreferences(this);
         offlineAudioPattern = Pattern.compile("[0-9]+");
         deviceUriPattern = Pattern.compile(Constants.DEVICE_URI_PREFIX_REGEX);
+        downloadPopup = CommonUtil.buildYoutubeDownloadPopup(this, activityMainBinding.downloadBtn, () -> currentMediaId);
 
 
         //Display Exception (If any)
@@ -627,7 +632,7 @@ public class MainActivity extends BaseActivity implements ActivityActionProvider
                 currentAlbumArtUri = metadata.getString(MediaMetadataCompat.METADATA_KEY_ALBUM_ART_URI);
                 LogHelper.d(TAG, "onMetadataChanged: AlbumArt Uri:" + currentAlbumArtUri);
                 boolean isUriSufficient = true;
-                if (currentAlbumArtUri != null &&  deviceUriPattern.matcher(currentAlbumArtUri).matches()) {
+                if (currentAlbumArtUri != null && deviceUriPattern.matcher(currentAlbumArtUri).matches()) {
                     retriever.setDataSource(MainActivity.this, Uri.parse(currentAlbumArtUri));
                     isUriSufficient = false;
                 }
@@ -660,6 +665,7 @@ public class MainActivity extends BaseActivity implements ActivityActionProvider
             activityMainBinding.favouriteBtn.setImageResource(metadata.getLong(PlayerService.METADATA_KEY_FAVOURITE) == 0 ? R.drawable.icon_favourite_off : R.drawable.icon_favourite);
 
             currentMediaId = metadata.getString(MediaMetadataCompat.METADATA_KEY_MEDIA_ID);
+            activityMainBinding.downloadBtn.setVisibility(CommonUtil.isYoutubeSong(currentMediaId)? View.VISIBLE: View.GONE);
             LogHelper.d(TAG, "onMetadataChanged: Duration:" + metadata.getLong(MediaMetadataCompat.METADATA_KEY_DURATION) / 1000 + "s");
         }
 
@@ -910,34 +916,19 @@ public class MainActivity extends BaseActivity implements ActivityActionProvider
             mediaController.getTransportControls().setShuffleMode((mediaController.getShuffleMode() + 1) % 2);
         }
     };
-    View.OnClickListener shareSongListener = new View.OnClickListener() {
-        @Override
-        public void onClick(View v) {
-
-            String[] parts = currentMediaId.split("[|/]");
-            if (offlineAudioPattern.matcher(parts[parts.length - 1]).matches()) {
-                long mediaId = Long.parseLong(parts[parts.length - 1]);
-                Uri contentUri = ContentUris.withAppendedId(MediaStore.Audio.Media.EXTERNAL_CONTENT_URI, mediaId);
-                Intent intent = new Intent(Intent.ACTION_SEND);
-                intent.setType("audio/*");
-                intent.putExtra(Intent.EXTRA_STREAM, contentUri);
-                intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
-                startActivity(Intent.createChooser(intent, "Share Song via"));
-            } else {
-                String baseUrl = "https://youtu.be/";
-                Intent shareIntent = new Intent(Intent.ACTION_VIEW);
-                shareIntent.setData(Uri.parse(baseUrl + currentMediaId));
-                startActivity(shareIntent);
-            }
-
-        }
-    };
 
 
     View.OnClickListener toggleFavouriteListener = new View.OnClickListener() {
         @Override
         public void onClick(View v) {
             mediaController.getTransportControls().sendCustomAction(Keys.Action.TOGGLE_FAVOURITE, null);
+        }
+    };
+
+    View.OnClickListener downloadSongListener = new View.OnClickListener() {
+        @Override
+        public void onClick(View v) {
+            downloadPopup.show();
         }
     };
 
@@ -1082,9 +1073,8 @@ public class MainActivity extends BaseActivity implements ActivityActionProvider
             activityMainBinding.maxDuration.setText(formatMillis(mediaController.getMetadata().getLong(MediaMetadataCompat.METADATA_KEY_DURATION)));
             activityMainBinding.musicProgress.setMax((int) mediaController.getMetadata().getLong(MediaMetadataCompat.METADATA_KEY_DURATION));
             playerView.setState(BottomSheetBehavior.STATE_COLLAPSED);
-//            int pos = (int) mediaController.getMetadata().getLong(MediaMetadataCompat.METADATA_KEY_TRACK_NUMBER);
-//            notifyCurrentPlayingSong(pos);
             activityMainBinding.favouriteBtn.setImageResource(mediaController.getMetadata().getLong(PlayerService.METADATA_KEY_FAVOURITE) == 0 ? R.drawable.icon_favourite_off : R.drawable.icon_favourite);
+            activityMainBinding.downloadBtn.setVisibility(CommonUtil.isYoutubeSong(currentMediaId)? View.VISIBLE: View.GONE);
         }
         if (mediaController.getPlaybackState() != null) {
             long activeQueuePosition = mediaController.getPlaybackState().getActiveQueueItemId();
@@ -1113,10 +1103,11 @@ public class MainActivity extends BaseActivity implements ActivityActionProvider
         activityMainBinding.repeatBtn.setOnClickListener(repeatModeClickListener);
         activityMainBinding.shuffleBtn.setOnClickListener(shuffleModeListener);
         activityMainBinding.favouriteBtn.setOnClickListener(toggleFavouriteListener);
+        activityMainBinding.downloadBtn.setOnClickListener(downloadSongListener);
         activityMainBinding.musicProgress.setOnSeekBarChangeListener(progressListener);
         activityMainBinding.closeBottomSheet.setOnClickListener(closeBottomSheetListener);
         activityMainBinding.minimize.setOnClickListener(v -> playerView.setState(BottomSheetBehavior.STATE_COLLAPSED));
-        activityMainBinding.shareThis.setOnClickListener(shareSongListener);
+        activityMainBinding.shareThis.setOnClickListener(CommonUtil.buildShareSong(this, () -> currentMediaId));
         activityMainBinding.equalizer.setOnClickListener(openEqualizerListener);
     }
 
@@ -1142,7 +1133,7 @@ public class MainActivity extends BaseActivity implements ActivityActionProvider
                 if (!tempFile.mkdirs())
                     return;
             //Get application's name and convert to lowercase
-            tempFile = new File(tempFile.getPath() + "/" + getString(app.labelRes).replace(" ", "").toLowerCase() + ".apk");
+            tempFile = new File(tempFile.getPath() + "/YM Player.apk");
             //If file doesn't exists create new
             if (!tempFile.exists()) {
                 if (!tempFile.createNewFile()) {
@@ -1167,7 +1158,7 @@ public class MainActivity extends BaseActivity implements ActivityActionProvider
             startActivity(Intent.createChooser(intent, "Share app via"));
 
         } catch (IOException e) {
-            e.printStackTrace();
+            LogHelper.e(TAG, "shareMyApp: Error "+ ExceptionUtil.getStackStrace(e));
         }
     }
 
