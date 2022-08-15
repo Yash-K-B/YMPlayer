@@ -906,7 +906,7 @@ public class PlayerService extends MediaBrowserServiceCompat implements PlayerHe
             player.stop();
         mediaSources.clear();
         if (!playSingle) {
-            playingQueue = uri.startsWith("PLAYLISTS/FAV") ? Repository.getInstance(this).getCurrentPlayingQueue(uri) : OnlineYoutubeRepository.getInstance(this).getPlayingQueue(uri);
+            playingQueue = uri.startsWith("PLAYLISTS/") ? Repository.getInstance(this).getCurrentPlayingQueue(uri) : OnlineYoutubeRepository.getInstance(this).getPlayingQueue(uri);
             for (int i = 0; i < playingQueue.size(); i++) {
                 String id = playingQueue.get(i).getDescription().getMediaId();
                 mediaIdLists.add(id);
@@ -914,7 +914,7 @@ public class PlayerService extends MediaBrowserServiceCompat implements PlayerHe
                 //LogHelper.d(TAG, "setOnlinePlayingQueue: video id: " + id);
             }
         } else {
-            playingQueue = uri.startsWith("PLAYLISTS/FAV") ? Repository.getInstance(this).getCurrentPlayingQueue(uri) : OnlineYoutubeRepository.getInstance(this).getPlayingQueueSingle(uri);
+            playingQueue = uri.startsWith("PLAYLISTS/") ? Repository.getInstance(this).getCurrentPlayingQueue(uri) : OnlineYoutubeRepository.getInstance(this).getPlayingQueueSingle(uri);
             for (int i = 0; i < playingQueue.size(); i++) {
                 String id = playingQueue.get(i).getDescription().getMediaId();
                 mediaIdLists.add(id);

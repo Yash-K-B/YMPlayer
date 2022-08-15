@@ -81,7 +81,7 @@ public class PlaylistExpandActivity extends BasePlayerActivity {
     void load(MediaControllerCompat mediaController) {
         if (mediaController == null)
             return;
-        OnlineYoutubeRepository.getInstance(PlaylistExpandActivity.this).getTracks(playlistId, title, "-1", new OnlineYoutubeRepository.TracksLoadedCallback() {
+        OnlineYoutubeRepository.getInstance(PlaylistExpandActivity.this).getTracks(playlistId, title, new OnlineYoutubeRepository.TracksLoadedCallback() {
             @Override
             public void onLoaded(List<YoutubeSong> songs) {
                 activityBinding.listProgress.setVisibility(View.GONE);

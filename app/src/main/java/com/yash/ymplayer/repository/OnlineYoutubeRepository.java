@@ -3,6 +3,8 @@ package com.yash.ymplayer.repository;
 import android.content.Context;
 import android.net.Uri;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Looper;
 import android.support.v4.media.MediaDescriptionCompat;
 import android.support.v4.media.session.MediaSessionCompat;
 import android.text.TextUtils;
@@ -27,6 +29,7 @@ import com.yash.ymplayer.models.YoutubePlaylist;
 import com.yash.ymplayer.storage.AudioProvider;
 import com.yash.ymplayer.util.YoutubeSong;
 import com.yash.youtube_extractor.ExtractorHelper;
+import com.yash.youtube_extractor.utility.CollectionUtility;
 
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -53,6 +56,7 @@ public class OnlineYoutubeRepository {
     RequestQueue requestQueue;
     TopTracksLoadedCallback callback;
     ExecutorService executor = Executors.newSingleThreadExecutor();
+    Handler handler = new Handler(Looper.getMainLooper());
 
     OnlineYoutubeRepository(Context context) {
         this.context = context.getApplicationContext();
@@ -523,6 +527,30 @@ public class OnlineYoutubeRepository {
             }
         };
         requestQueue.add(jsonObjectRequest);
+    }
+
+
+    public void getTracks(String id, String desc, TracksLoadedCallback callback) {
+        LogHelper.d(TAG, "topTracks: Extraction");
+
+        if (!CollectionUtility.isEmpty(loadedTracksMap.get(id))) {
+            LogHelper.d(TAG, "Tracks for Playlist %s found in cache!!!", id);
+            callback.onLoaded(loadedTracksMap.get(id));
+            return;
+        }
+
+        executor.execute(() -> {
+            List<YoutubeSong> songs = new ArrayList<>();
+            List<com.yash.youtube_extractor.models.YoutubeSong> youtubeSongs = ExtractorHelper.playlistSongs(id);
+            for (com.yash.youtube_extractor.models.YoutubeSong youtubeSong : youtubeSongs) {
+                YoutubeSong song = new YoutubeSong(youtubeSong.getTitle(), youtubeSong.getVideoId(), youtubeSong.getChannelTitle(), youtubeSong.getArtUrlSmall(), youtubeSong.getArtUrlMedium(), youtubeSong.getArtUrlHigh());
+                song.setDurationMillis(youtubeSong.getDurationMillis());
+                song.setChannelDesc(desc);
+                songs.add(song);
+            }
+            loadedTracksMap.put(id, songs);
+            handler.post(() -> callback.onLoaded(songs));
+        });
     }
 
     public interface TracksLoadedCallback {
