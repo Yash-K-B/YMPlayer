@@ -20,17 +20,18 @@ import com.bumptech.glide.Glide;
 import com.yash.ymplayer.DownloadService;
 import com.yash.ymplayer.R;
 import com.yash.ymplayer.databinding.ItemMusicBinding;
+import com.yash.ymplayer.interfaces.TrackClickListener;
 import com.yash.ymplayer.util.Keys;
 import com.yash.ymplayer.util.YoutubeSong;
 
 import java.security.Key;
 
 public class TopTracksAdapter extends PagedListAdapter<YoutubeSong, TopTracksAdapter.TopTracksViewHolder> {
-    OnClickListener listener;
+    TrackClickListener listener;
     MediaControllerCompat mediaController;
     Context context;
 
-    public TopTracksAdapter(Context context, OnClickListener listener, MediaControllerCompat mediaController) {
+    public TopTracksAdapter(Context context, TrackClickListener listener, MediaControllerCompat mediaController) {
         super(DiffCallback);
         this.listener = listener;
         this.context = context;
@@ -59,16 +60,14 @@ public class TopTracksAdapter extends PagedListAdapter<YoutubeSong, TopTracksAda
             this.binding = binding;
         }
 
-        void onBindTracks(YoutubeSong song, OnClickListener listener,MediaControllerCompat  mediaController) {
+        void onBindTracks(YoutubeSong song, TrackClickListener listener,MediaControllerCompat  mediaController) {
             PopupMenu menu = new PopupMenu(context,binding.more);
             menu.inflate(R.menu.youtube_song_menu);
             menu.setOnMenuItemClickListener(item -> {
                 Intent downloadIntent;
                 switch (item.getItemId()){
                     case R.id.play_single:
-                        Bundle extra = new Bundle();
-                        extra.putBoolean(Keys.PLAY_SINGLE, true);
-                        mediaController.getTransportControls().playFromMediaId("TOP_TRACKS|" +song.getVideoId(), extra);
+                       listener.onPlaySingle(song);
                         return true;
                     case R.id.download128kbps:
                          downloadIntent = new Intent(context,DownloadService.class);
@@ -88,6 +87,12 @@ public class TopTracksAdapter extends PagedListAdapter<YoutubeSong, TopTracksAda
                         downloadIntent.putExtra(Keys.EXTRA_DOWNLOAD_QUALITY,320);
                         context.startService(downloadIntent);
                         return true;
+                    case R.id.queue_next:
+                        listener.onQueueNext(song);
+                        return true;
+                    case R.id.queue_last:
+                        listener.onQueueLast(song);
+                        return true;
 
                     default: return false;
                 }
@@ -98,10 +103,6 @@ public class TopTracksAdapter extends PagedListAdapter<YoutubeSong, TopTracksAda
             Glide.with(context).load(song.getArt_url_small()).into(binding.art);
             itemView.setOnClickListener(v -> listener.onClick(song));
         }
-    }
-
-    interface OnClickListener {
-        void onClick(YoutubeSong song);
     }
 
 

@@ -3,12 +3,14 @@ package com.yash.ymplayer.util;
 import android.content.ContentUris;
 import android.content.Context;
 import android.content.Intent;
+import android.media.MediaMetadataRetriever;
 import android.net.Uri;
 import android.provider.MediaStore;
 import android.view.View;
 import android.widget.PopupMenu;
 
 import com.yash.ymplayer.DownloadService;
+import com.yash.ymplayer.MainActivity;
 import com.yash.ymplayer.R;
 import com.yash.ymplayer.constant.Constants;
 import com.yash.ymplayer.interfaces.MediaIDProvider;
@@ -99,5 +101,11 @@ public class CommonUtil {
 
             }
         };
+    }
+
+    public static byte[] getEmbeddedPicture(Context context, String uri) {
+        MediaMetadataRetriever retriever = new MediaMetadataRetriever();
+        retriever.setDataSource(context, Uri.parse(uri));
+        return retriever.getEmbeddedPicture();
     }
 }

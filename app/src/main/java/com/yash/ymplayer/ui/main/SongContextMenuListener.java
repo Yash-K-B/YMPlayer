@@ -13,6 +13,8 @@ public interface SongContextMenuListener {
 
     void queueNext(MediaBrowserCompat.MediaItem item);
 
+    void queueLast(MediaBrowserCompat.MediaItem item);
+
     void addToPlaylist(MediaBrowserCompat.MediaItem item, String playlist);
 
     void gotoAlbum(MediaBrowserCompat.MediaItem item);

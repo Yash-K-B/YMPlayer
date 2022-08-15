@@ -69,5 +69,7 @@ public interface AudioProvider {
         int ARTIST_SONGS = 1;
         int ALBUM_SONGS = 2;
         int PLAYLIST_SONGS = 3;
+        int YOUTUBE_SINGLE_SONG = 4;
+        int YOUTUBE_SONGS = 5;
     }
 }

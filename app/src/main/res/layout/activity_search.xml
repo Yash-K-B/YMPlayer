@@ -28,11 +28,28 @@
             android:layout_height="wrap_content">
 
             <TextView
+                android:id="@+id/onlineSearch"
+                android:visibility="invisible"
+                android:layout_width="0dp"
+                android:layout_height="60dp"
+                android:text="Search online "
+                android:gravity="start|center_vertical"
+                android:textColor="?attr/backgroundHeadingTextColor"
+                android:background="?attr/selectableItemBackground"
+                android:clickable="true"
+                android:focusable="true"
+                android:textStyle="bold"
+                android:padding="10dp"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toTopOf="parent" />
+
+            <TextView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="48dp"
-                android:text="No Results"
+                android:layout_marginTop="108dp"
                 android:gravity="center"
+                android:text="No Results"
                 app:layout_constraintEnd_toEndOf="parent"
                 app:layout_constraintHorizontal_bias="0.0"
                 app:layout_constraintStart_toStartOf="parent"
@@ -54,7 +71,7 @@
                 app:layout_constraintEnd_toEndOf="parent"
                 app:layout_constraintHorizontal_bias="0.5"
                 app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintTop_toTopOf="parent" />
+                app:layout_constraintTop_toBottomOf="@+id/onlineSearch" />
 
             <androidx.recyclerview.widget.RecyclerView
                 android:id="@+id/searchListSongsContainer"

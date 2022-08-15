@@ -17,6 +17,9 @@
         android:id="@+id/goto_artist"
         android:title="Goto Artist" />
     <item
+        android:id="@+id/queue_last"
+        android:title="@string/queue_last" />
+    <item
         android:id="@+id/shareSong"
         android:title="Share" />
     <item

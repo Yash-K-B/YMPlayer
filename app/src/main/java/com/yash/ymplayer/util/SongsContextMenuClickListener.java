@@ -57,7 +57,17 @@ public class SongsContextMenuClickListener implements SongContextMenuListener {
         Bundle extras = new Bundle();
         extras.putString(Keys.MEDIA_ID, item.getDescription().getMediaId());
         extras.putInt(Keys.QUEUE_HINT, AudioProvider.QueueHint.SINGLE_SONG);
+        extras.putString(Keys.QUEUE_MODE, Keys.QueueMode.OFFLINE.name());
         mMediaController.getTransportControls().sendCustomAction(Keys.Action.QUEUE_NEXT, extras);
+    }
+
+    @Override
+    public void queueLast(MediaBrowserCompat.MediaItem item) {
+        Bundle extras = new Bundle();
+        extras.putString(Keys.MEDIA_ID, item.getDescription().getMediaId());
+        extras.putInt(Keys.QUEUE_HINT, AudioProvider.QueueHint.SINGLE_SONG);
+        extras.putString(Keys.QUEUE_MODE, Keys.QueueMode.OFFLINE.name());
+        mMediaController.getTransportControls().sendCustomAction(Keys.Action.QUEUE_LAST, extras);
     }
 
     @Override

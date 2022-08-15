@@ -91,7 +91,6 @@ public abstract class BasePlayerActivity extends BaseActivity implements Activit
     private ScheduledFuture<?> mScheduledFuture;
     long currentProgress;
     long currentBufferedPosition;
-    MediaMetadataRetriever retriever = new MediaMetadataRetriever();
     String currentAlbumArtUri = null;
     boolean isPanelTopVisible = false;
     BottomSheetBehavior bottomSheetBehavior;
@@ -109,6 +108,7 @@ public abstract class BasePlayerActivity extends BaseActivity implements Activit
     Pattern offlineAudioPattern;
     Pattern deviceUriPattern;
     PopupMenu downloadPopup;
+    InputMethodManager imm;
 
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
@@ -124,6 +124,7 @@ public abstract class BasePlayerActivity extends BaseActivity implements Activit
         offlineAudioPattern = Pattern.compile("[0-9]+");
         deviceUriPattern = Pattern.compile(Constants.DEVICE_URI_PREFIX_REGEX);
         downloadPopup = CommonUtil.buildYoutubeDownloadPopup(this, basePlayerActivityBinding.downloadBtn, () -> currentMediaId);
+        imm = (InputMethodManager) getSystemService(Context.INPUT_METHOD_SERVICE);
 
         playerView = BottomSheetBehavior.from(basePlayerActivityBinding.player);
         basePlayerActivityBinding.player.setOnClickListener(v -> {
@@ -145,6 +146,9 @@ public abstract class BasePlayerActivity extends BaseActivity implements Activit
                 if (slideOffset > 0.5f) {
                     basePlayerActivityBinding.trackTitle.setSelected(true);
                     basePlayerActivityBinding.songTitle.setSelected(false);
+                    if (imm.isAcceptingText()) {
+                        imm.hideSoftInputFromWindow(bottomSheet.getWindowToken(), 0);
+                    }
                 } else if (slideOffset >= 0f) {
                     basePlayerActivityBinding.trackTitle.setSelected(false);
                     basePlayerActivityBinding.songTitle.setSelected(true);
@@ -159,7 +163,6 @@ public abstract class BasePlayerActivity extends BaseActivity implements Activit
         });
         playerView.setState(BottomSheetBehavior.STATE_HIDDEN);
         basePlayerActivityBinding.playerTop.setOnClickListener(v -> {
-            InputMethodManager imm = (InputMethodManager) getSystemService(Context.INPUT_METHOD_SERVICE);
             imm.hideSoftInputFromWindow(v.getWindowToken(), 0);
             if (playerView.getState() == BottomSheetBehavior.STATE_COLLAPSED)
                 playerView.setState(BottomSheetBehavior.STATE_EXPANDED);
@@ -243,11 +246,10 @@ public abstract class BasePlayerActivity extends BaseActivity implements Activit
                     String songArt = mediaController.getMetadata().getString(MediaMetadataCompat.METADATA_KEY_ALBUM_ART_URI);
                     boolean isUriSufficient = true;
                     if (songArt != null && songArt.contains(MediaStore.Audio.Media.EXTERNAL_CONTENT_URI.toString())) {
-                        retriever.setDataSource(BasePlayerActivity.this, Uri.parse(songArt));
                         isUriSufficient = false;
                     }
                     songArt = String.format("https://i.ytimg.com/vi/%s/hqdefault.jpg", mediaController.getMetadata().getString(MediaMetadataCompat.METADATA_KEY_MEDIA_ID));
-                    Glide.with(BasePlayerActivity.this).load(isUriSufficient ? songArt : retriever.getEmbeddedPicture()).placeholder(R.drawable.album_art_placeholder).into(new CustomTarget<Drawable>() {
+                    Glide.with(BasePlayerActivity.this).load(isUriSufficient ? songArt : CommonUtil.getEmbeddedPicture(BasePlayerActivity.this, songArt)).placeholder(R.drawable.album_art_placeholder).into(new CustomTarget<Drawable>() {
                         @Override
                         public void onResourceReady(@NonNull Drawable resource, @Nullable Transition<? super Drawable> transition) {
                             setSongArt(resource);
@@ -369,11 +371,10 @@ public abstract class BasePlayerActivity extends BaseActivity implements Activit
                 LogHelper.d(TAG, "onMetadataChanged: AlbumArt Uri:" + currentAlbumArtUri);
                 boolean isUriSufficient = true;
                 if (currentAlbumArtUri != null && deviceUriPattern.matcher(currentAlbumArtUri).matches()) {
-                    retriever.setDataSource(BasePlayerActivity.this, Uri.parse(currentAlbumArtUri));
                     isUriSufficient = false;
                 }
 
-                Glide.with(BasePlayerActivity.this).load(isUriSufficient ? currentAlbumArtUri : retriever.getEmbeddedPicture()).placeholder(R.drawable.album_art_placeholder).into(new CustomTarget<Drawable>() {
+                Glide.with(BasePlayerActivity.this).load(isUriSufficient ? currentAlbumArtUri : CommonUtil.getEmbeddedPicture(BasePlayerActivity.this, currentAlbumArtUri)).placeholder(R.drawable.album_art_placeholder).into(new CustomTarget<Drawable>() {
                     @Override
                     public void onResourceReady(@NonNull Drawable resource, @Nullable Transition<? super Drawable> transition) {
                         LogHelper.d(TAG, "onResourceReady: uri:" + currentAlbumArtUri);
@@ -401,7 +402,7 @@ public abstract class BasePlayerActivity extends BaseActivity implements Activit
             basePlayerActivityBinding.favouriteBtn.setImageResource(metadata.getLong(PlayerService.METADATA_KEY_FAVOURITE) == 0 ? R.drawable.icon_favourite_off : R.drawable.icon_favourite);
 
             currentMediaId = metadata.getString(MediaMetadataCompat.METADATA_KEY_MEDIA_ID);
-            basePlayerActivityBinding.downloadBtn.setVisibility(CommonUtil.isYoutubeSong(currentMediaId)? View.VISIBLE: View.GONE);
+            basePlayerActivityBinding.downloadBtn.setVisibility(CommonUtil.isYoutubeSong(currentMediaId) ? View.VISIBLE : View.GONE);
             LogHelper.d(TAG, "onMetadataChanged: Duration:" + metadata.getLong(MediaMetadataCompat.METADATA_KEY_DURATION) / 1000 + "s");
         }
 
@@ -728,9 +729,8 @@ public abstract class BasePlayerActivity extends BaseActivity implements Activit
             boolean isSufficient = true;
             if (deviceUriPattern.matcher(currentAlbumArtUri).matches()) {
                 isSufficient = false;
-                retriever.setDataSource(this, Uri.parse(currentAlbumArtUri));
             }
-            Glide.with(BasePlayerActivity.this).load(isSufficient ? currentAlbumArtUri : retriever.getEmbeddedPicture()).listener(new RequestListener<Drawable>() {
+            Glide.with(BasePlayerActivity.this).load(isSufficient ? currentAlbumArtUri : CommonUtil.getEmbeddedPicture(BasePlayerActivity.this, currentAlbumArtUri)).listener(new RequestListener<Drawable>() {
                 @Override
                 public boolean onLoadFailed(@Nullable GlideException e, Object model, Target<Drawable> target, boolean isFirstResource) {
                     setSongArt();
@@ -762,7 +762,7 @@ public abstract class BasePlayerActivity extends BaseActivity implements Activit
             basePlayerActivityBinding.musicProgress.setMax((int) mediaController.getMetadata().getLong(MediaMetadataCompat.METADATA_KEY_DURATION));
             playerView.setState(BottomSheetBehavior.STATE_COLLAPSED);
             basePlayerActivityBinding.favouriteBtn.setImageResource(mediaController.getMetadata().getLong(PlayerService.METADATA_KEY_FAVOURITE) == 0 ? R.drawable.icon_favourite_off : R.drawable.icon_favourite);
-            basePlayerActivityBinding.downloadBtn.setVisibility(CommonUtil.isYoutubeSong(currentMediaId)? View.VISIBLE: View.GONE);
+            basePlayerActivityBinding.downloadBtn.setVisibility(CommonUtil.isYoutubeSong(currentMediaId) ? View.VISIBLE : View.GONE);
         }
         if (mediaController.getPlaybackState() != null) {
             long activeQueuePosition = mediaController.getPlaybackState().getActiveQueueItemId();

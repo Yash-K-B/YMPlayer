@@ -18,7 +18,9 @@ import com.bumptech.glide.Glide;
 import com.yash.logging.LogHelper;
 import com.yash.ymplayer.databinding.BasePlayerActivityBinding;
 import com.yash.ymplayer.databinding.PlaylistExpandActivityBinding;
+import com.yash.ymplayer.interfaces.TrackClickListener;
 import com.yash.ymplayer.repository.OnlineYoutubeRepository;
+import com.yash.ymplayer.storage.AudioProvider;
 import com.yash.ymplayer.ui.youtube.YoutubeTracksAdapter;
 import com.yash.ymplayer.util.Keys;
 import com.yash.ymplayer.util.YoutubeSong;
@@ -83,7 +85,7 @@ public class PlaylistExpandActivity extends BasePlayerActivity {
             @Override
             public void onLoaded(List<YoutubeSong> songs) {
                 activityBinding.listProgress.setVisibility(View.GONE);
-                YoutubeTracksAdapter adapter = new YoutubeTracksAdapter(PlaylistExpandActivity.this, songs, new YoutubeTracksAdapter.TrackClickListener() {
+                YoutubeTracksAdapter adapter = new YoutubeTracksAdapter(PlaylistExpandActivity.this, songs, new TrackClickListener() {
                     @Override
                     public void onClick(YoutubeSong song) {
                         String id = playlistId + "|" + song.getVideoId();
@@ -96,6 +98,24 @@ public class PlaylistExpandActivity extends BasePlayerActivity {
                         Bundle extra = new Bundle();
                         extra.putBoolean(Keys.PLAY_SINGLE, true);
                         mediaController.getTransportControls().playFromMediaId(playlistId + "|" + song.getVideoId(), extra);
+                    }
+
+                    @Override
+                    public void onQueueNext(YoutubeSong song) {
+                        Bundle extras = new Bundle();
+                        extras.putString(Keys.MEDIA_ID, playlistId + "|" + song.getVideoId());
+                        extras.putInt(Keys.QUEUE_HINT, AudioProvider.QueueHint.YOUTUBE_SINGLE_SONG);
+                        extras.putString(Keys.QUEUE_MODE, Keys.QueueMode.ONLINE.name());
+                        mediaController.getTransportControls().sendCustomAction(Keys.Action.QUEUE_NEXT, extras);
+                    }
+
+                    @Override
+                    public void onQueueLast(YoutubeSong song) {
+                        Bundle extras = new Bundle();
+                        extras.putString(Keys.MEDIA_ID, playlistId + "|" + song.getVideoId());
+                        extras.putInt(Keys.QUEUE_HINT, AudioProvider.QueueHint.YOUTUBE_SINGLE_SONG);
+                        extras.putString(Keys.QUEUE_MODE, Keys.QueueMode.ONLINE.name());
+                        mediaController.getTransportControls().sendCustomAction(Keys.Action.QUEUE_LAST, extras);
                     }
                 });
                 activityBinding.list.setLayoutManager(new LinearLayoutManager(PlaylistExpandActivity.this));

@@ -18,8 +18,9 @@ public interface Keys {
     String EXTRA_TYPE = "type";
     String EXTRA_TITLE = "title";
     String EXTRA_ALBUM_ID = "albumId";
-    String EXTRA_ARTIST_ID ="artistId";
+    String EXTRA_ARTIST_ID = "artistId";
     String QUEUE_HINT = "queueHint";
+    String QUEUE_MODE = "queueMode";
     String EXTRA_ART_URL = "EXTRA_ART_URL";
     String VIDEO_ID = "videoId";
     String AUDIO_SESSION_ID = "audioSessionId";
@@ -31,6 +32,7 @@ public interface Keys {
     interface Action {
         String ADD_TO_PLAYLIST = "addToPlaylist";
         String QUEUE_NEXT = "queueNext";
+        String QUEUE_LAST = "queueLast";
         String PLAY_FROM_QUEUE = "playFromQueue";
         String REMOVE_FROM_QUEUE = "removeFromQueue";
         String SWAP_QUEUE_ITEM = "swapQueueItem";
@@ -106,8 +108,21 @@ public interface Keys {
         String EXTRA_BITRATE = "bitrate";
     }
 
-    interface Notification{
+    interface Notification {
         String CHANNEL_ID = "YMNotification";
         CharSequence CHANNEL_NAME = "YM Notification";
+    }
+
+    enum QueueMode {
+        ONLINE,
+        OFFLINE;
+
+        public static QueueMode fromString(String mode) {
+            for (QueueMode queueMode : values()) {
+                if (queueMode.name().equals(mode))
+                    return queueMode;
+            }
+            return OFFLINE;
+        }
     }
 }

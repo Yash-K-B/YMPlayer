@@ -54,6 +54,7 @@ public class AlbumOrArtistContextMenuClickListener implements AlbumOrArtistConte
 //            String mediaId = getFirstToken(type) + item.getMediaId();
             Bundle extras = new Bundle();
             extras.putString(Keys.MEDIA_ID, item.getMediaId());
+            extras.putString(Keys.QUEUE_MODE, Keys.QueueMode.OFFLINE.name());
             extras.putInt(Keys.QUEUE_HINT, type == ITEM_TYPE.ARTISTS ? AudioProvider.QueueHint.ARTIST_SONGS : AudioProvider.QueueHint.ALBUM_SONGS);
             mMediaController.getTransportControls().sendCustomAction(Keys.Action.QUEUE_NEXT, extras);
             LogHelper.d(TAG, "AlbumOrArtistContextMenuClickListener queueNext: " + item.getMediaId());

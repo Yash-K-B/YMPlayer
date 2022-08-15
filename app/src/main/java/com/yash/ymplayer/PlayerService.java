@@ -641,21 +641,70 @@ public class PlayerService extends MediaBrowserServiceCompat implements PlayerHe
                         Toast.makeText(PlayerService.this, "Please Select Playlist name", Toast.LENGTH_SHORT).show();
                     break;
                 case Keys.Action.QUEUE_NEXT:
-                    if (extras != null && extras.containsKey(Keys.MEDIA_ID) && extras.containsKey(Keys.QUEUE_HINT)) {
+                    if (extras != null && extras.containsKey(Keys.MEDIA_ID) && extras.containsKey(Keys.QUEUE_HINT) && extras.containsKey(Keys.QUEUE_MODE)) {
                         String mediaId = extras.getString(Keys.MEDIA_ID);
-                        int type = extras.getInt(Keys.QUEUE_HINT);
-                        LogHelper.d(TAG, "onCustomAction: QUEUE_NEXT:MediaId:" + mediaId);
+                        int hint = extras.getInt(Keys.QUEUE_HINT);
+                        Keys.QueueMode queueMode = Keys.QueueMode.fromString(extras.getString(Keys.QUEUE_MODE));
+                        LogHelper.d(TAG, "onCustomAction: QUEUE_NEXT [Media Id : %s, Hint : %s, Queue Mode: %s]", mediaId, hint, queueMode);
 
-                        List<MediaSessionCompat.QueueItem> items = Repository.getInstance(PlayerService.this).getQueue(type, mediaId);
-                        playingQueue.addAll((queuePos + 1), items);
-                        for (int i = 0; i < items.size(); i++) {
-                            int queue_pos = queuePos + 1 + i;
-                            String media_id = items.get(i).getDescription().getMediaId();
-                            addToMediaSources(media_id, queue_pos);
-                            mediaIdLists.add(queue_pos, media_id);
+                        if (queueMode == Keys.QueueMode.ONLINE) {
+                            LogHelper.d(TAG, "ONLINE QUEUE MODE: fetching queue items from youtube cache ");
+                            List<MediaSessionCompat.QueueItem> items = OnlineYoutubeRepository.getInstance(PlayerService.this).getQueue(hint, mediaId);
+                            playingQueue.addAll((queuePos + 1), items);
+                            for (int i = 0; i < items.size(); i++) {
+                                int queue_pos = queuePos + 1 + i;
+                                String media_id = items.get(i).getDescription().getMediaId();
+                                addHttpSourceToMediaSources(media_id, queue_pos);
+                                mediaIdLists.add(queue_pos, media_id);
+                            }
+
+                        } else {
+                            LogHelper.d(TAG, "OFFLINE QUEUE MODE: fetching queue items from device storage ");
+                            List<MediaSessionCompat.QueueItem> items = Repository.getInstance(PlayerService.this).getQueue(hint, mediaId);
+                            playingQueue.addAll((queuePos + 1), items);
+                            for (int i = 0; i < items.size(); i++) {
+                                int queue_pos = queuePos + 1 + i;
+                                String media_id = items.get(i).getDescription().getMediaId();
+                                addToMediaSources(media_id, queue_pos);
+                                mediaIdLists.add(queue_pos, media_id);
+                            }
                         }
+                        mSession.setQueueTitle(Keys.QUEUE_TITLE.USER_QUEUE);
+                        mSession.setQueue(playingQueue);
+                        if (player != null)
+                            setPlaybackState(mSession.getController().getPlaybackState().getState());
+                    }
+                    break;
 
+                case Keys.Action.QUEUE_LAST:
+                    if (extras != null && extras.containsKey(Keys.MEDIA_ID) && extras.containsKey(Keys.QUEUE_HINT) && extras.containsKey(Keys.QUEUE_MODE)) {
+                        String mediaId = extras.getString(Keys.MEDIA_ID);
+                        int hint = extras.getInt(Keys.QUEUE_HINT);
+                        Keys.QueueMode queueMode = Keys.QueueMode.fromString(extras.getString(Keys.QUEUE_MODE));
+                        LogHelper.d(TAG, "onCustomAction: QUEUE_LAST [Media Id : %s, Hint : %s, Queue Mode: %s]", mediaId, hint, queueMode);
 
+                        if (queueMode == Keys.QueueMode.ONLINE) {
+                            LogHelper.d(TAG, "ONLINE QUEUE MODE: fetching queue items from youtube cache ");
+                            List<MediaSessionCompat.QueueItem> items = OnlineYoutubeRepository.getInstance(PlayerService.this).getQueue(hint, mediaId);
+                            int numItems = mediaIdLists.size();
+                            playingQueue.addAll(items);
+                            for (int i = 0; i < items.size(); i++) {
+                                String media_id = items.get(i).getDescription().getMediaId();
+                                addHttpSourceToMediaSources(media_id, -1);
+                                mediaIdLists.add(media_id);
+                            }
+
+                        } else {
+                            LogHelper.d(TAG, "OFFLINE QUEUE MODE: fetching queue items from device storage ");
+                            List<MediaSessionCompat.QueueItem> items = Repository.getInstance(PlayerService.this).getQueue(hint, mediaId);
+                            int numItems = mediaIdLists.size();
+                            playingQueue.addAll(items);
+                            for (int i = 0; i < items.size(); i++) {
+                                String media_id = items.get(i).getDescription().getMediaId();
+                                addToMediaSources(media_id, -1);
+                                mediaIdLists.add(media_id);
+                            }
+                        }
                         mSession.setQueueTitle(Keys.QUEUE_TITLE.USER_QUEUE);
                         mSession.setQueue(playingQueue);
                         if (player != null)
@@ -1433,8 +1482,10 @@ public class PlayerService extends MediaBrowserServiceCompat implements PlayerHe
 
     @Override
     public void addHttpSourceToMediaSources(String videoId, int pos) {
-        mediaSources.addMediaSource(pos, new ProgressiveMediaSource.Factory(factory, extractorsFactory).setTag(videoId).createMediaSource(Uri.parse(videoId)));
-
+        if (pos != -1)
+            mediaSources.addMediaSource(pos, new ProgressiveMediaSource.Factory(factory, extractorsFactory).setTag(videoId).createMediaSource(Uri.parse(videoId)));
+        else
+            mediaSources.addMediaSource(new ProgressiveMediaSource.Factory(factory, extractorsFactory).setTag(videoId).createMediaSource(Uri.parse(videoId)));
     }
 
     @Override
@@ -1449,7 +1500,10 @@ public class PlayerService extends MediaBrowserServiceCompat implements PlayerHe
         String id = parts[parts.length - 1];
         DataSource.Factory factory = new DefaultDataSourceFactory(this, Util.getUserAgent(getApplicationContext(), "YM Player"));
         Uri contentUri = ContentUris.withAppendedId(MediaStore.Audio.Media.EXTERNAL_CONTENT_URI, Long.parseLong(id));
-        mediaSources.addMediaSource(pos, new ProgressiveMediaSource.Factory(factory).setTag(id).createMediaSource(contentUri));
+        if (pos != -1)
+            mediaSources.addMediaSource(pos, new ProgressiveMediaSource.Factory(factory).setTag(id).createMediaSource(contentUri));
+        else
+            mediaSources.addMediaSource(new ProgressiveMediaSource.Factory(factory).setTag(id).createMediaSource(contentUri));
     }
 
     /**

@@ -24,7 +24,9 @@ import androidx.recyclerview.widget.LinearLayoutManager;
 import com.yash.ymplayer.databinding.ActivitySearchBinding;
 import com.yash.ymplayer.databinding.BasePlayerActivityBinding;
 import com.yash.ymplayer.ui.main.SearchViewModel;
+import com.yash.ymplayer.ui.youtube.search.YoutubeSearch;
 import com.yash.ymplayer.util.SearchListAdapter;
+import com.yash.ymplayer.util.StringUtil;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -124,6 +126,8 @@ public class SearchActivity extends BasePlayerActivity {
         searchBinding.songsHeading.setVisibility(View.GONE);
         searchBinding.albumsHeading.setVisibility(View.GONE);
         searchBinding.artistsHeading.setVisibility(View.GONE);
+
+        searchBinding.onlineSearch.setOnClickListener(onlineSearchClickListener);
     }
 
     @Override
@@ -163,6 +167,12 @@ public class SearchActivity extends BasePlayerActivity {
 
             @Override
             public boolean onQueryTextChange(String newText) {
+                if (StringUtil.hasText(newText)) {
+                    searchBinding.onlineSearch.setVisibility(View.VISIBLE);
+                    searchBinding.onlineSearch.setText("\tSearch online \"" + newText + "\"");
+                } else {
+                    searchBinding.onlineSearch.setVisibility(View.INVISIBLE);
+                }
                 if (searchListSongAdapter == null || searchListArtistAdapter == null || searchListAlbumAdapter == null)
                     return false;
                 handler.removeCallbacks(null);
@@ -295,4 +305,14 @@ public class SearchActivity extends BasePlayerActivity {
 
         public abstract void run(String text);
     }
+
+    View.OnClickListener onlineSearchClickListener = new View.OnClickListener() {
+        @Override
+        public void onClick(View v) {
+            Intent intent = new Intent(SearchActivity.this, YoutubeSearch.class);
+            intent.putExtra("query", searchView.getQuery().toString());
+            startActivity(intent);
+            finish();
+        }
+    };
 }

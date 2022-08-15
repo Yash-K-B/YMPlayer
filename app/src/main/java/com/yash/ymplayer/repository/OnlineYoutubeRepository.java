@@ -24,6 +24,7 @@ import com.yash.logging.LogHelper;
 import com.yash.ymplayer.models.PopularPlaylist;
 import com.yash.ymplayer.models.PopularPlaylists;
 import com.yash.ymplayer.models.YoutubePlaylist;
+import com.yash.ymplayer.storage.AudioProvider;
 import com.yash.ymplayer.util.YoutubeSong;
 import com.yash.youtube_extractor.ExtractorHelper;
 
@@ -613,6 +614,20 @@ public class OnlineYoutubeRepository {
             return mediaItems;
         }
 
+    }
+
+
+    public List<MediaSessionCompat.QueueItem> getQueue(int queueHint, String uri) {
+        List<MediaSessionCompat.QueueItem> items = new ArrayList<>();
+        switch (queueHint) {
+            case AudioProvider.QueueHint.YOUTUBE_SINGLE_SONG:
+                return getPlayingQueueSingle(uri);
+            case AudioProvider.QueueHint.YOUTUBE_SONGS:
+                return getPlayingQueue(uri);
+
+            default:
+                return items;
+        }
     }
 
 

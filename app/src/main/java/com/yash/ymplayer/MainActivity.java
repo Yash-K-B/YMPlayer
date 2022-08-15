@@ -156,7 +156,6 @@ public class MainActivity extends BaseActivity implements ActivityActionProvider
     private ScheduledFuture<?> mScheduledFuture;
     long currentProgress;
     long currentBufferedPosition;
-    MediaMetadataRetriever retriever = new MediaMetadataRetriever();
     String currentAlbumArtUri = null;
     BottomSheetBehavior bottomSheetBehavior;
     BottomSheetBehavior playerView;
@@ -502,11 +501,10 @@ public class MainActivity extends BaseActivity implements ActivityActionProvider
                     String songArt = mediaController.getMetadata().getString(MediaMetadataCompat.METADATA_KEY_ALBUM_ART_URI);
                     boolean isUriSufficient = true;
                     if (songArt != null && deviceUriPattern.matcher(songArt).matches()) {
-                        retriever.setDataSource(MainActivity.this, Uri.parse(songArt));
                         isUriSufficient = false;
                     }
                     songArt = String.format("https://i.ytimg.com/vi/%s/hqdefault.jpg", mediaController.getMetadata().getString(MediaMetadataCompat.METADATA_KEY_MEDIA_ID));
-                    Glide.with(MainActivity.this).load(isUriSufficient ? songArt : retriever.getEmbeddedPicture()).placeholder(R.drawable.album_art_placeholder).into(new CustomTarget<Drawable>() {
+                    Glide.with(MainActivity.this).load(isUriSufficient ? songArt : CommonUtil.getEmbeddedPicture(MainActivity.this, songArt)).placeholder(R.drawable.album_art_placeholder).into(new CustomTarget<Drawable>() {
                         @Override
                         public void onResourceReady(@NonNull Drawable resource, @Nullable Transition<? super Drawable> transition) {
                             setSongArt(resource);
@@ -633,11 +631,10 @@ public class MainActivity extends BaseActivity implements ActivityActionProvider
                 LogHelper.d(TAG, "onMetadataChanged: AlbumArt Uri:" + currentAlbumArtUri);
                 boolean isUriSufficient = true;
                 if (currentAlbumArtUri != null && deviceUriPattern.matcher(currentAlbumArtUri).matches()) {
-                    retriever.setDataSource(MainActivity.this, Uri.parse(currentAlbumArtUri));
                     isUriSufficient = false;
                 }
 
-                Glide.with(MainActivity.this).load(isUriSufficient ? currentAlbumArtUri : retriever.getEmbeddedPicture()).placeholder(R.drawable.album_art_placeholder).into(new CustomTarget<Drawable>() {
+                Glide.with(MainActivity.this).load(isUriSufficient ? currentAlbumArtUri :  CommonUtil.getEmbeddedPicture(MainActivity.this, currentAlbumArtUri)).placeholder(R.drawable.album_art_placeholder).into(new CustomTarget<Drawable>() {
                     @Override
                     public void onResourceReady(@NonNull Drawable resource, @Nullable Transition<? super Drawable> transition) {
                         LogHelper.d(TAG, "onResourceReady: uri:" + currentAlbumArtUri);
@@ -1040,9 +1037,8 @@ public class MainActivity extends BaseActivity implements ActivityActionProvider
             boolean isSufficient = true;
             if (deviceUriPattern.matcher(currentAlbumArtUri).matches()) {
                 isSufficient = false;
-                retriever.setDataSource(this, Uri.parse(currentAlbumArtUri));
             }
-            Glide.with(MainActivity.this).load(isSufficient ? currentAlbumArtUri : retriever.getEmbeddedPicture()).listener(new RequestListener<Drawable>() {
+            Glide.with(MainActivity.this).load(isSufficient ? currentAlbumArtUri : CommonUtil.getEmbeddedPicture(MainActivity.this, currentAlbumArtUri)).listener(new RequestListener<Drawable>() {
                 @Override
                 public boolean onLoadFailed(@Nullable GlideException e, Object model, Target<Drawable> target, boolean isFirstResource) {
                     setSongArt();

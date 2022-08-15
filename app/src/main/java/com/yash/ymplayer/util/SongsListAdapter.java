@@ -137,6 +137,9 @@ public class SongsListAdapter extends RecyclerView.Adapter<SongsListAdapter.Item
                     case R.id.queue_next:
                         songContextMenuListener.queueNext(song);
                         return true;
+                    case R.id.queue_last:
+                        songContextMenuListener.queueLast(song);
+                        return true;
                     case R.id.go_to_album:
                         songContextMenuListener.gotoAlbum(song);
                         return true;
