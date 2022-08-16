@@ -145,8 +145,8 @@ public class YoutubeSearch extends BasePlayerActivity {
                     }
 
                     @Override
-                    public void onError() {
-                        LogHelper.d(TAG, "onError: ");
+                    public <E extends Exception> void onError(E e) {
+                        LogHelper.e(TAG, "onError: ", e);
                     }
                 });
                 return false;

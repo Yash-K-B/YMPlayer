@@ -47,6 +47,7 @@ import androidx.media.MediaBrowserServiceCompat;
 import androidx.media.session.MediaButtonReceiver;
 import androidx.preference.PreferenceManager;
 
+import com.android.volley.AsyncNetwork;
 import com.bumptech.glide.Glide;
 import com.bumptech.glide.request.target.CustomTarget;
 import com.bumptech.glide.request.transition.Transition;
@@ -71,6 +72,7 @@ import com.google.android.exoplayer2.util.Util;
 import com.yash.logging.LogHelper;
 import com.yash.logging.utils.ExceptionUtil;
 import com.yash.ymplayer.cache.impl.UriCache;
+import com.yash.ymplayer.constant.Constants;
 import com.yash.ymplayer.models.YoutubeSongUriDetail;
 import com.yash.ymplayer.repository.OnlineYoutubeRepository;
 import com.yash.ymplayer.repository.Repository;
@@ -79,6 +81,7 @@ import com.yash.ymplayer.storage.MediaItem;
 import com.yash.ymplayer.util.ConverterUtil;
 import com.yash.ymplayer.util.EqualizerUtil;
 import com.yash.ymplayer.util.Keys;
+import com.yash.ymplayer.util.QueueHelperUtility;
 import com.yash.ymplayer.util.Song;
 import com.yash.ymplayer.util.YoutubeSong;
 import com.yash.youtube_extractor.Extractor;
@@ -394,9 +397,16 @@ public class PlayerService extends MediaBrowserServiceCompat implements PlayerHe
         public void onPlayFromYoutube(String videoId, Bundle extras) {
             playingMode = Keys.PLAYING_MODE.ONLINE;
             currentMediaIdOrVideoId = videoId;
-            setOnlinePlayingQueue(currentMediaIdOrVideoId, extras);
-            resolveQueuePosition(extractId(currentMediaIdOrVideoId));
-            dispatchPlayRequest();
+            if (videoId.startsWith(Constants.SHARED)) {
+                prepareForSharedPlayingQueue(videoId, () -> {
+                    resolveQueuePosition(extractId(currentMediaIdOrVideoId));
+                    dispatchPlayRequest();
+                });
+            } else {
+                setOnlinePlayingQueue(currentMediaIdOrVideoId, extras);
+                resolveQueuePosition(extractId(currentMediaIdOrVideoId));
+                dispatchPlayRequest();
+            }
         }
 
         /**
@@ -884,11 +894,65 @@ public class PlayerService extends MediaBrowserServiceCompat implements PlayerHe
         }
     }
 
+
+    public void prepareForSharedPlayingQueue(String uri, Runnable runnable) {
+        Toast.makeText(PlayerService.this, "Fetching song details", Toast.LENGTH_SHORT).show();
+        OnlineYoutubeRepository.getInstance(this).extractSharedSongQueue(uri, new OnlineYoutubeRepository.QueueLoadedCallback() {
+            @Override
+            public void onLoaded(List<MediaSessionCompat.QueueItem> queueItems) {
+                setQueueTitle(uri, true);
+                clearMediaSourceAndQueue();
+                playingQueue = queueItems;
+                prepareMediaSource();
+                runnable.run();
+            }
+
+            @Override
+            public <E extends Exception> void onError(E e) {
+                Toast.makeText(PlayerService.this, "Unable to play the song", Toast.LENGTH_SHORT).show();
+            }
+        });
+    }
+
     @Override
     public void setOnlinePlayingQueue(String uri, Bundle extras) {
         if (extras == null)
             extras = new Bundle();
         boolean playSingle = extras.getBoolean(Keys.PLAY_SINGLE, false);
+        setQueueTitle(uri, playSingle);
+
+        clearMediaSourceAndQueue();
+
+        if (!playSingle) {
+            playingQueue = uri.startsWith("PLAYLISTS/") ? Repository.getInstance(this).getCurrentPlayingQueue(uri) : OnlineYoutubeRepository.getInstance(this).getPlayingQueue(uri);
+        } else {
+            playingQueue = uri.startsWith("PLAYLISTS/") ? Repository.getInstance(this).getCurrentPlayingQueue(uri) : OnlineYoutubeRepository.getInstance(this).getPlayingQueueSingle(uri);
+        }
+
+        prepareMediaSource();
+    }
+
+    private void clearMediaSourceAndQueue() {
+        playingQueue.clear();
+        mediaIdLists.clear();
+        if (player != null && player.isPlaying())
+            player.stop();
+        mediaSources.clear();
+    }
+
+    private void prepareMediaSource() {
+        for (int i = 0; i < playingQueue.size(); i++) {
+            String id = playingQueue.get(i).getDescription().getMediaId();
+            mediaIdLists.add(id);
+            addHttpSourceToMediaSources(id, i);
+        }
+        mSession.setQueue(playingQueue);
+        isQueueChanged = true;
+        if (player != null)
+            player.prepare(mediaSources);
+    }
+
+    private void setQueueTitle(String uri, boolean playSingle) {
         String queueTitle;
         if (playSingle)
             queueTitle = uri + "_PlaYSinglE";
@@ -899,32 +963,6 @@ public class PlayerService extends MediaBrowserServiceCompat implements PlayerHe
             return;
         }
         mSession.setQueueTitle(queueTitle);
-
-        playingQueue.clear();
-        mediaIdLists.clear();
-        if (player != null && player.isPlaying())
-            player.stop();
-        mediaSources.clear();
-        if (!playSingle) {
-            playingQueue = uri.startsWith("PLAYLISTS/") ? Repository.getInstance(this).getCurrentPlayingQueue(uri) : OnlineYoutubeRepository.getInstance(this).getPlayingQueue(uri);
-            for (int i = 0; i < playingQueue.size(); i++) {
-                String id = playingQueue.get(i).getDescription().getMediaId();
-                mediaIdLists.add(id);
-                addHttpSourceToMediaSources(id, i);
-                //LogHelper.d(TAG, "setOnlinePlayingQueue: video id: " + id);
-            }
-        } else {
-            playingQueue = uri.startsWith("PLAYLISTS/") ? Repository.getInstance(this).getCurrentPlayingQueue(uri) : OnlineYoutubeRepository.getInstance(this).getPlayingQueueSingle(uri);
-            for (int i = 0; i < playingQueue.size(); i++) {
-                String id = playingQueue.get(i).getDescription().getMediaId();
-                mediaIdLists.add(id);
-                addHttpSourceToMediaSources(id, i);
-            }
-        }
-        mSession.setQueue(playingQueue);
-        isQueueChanged = true;
-        if (player != null)
-            player.prepare(mediaSources);
     }
 
     @Override
@@ -969,41 +1007,15 @@ public class PlayerService extends MediaBrowserServiceCompat implements PlayerHe
     public void setPlayingQueue(@Nullable String mediaId, Bundle extras) {
         try {
             boolean playSingle = extras.getBoolean(Keys.PLAY_SINGLE, false);
-            String queueTitle;
-            if (playSingle)
-                queueTitle = mediaId + "_PlaYSinglE";
-            else queueTitle = mediaId.split("[|]")[0];
-            if (mSession.getController().getQueueTitle() != null && queueTitle.contentEquals(mSession.getController().getQueueTitle())) {
-                LogHelper.d(TAG, "setPlayingQueue: .... Queue Already set");
-                isQueueChanged = false;
-                return;
-            }
-            mSession.setQueueTitle(queueTitle);
+            setQueueTitle(mediaId, playSingle);
 
-            if (player != null && player.isPlaying())
-                player.stop();
+            clearMediaSourceAndQueue();
 
-            mediaIdLists.clear();
             if (!playSingle) {
                 playingQueue = Repository.getInstance(PlayerService.this).getCurrentPlayingQueue(mediaId);
-                mediaSources.clear();
-                for (int i = 0; i < playingQueue.size(); i++) {
-                    String id = playingQueue.get(i).getDescription().getMediaId();
-                    mediaIdLists.add(id);
-                    addHttpSourceToMediaSources(id, i);
-                }
-                mSession.setQueue(playingQueue);
-
                 LogHelper.d(TAG, "setPlayingQueue: All");
             } else if (extras.getBoolean(Keys.PLAY_SINGLE)) {
                 playingQueue = Repository.getInstance(PlayerService.this).getQueue(AudioProvider.QueueHint.SINGLE_SONG, mediaId);
-                mediaSources.clear();
-                for (int i = 0; i < playingQueue.size(); i++) {
-                    String id = playingQueue.get(i).getDescription().getMediaId();
-                    mediaIdLists.add(id);
-                    addHttpSourceToMediaSources(id, i);
-                }
-                mSession.setQueue(playingQueue);
                 LogHelper.d(TAG, "setPlayingQueue: Single");
             }
         } catch (NullPointerException e) {
@@ -1011,19 +1023,11 @@ public class PlayerService extends MediaBrowserServiceCompat implements PlayerHe
             if (mediaId == null) {
                 mSession.setQueueTitle("RANDOM");
                 setPlaybackState(PlaybackStateCompat.STATE_NONE);
-                mediaIdLists.clear();
                 playingQueue = Repository.getInstance(PlayerService.this).getRandomQueue();
-                for (int i = 0; i < playingQueue.size(); i++) {
-                    String id = playingQueue.get(i).getDescription().getMediaId();
-                    mediaIdLists.add(id);
-                    addHttpSourceToMediaSources(id, i);
-                }
-                mSession.setQueue(playingQueue);
             }
         }
-        isQueueChanged = true;
-        if (player != null)
-            player.prepare(mediaSources);
+
+        prepareMediaSource();
 
     }
 

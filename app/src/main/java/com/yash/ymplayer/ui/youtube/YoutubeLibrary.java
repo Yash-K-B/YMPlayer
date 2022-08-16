@@ -8,6 +8,7 @@ import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
 
 import android.util.Log;
+import android.util.Pair;
 import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuInflater;
@@ -17,16 +18,25 @@ import android.view.ViewGroup;
 
 import com.google.android.material.tabs.TabLayout;
 import com.google.android.material.tabs.TabLayoutMediator;
+import com.yash.logging.LogHelper;
 import com.yash.ymplayer.ActivityActionProvider;
 import com.yash.ymplayer.R;
 import com.yash.ymplayer.SearchActivity;
 import com.yash.ymplayer.databinding.FragmentYoutubeLibraryBinding;
+import com.yash.ymplayer.repository.OnlineYoutubeRepository;
 import com.yash.ymplayer.ui.youtube.search.YoutubeSearch;
+import com.yash.youtube_extractor.ExtractorHelper;
+import com.yash.youtube_extractor.models.YoutubePlaylist;
+import com.yash.youtube_extractor.utility.CollectionUtility;
+
+import java.util.List;
+import java.util.Map;
 
 public class YoutubeLibrary extends Fragment {
     private static final String TAG = "YoutubeLibrary";
     FragmentYoutubeLibraryBinding youtubeLibraryBinding;
-    public static final String[] TAB_TITLES = {"TOP TRACKS","TODAY'S POPULAR","DISCOVER NEW","ALL TIME HIT","90s MAGIC"};
+    public static final String[] TAB_TITLES = {"TOP TRACKS", "TODAY'S POPULAR", "DISCOVER NEW", "ALL TIME HIT", "90s MAGIC"};
+
     public YoutubeLibrary() {
         // Required empty public constructor
     }
@@ -37,7 +47,9 @@ public class YoutubeLibrary extends Fragment {
                              Bundle savedInstanceState) {
         // Inflate the layout for this fragment
         setHasOptionsMenu(true);
-        youtubeLibraryBinding = FragmentYoutubeLibraryBinding.inflate(inflater,container,false);
+        youtubeLibraryBinding = FragmentYoutubeLibraryBinding.inflate(inflater, container, false);
+        youtubeLibraryBinding.btnRetry.setVisibility(View.VISIBLE);
+        youtubeLibraryBinding.btnRetry.setOnClickListener(v -> loadLibrary("UC-9-kyTW8ZkZNDHQJ6FgpwQ"));
         return youtubeLibraryBinding.getRoot();
     }
 
@@ -45,11 +57,41 @@ public class YoutubeLibrary extends Fragment {
     @Override
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
-        ((ActivityActionProvider)getActivity()).setCustomToolbar(youtubeLibraryBinding.youtubeToolbar,"Youtube Library");
-        YoutubeViewPagerAdapter adapter = new YoutubeViewPagerAdapter(getChildFragmentManager(),getLifecycle());
-        youtubeLibraryBinding.youtubeViewPager.setAdapter(adapter);
-        new TabLayoutMediator(youtubeLibraryBinding.tabs, youtubeLibraryBinding.youtubeViewPager, (tab, position) -> tab.setText(TAB_TITLES[position])).attach();
+        ((ActivityActionProvider) getActivity()).setCustomToolbar(youtubeLibraryBinding.youtubeToolbar, "Youtube Library");
+        loadLibrary("UC-9-kyTW8ZkZNDHQJ6FgpwQ");
 
+
+    }
+
+    private void loadLibrary(String channelId) {
+        youtubeLibraryBinding.progressBar.setVisibility(View.VISIBLE);
+        youtubeLibraryBinding.youtubeLibError.setVisibility(View.GONE);
+        OnlineYoutubeRepository.getInstance(requireContext()).getChannelPlaylists(channelId, new OnlineYoutubeRepository.PlaylistLoadedCallback() {
+            @Override
+            public void onLoaded(List<Pair<String, List<YoutubePlaylist>>> playlistsByCategory) {
+                if (CollectionUtility.isEmpty(playlistsByCategory)) {
+                    LogHelper.d(TAG, "Channel playlist empty");
+                    showError();
+                    return;
+                }
+                youtubeLibraryBinding.progressBar.setVisibility(View.GONE);
+                youtubeLibraryBinding.youtubeLibError.setVisibility(View.GONE);
+                YoutubeViewPagerAdapter adapter = new YoutubeViewPagerAdapter(getChildFragmentManager(), getLifecycle(), playlistsByCategory);
+                youtubeLibraryBinding.youtubeViewPager.setAdapter(adapter);
+                new TabLayoutMediator(youtubeLibraryBinding.tabs, youtubeLibraryBinding.youtubeViewPager, (tab, position) -> tab.setText(position == 0 ? TAB_TITLES[0] : playlistsByCategory.get(position - 1).first)).attach();
+            }
+
+            @Override
+            public <E extends Exception> void onError(E e) {
+                LogHelper.e(TAG, "Error while building YouTube Lib: ", e);
+                showError();
+            }
+        });
+    }
+
+    private void showError() {
+        youtubeLibraryBinding.youtubeLibError.setVisibility(View.VISIBLE);
+        youtubeLibraryBinding.progressBar.setVisibility(View.GONE);
     }
 
     @Override

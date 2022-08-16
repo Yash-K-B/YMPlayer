@@ -22,6 +22,7 @@ import com.yash.ymplayer.PlaylistExpandActivity;
 import com.yash.ymplayer.databinding.FragmentPopularHitBinding;
 import com.yash.ymplayer.models.PopularPlaylist;
 import com.yash.ymplayer.ui.youtube.YoutubeLibraryViewModel;
+import com.yash.ymplayer.ui.youtube.adapters.PopularHitAdapter;
 import com.yash.ymplayer.util.Keys;
 
 import java.util.ArrayList;

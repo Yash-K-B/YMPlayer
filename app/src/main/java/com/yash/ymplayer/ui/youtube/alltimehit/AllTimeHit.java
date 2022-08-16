@@ -1,14 +1,10 @@
 package com.yash.ymplayer.ui.youtube.alltimehit;
 
-import android.app.Activity;
-import android.app.ActivityOptions;
 import android.content.Context;
 import android.content.Intent;
 import android.os.Bundle;
-import android.os.Handler;
 import android.support.v4.media.MediaBrowserCompat;
 import android.support.v4.media.session.MediaControllerCompat;
-import android.util.Pair;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -26,7 +22,7 @@ import com.yash.ymplayer.databinding.FragmentAllTimeHitBinding;
 import com.yash.logging.LogHelper;
 import com.yash.ymplayer.models.PopularPlaylist;
 import com.yash.ymplayer.ui.youtube.YoutubeLibraryViewModel;
-import com.yash.ymplayer.ui.youtube.todayspopular.PopularHitAdapter;
+import com.yash.ymplayer.ui.youtube.adapters.PopularHitAdapter;
 import com.yash.ymplayer.util.Keys;
 
 import java.util.ArrayList;

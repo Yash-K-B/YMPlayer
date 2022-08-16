@@ -81,10 +81,26 @@ public class YoutubeSong {
         this.art_url_medium = art_url_medium;
     }
 
+    public String getArt_url_high() {
+        return art_url_high;
+    }
+
+    public void setArt_url_high(String art_url_high) {
+        this.art_url_high = art_url_high;
+    }
+
     @Override
     public String toString() {
         return "YoutubeSong{" +
-                "videoId='" + videoId + '\'' +
+                "title='" + title + '\'' +
+                ", videoId='" + videoId + '\'' +
+                ", channelTitle='" + channelTitle + '\'' +
+                ", channelDesc='" + channelDesc + '\'' +
+                ", art_url_small='" + art_url_small + '\'' +
+                ", art_url_medium='" + art_url_medium + '\'' +
+                ", art_url_high='" + art_url_high + '\'' +
+                ", audioUri=" + audioUri +
+                ", durationMillis=" + durationMillis +
                 '}';
     }
 }

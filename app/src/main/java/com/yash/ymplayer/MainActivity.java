@@ -436,11 +436,19 @@ public class MainActivity extends BaseActivity implements ActivityActionProvider
 
     private void playIfIntentHasData(Intent intent) {
         LogHelper.d(TAG, "playIfIntentHasData: " + intent);
+        Bundle extras = new Bundle();
         if (mediaController != null && intent.getData() != null) {
-
             Uri data = intent.getData();
-            Bundle extras = new Bundle();
             mediaController.getTransportControls().playFromUri(data, extras);
+        }
+        if (mediaController != null && intent.getExtras() != null) {
+            String url = intent.getExtras().getString(Intent.EXTRA_TEXT);
+            if (url == null)
+                return;
+            String[] parts = url.split("[|/=]");
+            String videoId = parts[parts.length - 1];
+            extras.putBoolean(Keys.PLAY_SINGLE, true);
+            mediaController.getTransportControls().playFromMediaId(Constants.SHARED + "|" + videoId, extras);
         }
 
     }
@@ -634,7 +642,7 @@ public class MainActivity extends BaseActivity implements ActivityActionProvider
                     isUriSufficient = false;
                 }
 
-                Glide.with(MainActivity.this).load(isUriSufficient ? currentAlbumArtUri :  CommonUtil.getEmbeddedPicture(MainActivity.this, currentAlbumArtUri)).placeholder(R.drawable.album_art_placeholder).into(new CustomTarget<Drawable>() {
+                Glide.with(MainActivity.this).load(isUriSufficient ? currentAlbumArtUri : CommonUtil.getEmbeddedPicture(MainActivity.this, currentAlbumArtUri)).placeholder(R.drawable.album_art_placeholder).into(new CustomTarget<Drawable>() {
                     @Override
                     public void onResourceReady(@NonNull Drawable resource, @Nullable Transition<? super Drawable> transition) {
                         LogHelper.d(TAG, "onResourceReady: uri:" + currentAlbumArtUri);
@@ -662,7 +670,7 @@ public class MainActivity extends BaseActivity implements ActivityActionProvider
             activityMainBinding.favouriteBtn.setImageResource(metadata.getLong(PlayerService.METADATA_KEY_FAVOURITE) == 0 ? R.drawable.icon_favourite_off : R.drawable.icon_favourite);
 
             currentMediaId = metadata.getString(MediaMetadataCompat.METADATA_KEY_MEDIA_ID);
-            activityMainBinding.downloadBtn.setVisibility(CommonUtil.isYoutubeSong(currentMediaId)? View.VISIBLE: View.GONE);
+            activityMainBinding.downloadBtn.setVisibility(CommonUtil.isYoutubeSong(currentMediaId) ? View.VISIBLE : View.GONE);
             LogHelper.d(TAG, "onMetadataChanged: Duration:" + metadata.getLong(MediaMetadataCompat.METADATA_KEY_DURATION) / 1000 + "s");
         }
 
@@ -1070,7 +1078,7 @@ public class MainActivity extends BaseActivity implements ActivityActionProvider
             activityMainBinding.musicProgress.setMax((int) mediaController.getMetadata().getLong(MediaMetadataCompat.METADATA_KEY_DURATION));
             playerView.setState(BottomSheetBehavior.STATE_COLLAPSED);
             activityMainBinding.favouriteBtn.setImageResource(mediaController.getMetadata().getLong(PlayerService.METADATA_KEY_FAVOURITE) == 0 ? R.drawable.icon_favourite_off : R.drawable.icon_favourite);
-            activityMainBinding.downloadBtn.setVisibility(CommonUtil.isYoutubeSong(currentMediaId)? View.VISIBLE: View.GONE);
+            activityMainBinding.downloadBtn.setVisibility(CommonUtil.isYoutubeSong(currentMediaId) ? View.VISIBLE : View.GONE);
         }
         if (mediaController.getPlaybackState() != null) {
             long activeQueuePosition = mediaController.getPlaybackState().getActiveQueueItemId();
@@ -1154,7 +1162,7 @@ public class MainActivity extends BaseActivity implements ActivityActionProvider
             startActivity(Intent.createChooser(intent, "Share app via"));
 
         } catch (IOException e) {
-            LogHelper.e(TAG, "shareMyApp: Error "+ ExceptionUtil.getStackStrace(e));
+            LogHelper.e(TAG, "shareMyApp: Error " + ExceptionUtil.getStackStrace(e));
         }
     }
 

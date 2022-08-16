@@ -9,6 +9,7 @@ import android.support.v4.media.MediaDescriptionCompat;
 import android.support.v4.media.session.MediaSessionCompat;
 import android.text.TextUtils;
 import android.util.Log;
+import android.util.Pair;
 
 import androidx.room.util.StringUtil;
 
@@ -28,14 +29,20 @@ import com.yash.ymplayer.models.PopularPlaylists;
 import com.yash.ymplayer.models.YoutubePlaylist;
 import com.yash.ymplayer.storage.AudioProvider;
 import com.yash.ymplayer.util.YoutubeSong;
+import com.yash.youtube_extractor.Extractor;
 import com.yash.youtube_extractor.ExtractorHelper;
+import com.yash.youtube_extractor.exceptions.ExtractionException;
+import com.yash.youtube_extractor.models.VideoData;
+import com.yash.youtube_extractor.models.VideoDetails;
 import com.yash.youtube_extractor.utility.CollectionUtility;
+import com.yash.youtube_extractor.utility.CommonUtility;
 
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.io.UnsupportedEncodingException;
+import java.util.AbstractMap;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
@@ -51,6 +58,7 @@ public class OnlineYoutubeRepository {
     private static final String TAG = "OnlineYoutubeRepository";
     Map<String, TopTracksYoutubeSongsCache> topTracksCache;
     Map<String, List<YoutubeSong>> loadedTracksMap;
+    Map<String, List<Pair<String, List<com.yash.youtube_extractor.models.YoutubePlaylist>>>> loadedPlaylistsMap;
     Context context;
     static OnlineYoutubeRepository instance;
     RequestQueue requestQueue;
@@ -63,6 +71,7 @@ public class OnlineYoutubeRepository {
         this.requestQueue = Volley.newRequestQueue(context);
         this.topTracksCache = new LinkedHashMap<>();
         this.loadedTracksMap = new HashMap<>();
+        this.loadedPlaylistsMap = new HashMap<>();
     }
 
     //singleton
@@ -237,7 +246,7 @@ public class OnlineYoutubeRepository {
                             .setTitle(song.getTitle())
                             .setSubtitle(song.getChannelTitle())
                             .setDescription(song.getChannelDesc())
-                            .setIconUri(Uri.parse(song.getArt_url_medium()))
+                            .setIconUri(Uri.parse(song.getArt_url_high()))
                             .setExtras(extras)
                             .build()
                             , queueId++);
@@ -382,7 +391,7 @@ public class OnlineYoutubeRepository {
     }
 
 
-    public void getTracks(String id, String desc, String pageToken, TracksLoadedCallback callback) {
+    public void getPlaylistTracks(String id, String desc, String pageToken, TracksLoadedCallback callback) {
         LogHelper.d(TAG, "topTracks: Extraction");
         String url = "https://www.googleapis.com/youtube/v3/playlistItems?part=snippet&fields=prevPageToken,nextPageToken,items(snippet(title,thumbnails(default,medium,high),channelTitle,resourceId))&playlistId=" + id + "&maxResults=50&key=AIzaSyAdfvLnL55J-5dOwiL_IDF5PydkF3r2jQA";
         if (!pageToken.equals("-1"))
@@ -418,7 +427,7 @@ public class OnlineYoutubeRepository {
             loadTracksDuration(tracks, id, callback);
         }, error -> {
             LogHelper.d(TAG, "onErrorResponse: " + error);
-            callback.onError();
+            callback.onError(error);
         }) {
             @Override
             protected Response<JSONObject> parseNetworkResponse(NetworkResponse response) {
@@ -489,7 +498,7 @@ public class OnlineYoutubeRepository {
 
             } catch (JSONException e) {
                 e.printStackTrace();
-                callback.onError();
+                callback.onError(e);
             }
 
         }, error -> LogHelper.d(TAG, "onErrorResponse: ")) {
@@ -530,33 +539,22 @@ public class OnlineYoutubeRepository {
     }
 
 
-    public void getTracks(String id, String desc, TracksLoadedCallback callback) {
-        LogHelper.d(TAG, "topTracks: Extraction");
+    public interface QueueLoadedCallback {
+        void onLoaded(List<MediaSessionCompat.QueueItem> queueItems);
 
-        if (!CollectionUtility.isEmpty(loadedTracksMap.get(id))) {
-            LogHelper.d(TAG, "Tracks for Playlist %s found in cache!!!", id);
-            callback.onLoaded(loadedTracksMap.get(id));
-            return;
-        }
-
-        executor.execute(() -> {
-            List<YoutubeSong> songs = new ArrayList<>();
-            List<com.yash.youtube_extractor.models.YoutubeSong> youtubeSongs = ExtractorHelper.playlistSongs(id);
-            for (com.yash.youtube_extractor.models.YoutubeSong youtubeSong : youtubeSongs) {
-                YoutubeSong song = new YoutubeSong(youtubeSong.getTitle(), youtubeSong.getVideoId(), youtubeSong.getChannelTitle(), youtubeSong.getArtUrlSmall(), youtubeSong.getArtUrlMedium(), youtubeSong.getArtUrlHigh());
-                song.setDurationMillis(youtubeSong.getDurationMillis());
-                song.setChannelDesc(desc);
-                songs.add(song);
-            }
-            loadedTracksMap.put(id, songs);
-            handler.post(() -> callback.onLoaded(songs));
-        });
+        <E extends Exception> void onError(E e);
     }
 
     public interface TracksLoadedCallback {
         void onLoaded(List<YoutubeSong> songs);
 
-        void onError();
+        <E extends Exception> void onError(E e);
+    }
+
+    public interface PlaylistLoadedCallback {
+        void onLoaded(List<Pair<String, List<com.yash.youtube_extractor.models.YoutubePlaylist>>> playlistsByCategory);
+
+        <E extends Exception> void onError(E e);
     }
 
 
@@ -577,7 +575,7 @@ public class OnlineYoutubeRepository {
                                 .setTitle(song.getTitle())
                                 .setSubtitle(song.getChannelTitle())
                                 .setDescription(song.getChannelDesc())
-                                .setIconUri(Uri.parse(song.getArt_url_medium()))
+                                .setIconUri(Uri.parse(song.getArt_url_high()))
                                 .setExtras(extras)
                                 .build()
                                 , queueId++);
@@ -607,7 +605,7 @@ public class OnlineYoutubeRepository {
                                     .setTitle(song.getTitle())
                                     .setSubtitle(song.getChannelTitle())
                                     .setDescription(song.getChannelDesc())
-                                    .setIconUri(Uri.parse(song.getArt_url_medium()))
+                                    .setIconUri(Uri.parse(song.getArt_url_high()))
                                     .setExtras(extras)
                                     .build()
                                     , queueId++);
@@ -630,7 +628,7 @@ public class OnlineYoutubeRepository {
                                     .setTitle(song.getTitle())
                                     .setSubtitle(song.getChannelTitle())
                                     .setDescription(song.getChannelDesc())
-                                    .setIconUri(Uri.parse(song.getArt_url_medium()))
+                                    .setIconUri(Uri.parse(song.getArt_url_high()))
                                     .setExtras(extras)
                                     .build()
                                     , queueId++);
@@ -659,11 +657,50 @@ public class OnlineYoutubeRepository {
     }
 
 
+    public void extractSharedSongQueue(String uri, QueueLoadedCallback callback) {
+        String[] splits = uri.split("[|]");
+        String videoId = splits[splits.length - 1];
+        List<MediaSessionCompat.QueueItem> mediaItems = new ArrayList<>();
+        Extractor extractor = new Extractor();
+        extractor.extract(videoId, new Extractor.Callback() {
+            @Override
+            public void onSuccess(VideoDetails videoDetails) {
+                if (videoDetails != null) {
+                    VideoData videoData = videoDetails.getVideoData();
+                    Bundle extras = new Bundle();
+                    extras.putLong("duration", CommonUtility.stringToMillis(videoData.getLengthSeconds()));
+                    MediaSessionCompat.QueueItem queueItem = new MediaSessionCompat.QueueItem(new MediaDescriptionCompat.Builder()
+                            .setMediaId(videoId)
+                            .setTitle(videoData.getTitle())
+                            .setSubtitle(videoData.getAuthor())
+                            .setDescription(videoData.getShortDescription())
+                            .setIconUri(Uri.parse(videoData.getThumbnail().getThumbnails().get(videoData.getThumbnail().getThumbnails().size() - 1).getUrl()))
+                            .setExtras(extras)
+                            .build(), 0);
+                    mediaItems.add(queueItem);
+                }
+                callback.onLoaded(mediaItems);
+
+            }
+
+            @Override
+            public void onError(ExtractionException e) {
+                callback.onError(e);
+            }
+        });
+
+
+    }
+
+
+
+
 
 
 
     /*     ---- Generic Playlists Details ----- */
 
+    @Deprecated
     public void getPlaylistsDetails(List<String> playlistIds, PlaylistsLoadedCallback callback) {
         String url = "https://www.googleapis.com/youtube/v3/playlists?part=snippet,contentDetails&fields=items(id,snippet(localized,thumbnails(medium,standard)),contentDetails)&maxResults=50&id=" + TextUtils.join(",", playlistIds) + "&key=AIzaSyAdfvLnL55J-5dOwiL_IDF5PydkF3r2jQA";
         JsonObjectRequest request = new JsonObjectRequest(url, null, response -> {
@@ -710,6 +747,14 @@ public class OnlineYoutubeRepository {
 
     }
 
+    //-----------------------------------------------------------
+    //               SEARCH
+    //-----------------------------------------------------------
+
+    /**
+     * @param query
+     * @param callback
+     */
     public void searchTracks(String query, TracksLoadedCallback callback) {
         executor.execute(() -> {
             try {
@@ -723,7 +768,72 @@ public class OnlineYoutubeRepository {
                 loadedTracksMap.put("Search/" + query, songs);
                 callback.onLoaded(songs);
             } catch (Exception e) {
-                callback.onError();
+                callback.onError(e);
+            }
+        });
+    }
+
+
+    //-----------------------------------------------------------
+    //               FIND
+    //-----------------------------------------------------------
+
+    /**
+     * New Playlist track provider
+     *
+     * @param id       Playlist Id
+     * @param desc     Description
+     * @param callback Callback of success or failed response
+     */
+    public void getPlaylistTracks(String id, String desc, TracksLoadedCallback callback) {
+        LogHelper.d(TAG, "topTracks: Extraction");
+
+        if (!CollectionUtility.isEmpty(loadedTracksMap.get(id))) {
+            LogHelper.d(TAG, "Tracks for Playlist %s found in cache!!!", id);
+            callback.onLoaded(loadedTracksMap.get(id));
+            return;
+        }
+
+        executor.execute(() -> {
+            try {
+                List<YoutubeSong> songs = new ArrayList<>();
+                List<com.yash.youtube_extractor.models.YoutubeSong> youtubeSongs = ExtractorHelper.playlistSongs(id);
+                for (com.yash.youtube_extractor.models.YoutubeSong youtubeSong : youtubeSongs) {
+                    YoutubeSong song = new YoutubeSong(youtubeSong.getTitle(), youtubeSong.getVideoId(), youtubeSong.getChannelTitle(), youtubeSong.getArtUrlSmall(), youtubeSong.getArtUrlMedium(), youtubeSong.getArtUrlHigh());
+                    song.setDurationMillis(youtubeSong.getDurationMillis());
+                    song.setChannelDesc(desc);
+                    songs.add(song);
+                }
+                loadedTracksMap.put(id, songs);
+                handler.post(() -> callback.onLoaded(songs));
+            } catch (Exception e) {
+                handler.post(() -> callback.onError(e));
+            }
+        });
+    }
+
+    public void getChannelPlaylists(String channelId, PlaylistLoadedCallback callback) {
+        LogHelper.d(TAG, "Channel Playlists of id : %s", channelId);
+
+        if (!CollectionUtility.isEmpty(loadedPlaylistsMap.get(channelId))) {
+            LogHelper.d(TAG, "Playlists for Channel %s found in cache!!!", channelId);
+            callback.onLoaded(loadedPlaylistsMap.get(channelId));
+            return;
+        }
+
+        executor.execute(() -> {
+            try {
+                List<Pair<String, List<com.yash.youtube_extractor.models.YoutubePlaylist>>> playlists = new ArrayList<>();
+                Map<String, List<com.yash.youtube_extractor.models.YoutubePlaylist>> playlistsByCategory = ExtractorHelper.channelPlaylists(channelId);
+                for (Map.Entry<String, List<com.yash.youtube_extractor.models.YoutubePlaylist>> entry : playlistsByCategory.entrySet()) {
+                    if (CollectionUtility.isEmpty(entry.getValue()))
+                        continue;
+                    playlists.add(Pair.create(entry.getKey(), entry.getValue()));
+                }
+                loadedPlaylistsMap.put(channelId, playlists);
+                handler.post(() -> callback.onLoaded(playlists));
+            } catch (Exception e) {
+                handler.post(() -> callback.onError(e));
             }
         });
     }

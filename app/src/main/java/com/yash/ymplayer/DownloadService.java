@@ -385,7 +385,7 @@ public class DownloadService extends Service {
 
                     LogHelper.d(TAG, "onSuccess: ");
                     VideoData.Thumbnail thumbnail = videoDetails.getVideoData().getThumbnail();
-                    byte[] image = DownloadUtil.download(thumbnail.getThumbnails().get(thumbnail.getThumbnails().size() - 2).getUrl());
+                    byte[] image = DownloadUtil.download(thumbnail.getThumbnails().get(thumbnail.getThumbnails().size() - 1).getUrl());
                     id3v2Tag.setAlbumImage(image, "image/jpeg");
 
                     mp3File.save(outFile.getAbsolutePath());  // writing actual file

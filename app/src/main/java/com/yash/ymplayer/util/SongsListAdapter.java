@@ -5,6 +5,7 @@ import android.content.ContentUris;
 import android.content.Context;
 import android.graphics.drawable.Drawable;
 import android.media.MediaMetadataRetriever;
+import android.net.Uri;
 import android.os.Handler;
 import android.os.Looper;
 import android.provider.MediaStore;
@@ -30,6 +31,7 @@ import com.yash.ymplayer.ui.main.SongContextMenuListener;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.regex.Pattern;
@@ -168,13 +170,13 @@ public class SongsListAdapter extends RecyclerView.Adapter<SongsListAdapter.Item
 
             executor.execute(() -> {
                 if (viewModel.songImages.get(song.getDescription().getMediaId()) == null) {
-                    MediaMetadataRetriever retriever = new MediaMetadataRetriever();
-                    String[] parts = song.getDescription().getMediaId().split("[/|]");
+                    String[] parts = Objects.requireNonNull(song.getDescription().getMediaId()).split("[/|]");
                     try {
                         boolean isEmbeddedArt = pattern.matcher(parts[parts.length - 1]).matches();
+                        Uri artUrl = song.getDescription().getIconUri();
                         if (isEmbeddedArt)
-                            retriever.setDataSource(context, ContentUris.withAppendedId(MediaStore.Audio.Media.EXTERNAL_CONTENT_URI, Long.parseLong(parts[parts.length - 1])));
-                        Glide.with(context).load(isEmbeddedArt ? retriever.getEmbeddedPicture() : song.getDescription().getIconUri()).into(new CustomTarget<Drawable>(size, size) {
+                            artUrl = ContentUris.withAppendedId(MediaStore.Audio.Media.EXTERNAL_CONTENT_URI, Long.parseLong(parts[parts.length - 1]));
+                        Glide.with(context).load(isEmbeddedArt ? CommonUtil.getEmbeddedPicture(context, artUrl) : artUrl).into(new CustomTarget<Drawable>(size, size) {
                             @Override
                             public void onResourceReady(@NonNull Drawable resource, @Nullable Transition<? super Drawable> transition) {
                                 handler.post(() -> binding.art.setImageDrawable(resource));

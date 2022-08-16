@@ -104,8 +104,12 @@ public class CommonUtil {
     }
 
     public static byte[] getEmbeddedPicture(Context context, String uri) {
+        return getEmbeddedPicture(context, Uri.parse(uri));
+    }
+
+    public synchronized static byte[] getEmbeddedPicture(Context context, Uri uri) {
         MediaMetadataRetriever retriever = new MediaMetadataRetriever();
-        retriever.setDataSource(context, Uri.parse(uri));
+        retriever.setDataSource(context, uri);
         return retriever.getEmbeddedPicture();
     }
 }

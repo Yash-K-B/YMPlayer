@@ -1,8 +1,7 @@
-package com.yash.ymplayer.ui.youtube.todayspopular;
+package com.yash.ymplayer.ui.youtube.adapters;
 
 import android.content.Context;
 import android.view.LayoutInflater;
-import android.view.View;
 import android.view.ViewGroup;
 
 import androidx.annotation.NonNull;

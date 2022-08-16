@@ -90,4 +90,7 @@ dependencies {
     implementation 'com.github.Yash-K-B:Logging:1.0.5'
 
     implementation 'com.github.siyamed:android-shape-imageview:0.9.3'
+
+    implementation 'com.google.guava:guava:28.2-android'
+
 }

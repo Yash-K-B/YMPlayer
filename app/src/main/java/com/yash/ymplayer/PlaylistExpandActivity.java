@@ -1,10 +1,7 @@
 package com.yash.ymplayer;
 
-import android.content.ComponentName;
 import android.content.Intent;
-import android.net.Uri;
 import android.os.Bundle;
-import android.os.RemoteException;
 import android.support.v4.media.MediaBrowserCompat;
 import android.support.v4.media.session.MediaControllerCompat;
 import android.view.MenuItem;
@@ -81,7 +78,7 @@ public class PlaylistExpandActivity extends BasePlayerActivity {
     void load(MediaControllerCompat mediaController) {
         if (mediaController == null)
             return;
-        OnlineYoutubeRepository.getInstance(PlaylistExpandActivity.this).getTracks(playlistId, title, new OnlineYoutubeRepository.TracksLoadedCallback() {
+        OnlineYoutubeRepository.getInstance(PlaylistExpandActivity.this).getPlaylistTracks(playlistId, title, new OnlineYoutubeRepository.TracksLoadedCallback() {
             @Override
             public void onLoaded(List<YoutubeSong> songs) {
                 activityBinding.listProgress.setVisibility(View.GONE);
@@ -123,7 +120,7 @@ public class PlaylistExpandActivity extends BasePlayerActivity {
             }
 
             @Override
-            public void onError() {
+            public <E extends Exception> void onError(E e) {
                 LogHelper.d(TAG, "onError: ");
                 activityBinding.listProgress.setVisibility(View.INVISIBLE);
                 activityBinding.dialogTryAgain.setVisibility(View.VISIBLE);

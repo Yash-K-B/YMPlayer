@@ -18,12 +18,10 @@ import android.view.ViewGroup;
 
 import com.yash.logging.LogHelper;
 import com.yash.ymplayer.PlaylistExpandActivity;
-import com.yash.ymplayer.R;
 import com.yash.ymplayer.databinding.FragmentDiscoverNewBinding;
 import com.yash.ymplayer.models.PopularPlaylist;
 import com.yash.ymplayer.ui.youtube.YoutubeLibraryViewModel;
-import com.yash.ymplayer.ui.youtube.magic90s.Magic90s;
-import com.yash.ymplayer.ui.youtube.todayspopular.PopularHitAdapter;
+import com.yash.ymplayer.ui.youtube.adapters.PopularHitAdapter;
 import com.yash.ymplayer.util.Keys;
 
 import java.util.ArrayList;
