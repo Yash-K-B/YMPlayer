@@ -114,48 +114,44 @@ public class TopTracks extends Fragment {
         public void onConnected() {
             super.onConnected();
             viewModel = new ViewModelProvider(TopTracks.this).get(YoutubeLibraryViewModel.class);
-            try {
-                mediaController = new MediaControllerCompat(context, mediaBrowser.getSessionToken());
-                LogHelper.d(TAG, "onConnected: TopTracks");
-                isConnectedToService = true;
-                handler.postDelayed(noInternet, 1000);
-                adapter = new TopTracksAdapter(context, new TrackClickListener() {
-                    @Override
-                    public void onClick(YoutubeSong song) {
-                        String audioUri = "TOP_TRACKS|" + song.getVideoId();
-                        mediaController.getTransportControls().playFromMediaId(audioUri, null);
-                    }
+            mediaController = new MediaControllerCompat(context, mediaBrowser.getSessionToken());
+            LogHelper.d(TAG, "onConnected: TopTracks");
+            isConnectedToService = true;
+            handler.postDelayed(noInternet, 1000);
+            adapter = new TopTracksAdapter(context, new TrackClickListener() {
+                @Override
+                public void onClick(YoutubeSong song) {
+                    String audioUri = "TOP_TRACKS|" + song.getVideoId();
+                    mediaController.getTransportControls().playFromMediaId(audioUri, null);
+                }
 
-                    @Override
-                    public void onPlaySingle(YoutubeSong song) {
-                        Bundle extra = new Bundle();
-                        extra.putBoolean(Keys.PLAY_SINGLE, true);
-                        mediaController.getTransportControls().playFromMediaId("TOP_TRACKS|" + song.getVideoId(), extra);
-                    }
+                @Override
+                public void onPlaySingle(YoutubeSong song) {
+                    Bundle extra = new Bundle();
+                    extra.putBoolean(Keys.PLAY_SINGLE, true);
+                    mediaController.getTransportControls().playFromMediaId("TOP_TRACKS|" + song.getVideoId(), extra);
+                }
 
-                    @Override
-                    public void onQueueNext(YoutubeSong song) {
-                        Bundle extras = new Bundle();
-                        extras.putString(Keys.MEDIA_ID, "TOP_TRACKS|" + song.getVideoId());
-                        extras.putInt(Keys.QUEUE_HINT, AudioProvider.QueueHint.YOUTUBE_SINGLE_SONG);
-                        extras.putString(Keys.QUEUE_MODE, Keys.QueueMode.ONLINE.name());
-                        mediaController.getTransportControls().sendCustomAction(Keys.Action.QUEUE_NEXT, extras);
-                    }
+                @Override
+                public void onQueueNext(YoutubeSong song) {
+                    Bundle extras = new Bundle();
+                    extras.putString(Keys.MEDIA_ID, "TOP_TRACKS|" + song.getVideoId());
+                    extras.putInt(Keys.QUEUE_HINT, AudioProvider.QueueHint.YOUTUBE_SINGLE_SONG);
+                    extras.putString(Keys.QUEUE_MODE, Keys.QueueMode.ONLINE.name());
+                    mediaController.getTransportControls().sendCustomAction(Keys.Action.QUEUE_NEXT, extras);
+                }
 
-                    @Override
-                    public void onQueueLast(YoutubeSong song) {
-                        Bundle extras = new Bundle();
-                        extras.putString(Keys.MEDIA_ID, "TOP_TRACKS|" + song.getVideoId());
-                        extras.putInt(Keys.QUEUE_HINT, AudioProvider.QueueHint.YOUTUBE_SINGLE_SONG);
-                        extras.putString(Keys.QUEUE_MODE, Keys.QueueMode.ONLINE.name());
-                        mediaController.getTransportControls().sendCustomAction(Keys.Action.QUEUE_LAST, extras);
-                    }
-                }, mediaController);
-                topTracksBinding.topTracksContainer.setAdapter(adapter);
+                @Override
+                public void onQueueLast(YoutubeSong song) {
+                    Bundle extras = new Bundle();
+                    extras.putString(Keys.MEDIA_ID, "TOP_TRACKS|" + song.getVideoId());
+                    extras.putInt(Keys.QUEUE_HINT, AudioProvider.QueueHint.YOUTUBE_SINGLE_SONG);
+                    extras.putString(Keys.QUEUE_MODE, Keys.QueueMode.ONLINE.name());
+                    mediaController.getTransportControls().sendCustomAction(Keys.Action.QUEUE_LAST, extras);
+                }
+            }, mediaController);
+            topTracksBinding.topTracksContainer.setAdapter(adapter);
 
-            } catch (RemoteException e) {
-                e.printStackTrace();
-            }
             if (!isContentLoaded && isNetworkAvailable)
                 loadContent();
 

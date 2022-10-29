@@ -125,45 +125,41 @@ public class AllSongs extends Fragment {
          */
         @Override
         public void onConnected() {
-            try {
-                songs.clear();
-                mMediaController = new MediaControllerCompat(context, mMediaBrowser.getSessionToken());
-                mMediaController.registerCallback(mMediaControllerCallbacks);
-                songsAdapter = new SongsListAdapter(context,launcher, songs, new SongListAdapter.OnItemClickListener() {
-                    @Override
-                    public void onClick(View v, MediaBrowserCompat.MediaItem song) {
-                        mMediaController.getTransportControls().playFromMediaId(song.getDescription().getMediaId(), null);
-                        Log.d(TAG, "onClick: Extra: null");
-                    }
-                }, new SongsContextMenuClickListener(context, mMediaController), SongsListAdapter.MODE.ALL);
-                songsAdapter.setViewModel(viewModel);
-                allSongsBinding.allSongsView.setAdapter(songsAdapter);
-                allSongsBinding.allSongsRefresh.setColorSchemeColors(BaseActivity.getAttributeColor(context, R.attr.colorPrimary));
-                allSongsBinding.allSongsRefresh.setOnRefreshListener(new SwipeRefreshLayout.OnRefreshListener() {
-                    @Override
-                    public void onRefresh() {
-                        allSongsBinding.allSongsRefresh.setRefreshing(true);
-                        viewModel.refresh(getContext(), mMediaBrowser);
-                        //viewModel.querySongs();
-                    }
-                });
-                if (viewModel.songs.getValue() == null || viewModel.songs.getValue().isEmpty())
-                    viewModel.querySongs(mMediaBrowser);
-                viewModel.songs.observe(AllSongs.this, new Observer<List<MediaBrowserCompat.MediaItem>>() {
-                    @Override
-                    public void onChanged(List<MediaBrowserCompat.MediaItem> songs) {
-                        AllSongs.this.songs.clear();
-                        AllSongs.this.songs.addAll(songs);
-                        Log.d(TAG, "onChanged: Song Refreshed");
-                        allSongsBinding.allSongsRefresh.setRefreshing(false);
-                        allSongsBinding.progressBar.setVisibility(View.INVISIBLE);
-                        songsAdapter.refreshList();
-                        songsAdapter.notifyDataSetChanged();
-                    }
-                });
-            } catch (RemoteException e) {
-                e.printStackTrace();
-            }
+            songs.clear();
+            mMediaController = new MediaControllerCompat(context, mMediaBrowser.getSessionToken());
+            mMediaController.registerCallback(mMediaControllerCallbacks);
+            songsAdapter = new SongsListAdapter(context,launcher, songs, new SongListAdapter.OnItemClickListener() {
+                @Override
+                public void onClick(View v, MediaBrowserCompat.MediaItem song) {
+                    mMediaController.getTransportControls().playFromMediaId(song.getDescription().getMediaId(), null);
+                    Log.d(TAG, "onClick: Extra: null");
+                }
+            }, new SongsContextMenuClickListener(context, mMediaController), SongsListAdapter.MODE.ALL);
+            songsAdapter.setViewModel(viewModel);
+            allSongsBinding.allSongsView.setAdapter(songsAdapter);
+            allSongsBinding.allSongsRefresh.setColorSchemeColors(BaseActivity.getAttributeColor(context, R.attr.colorPrimary));
+            allSongsBinding.allSongsRefresh.setOnRefreshListener(new SwipeRefreshLayout.OnRefreshListener() {
+                @Override
+                public void onRefresh() {
+                    allSongsBinding.allSongsRefresh.setRefreshing(true);
+                    viewModel.refresh(getContext(), mMediaBrowser);
+                    //viewModel.querySongs();
+                }
+            });
+            if (viewModel.songs.getValue() == null || viewModel.songs.getValue().isEmpty())
+                viewModel.querySongs(mMediaBrowser);
+            viewModel.songs.observe(AllSongs.this, new Observer<List<MediaBrowserCompat.MediaItem>>() {
+                @Override
+                public void onChanged(List<MediaBrowserCompat.MediaItem> songs) {
+                    AllSongs.this.songs.clear();
+                    AllSongs.this.songs.addAll(songs);
+                    Log.d(TAG, "onChanged: Song Refreshed");
+                    allSongsBinding.allSongsRefresh.setRefreshing(false);
+                    allSongsBinding.progressBar.setVisibility(View.INVISIBLE);
+                    songsAdapter.refreshList();
+                    songsAdapter.notifyDataSetChanged();
+                }
+            });
 
         }
     };

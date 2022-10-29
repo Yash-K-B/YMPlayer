@@ -16,25 +16,18 @@
         android:layout_marginBottom="8dp"
         android:scaleType="fitCenter"
         app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintEnd_toStartOf="@id/guideline35p"
         app:layout_constraintHorizontal_bias="0.0"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent"
         app:layout_constraintVertical_bias="0.242"
         app:srcCompat="@drawable/album_art_placeholder" />
 
-    <androidx.constraintlayout.widget.Guideline
-        android:id="@+id/guideline35p"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:orientation="vertical"
-        app:layout_constraintGuide_percent="0.38" />
 
     <TextView
         android:id="@+id/playlistTitle"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
-        android:layout_marginStart="10dp"
+        android:layout_marginStart="20dp"
         android:layout_marginTop="16dp"
         android:text="Todays Hit"
         android:textColor="?attr/listTitleTextColor"
@@ -42,21 +35,21 @@
         android:textStyle="bold"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintHorizontal_bias="0.0"
-        app:layout_constraintStart_toStartOf="@+id/guideline35p"
+        app:layout_constraintStart_toEndOf="@+id/playlistArt"
         app:layout_constraintTop_toTopOf="parent" />
 
     <TextView
         android:id="@+id/playlistSubTitle"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
-        android:layout_marginStart="10dp"
+        android:layout_marginStart="20dp"
         android:layout_marginTop="8dp"
         android:text="Daily fresh"
         android:textAppearance="@style/TextAppearance.AppCompat.Small"
         android:textSize="12sp"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintHorizontal_bias="0.0"
-        app:layout_constraintStart_toStartOf="@+id/guideline35p"
+        app:layout_constraintStart_toEndOf="@id/playlistArt"
         app:layout_constraintTop_toBottomOf="@+id/playlistTitle" />
 
     <TextView

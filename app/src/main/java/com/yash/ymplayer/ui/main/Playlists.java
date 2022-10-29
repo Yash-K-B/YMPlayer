@@ -139,7 +139,7 @@ public class Playlists extends Fragment implements PlaylistUpdateListener {
                 });
                 LocalSongs localSongs = (LocalSongs) Playlists.this.getParentFragment();
                 localSongs.onFabClicked(Playlists.this);
-            } catch (RemoteException | NullPointerException e) {
+            } catch (NullPointerException e) {
                 e.printStackTrace();
             }
         }

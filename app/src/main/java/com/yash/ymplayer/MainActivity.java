@@ -136,6 +136,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
+import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 
@@ -434,6 +435,8 @@ public class MainActivity extends BaseActivity implements ActivityActionProvider
         mediaBrowser.connect();
     }
 
+    Pattern shortsPattern = Pattern.compile("https://youtube.com/shorts/(.*)\\?feature=share");
+
     private void playIfIntentHasData(Intent intent) {
         LogHelper.d(TAG, "playIfIntentHasData: " + intent);
         Bundle extras = new Bundle();
@@ -445,8 +448,14 @@ public class MainActivity extends BaseActivity implements ActivityActionProvider
             String url = intent.getExtras().getString(Intent.EXTRA_TEXT);
             if (url == null)
                 return;
-            String[] parts = url.split("[|/=]");
-            String videoId = parts[parts.length - 1];
+            String videoId;
+            Matcher shortsMatcher = shortsPattern.matcher(url);
+            if (url.contains("shorts") && shortsMatcher.find()) {
+                videoId = shortsMatcher.group(1);
+            } else {
+                String[] parts = url.split("[|/=]");
+                videoId = parts[parts.length - 1];
+            }
             extras.putBoolean(Keys.PLAY_SINGLE, true);
             mediaController.getTransportControls().playFromMediaId(Constants.SHARED + "|" + videoId, extras);
         }
@@ -560,12 +569,8 @@ public class MainActivity extends BaseActivity implements ActivityActionProvider
         @Override
         public void onConnected() {
             LogHelper.d(TAG, "onConnected: MainActivity");
-            try {
-                mediaController = new MediaControllerCompat(MainActivity.this, mediaBrowser.getSessionToken());
-                mediaController.registerCallback(mediaControllerCallback);
-            } catch (RemoteException e) {
-                e.printStackTrace();
-            }
+            mediaController = new MediaControllerCompat(MainActivity.this, mediaBrowser.getSessionToken());
+            mediaController.registerCallback(mediaControllerCallback);
             initialise();
 
         }

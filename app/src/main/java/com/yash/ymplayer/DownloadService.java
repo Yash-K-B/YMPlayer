@@ -28,6 +28,7 @@ import android.webkit.MimeTypeMap;
 import android.widget.Toast;
 
 import androidx.annotation.Nullable;
+import androidx.annotation.RequiresApi;
 import androidx.core.app.NotificationCompat;
 import androidx.core.os.EnvironmentCompat;
 import androidx.documentfile.provider.DocumentFile;
@@ -220,6 +221,7 @@ public class DownloadService extends Service {
             return videoId;
         }
 
+        @RequiresApi(api = Build.VERSION_CODES.M)
         @Override
         public void run() {
             super.run();
@@ -235,7 +237,11 @@ public class DownloadService extends Service {
                 Intent downloadFileIntent = new Intent(DownloadService.this, DownloadService.class);
                 downloadFileIntent.putExtra(Keys.DownloadManager.EXTRA_ACTION, "pause");
                 downloadFileIntent.putExtra(Keys.DownloadManager.EXTRA_VIDEO_ID, videoId);
-                PendingIntent dFilePendingIntent = PendingIntent.getService(DownloadService.this, 10023, downloadFileIntent, PendingIntent.FLAG_UPDATE_CURRENT);
+                PendingIntent dFilePendingIntent;
+                if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.M)
+                    dFilePendingIntent = PendingIntent.getService(DownloadService.this, 10023, downloadFileIntent, PendingIntent.FLAG_IMMUTABLE | PendingIntent.FLAG_UPDATE_CURRENT);
+                else
+                    dFilePendingIntent = PendingIntent.getService(DownloadService.this, 10023, downloadFileIntent, PendingIntent.FLAG_UPDATE_CURRENT);
                 notificationBuilder = new NotificationCompat.Builder(DownloadService.this, Keys.Notification.CHANNEL_ID)
                         .setSmallIcon(R.drawable.ic_cloud_download)
                         .setColor(Color.BLUE)
@@ -588,7 +594,11 @@ public class DownloadService extends Service {
             downloadFileIntent.putExtra(Keys.DownloadManager.EXTRA_VIDEO_ID, videoId);
             downloadFileIntent.putExtra(Keys.DownloadManager.EXTRA_TASK_ID, taskId);
             downloadFileIntent.putExtra(Keys.DownloadManager.EXTRA_BITRATE, bitrate);
-            PendingIntent dFilePendingIntent = PendingIntent.getService(DownloadService.this, 10023, downloadFileIntent, PendingIntent.FLAG_UPDATE_CURRENT);
+            PendingIntent dFilePendingIntent;
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M)
+                dFilePendingIntent = PendingIntent.getService(DownloadService.this, 10023, downloadFileIntent, PendingIntent.FLAG_IMMUTABLE | PendingIntent.FLAG_UPDATE_CURRENT);
+            else
+                dFilePendingIntent = PendingIntent.getService(DownloadService.this, 10023, downloadFileIntent, PendingIntent.FLAG_UPDATE_CURRENT);
             notificationBuilder.mActions.set(0, new NotificationCompat.Action(R.drawable.icon_play, "Play", dFilePendingIntent));
             notificationBuilder.setContentText("Paused");
             notificationBuilder.setOngoing(false);

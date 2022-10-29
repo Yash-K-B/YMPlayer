@@ -107,45 +107,41 @@ public class Albums extends Fragment {
     private MediaBrowserCompat.ConnectionCallback mConnectionCallbacks = new MediaBrowserCompat.ConnectionCallback() {
         @Override
         public void onConnected() {
-            try {
-                viewModel = new ViewModelProvider(activity).get(LocalViewModel.class);
-                mMediaController = new MediaControllerCompat(getContext(), mMediaBrowser.getSessionToken());
-                albumsAdapter = new AlbumListAdapter(context, songs, (song) -> {
-                    if (song.isBrowsable()) {
-                        Intent intent = new Intent(getActivity(), ListExpandActivity.class);
-                        intent.putExtra(Keys.EXTRA_PARENT_ID, song.getMediaId());
-                        intent.putExtra(Keys.EXTRA_TYPE, "album");
-                        intent.putExtra(Keys.EXTRA_TITLE, song.getDescription().getTitle());
-                        startActivity(intent);
-                    }
-                },new AlbumOrArtistContextMenuClickListener(context,mMediaController));
-                albumsBinding.allAlbums.setAdapter(albumsAdapter);
-                albumsBinding.albumRefresh.setColorSchemeColors(BaseActivity.getAttributeColor(context,R.attr.colorPrimary));
-                albumsBinding.albumRefresh.setOnRefreshListener(new SwipeRefreshLayout.OnRefreshListener() {
-                    @Override
-                    public void onRefresh() {
-                        albumsBinding.albumRefresh.setRefreshing(true);
-                        viewModel.refresh(context, mMediaBrowser);
-                        //viewModel.getAllAlbums(, null);
-                    }
-                });
-                if (viewModel.allAlbums.getValue() == null || viewModel.allAlbums.getValue().isEmpty())
-                    viewModel.getAllAlbums(mMediaBrowser, null);
-                viewModel.allAlbums.observe(activity, new Observer<List<MediaBrowserCompat.MediaItem>>() {
-                    @Override
-                    public void onChanged(List<MediaBrowserCompat.MediaItem> songs) {
-                        Albums.this.songs.clear();
-                        Albums.this.songs.addAll(songs);
-                        albumsBinding.albumRefresh.setRefreshing(false);
-                        albumsAdapter.refreshList();
-                        albumsAdapter.notifyDataSetChanged();
-                        albumsBinding.progressBar.setVisibility(View.INVISIBLE);
+            viewModel = new ViewModelProvider(activity).get(LocalViewModel.class);
+            mMediaController = new MediaControllerCompat(getContext(), mMediaBrowser.getSessionToken());
+            albumsAdapter = new AlbumListAdapter(context, songs, (song) -> {
+                if (song.isBrowsable()) {
+                    Intent intent = new Intent(getActivity(), ListExpandActivity.class);
+                    intent.putExtra(Keys.EXTRA_PARENT_ID, song.getMediaId());
+                    intent.putExtra(Keys.EXTRA_TYPE, "album");
+                    intent.putExtra(Keys.EXTRA_TITLE, song.getDescription().getTitle());
+                    startActivity(intent);
+                }
+            },new AlbumOrArtistContextMenuClickListener(context,mMediaController));
+            albumsBinding.allAlbums.setAdapter(albumsAdapter);
+            albumsBinding.albumRefresh.setColorSchemeColors(BaseActivity.getAttributeColor(context,R.attr.colorPrimary));
+            albumsBinding.albumRefresh.setOnRefreshListener(new SwipeRefreshLayout.OnRefreshListener() {
+                @Override
+                public void onRefresh() {
+                    albumsBinding.albumRefresh.setRefreshing(true);
+                    viewModel.refresh(context, mMediaBrowser);
+                    //viewModel.getAllAlbums(, null);
+                }
+            });
+            if (viewModel.allAlbums.getValue() == null || viewModel.allAlbums.getValue().isEmpty())
+                viewModel.getAllAlbums(mMediaBrowser, null);
+            viewModel.allAlbums.observe(activity, new Observer<List<MediaBrowserCompat.MediaItem>>() {
+                @Override
+                public void onChanged(List<MediaBrowserCompat.MediaItem> songs) {
+                    Albums.this.songs.clear();
+                    Albums.this.songs.addAll(songs);
+                    albumsBinding.albumRefresh.setRefreshing(false);
+                    albumsAdapter.refreshList();
+                    albumsAdapter.notifyDataSetChanged();
+                    albumsBinding.progressBar.setVisibility(View.INVISIBLE);
 
-                    }
-                });
-            } catch (RemoteException e) {
-                e.printStackTrace();
-            }
+                }
+            });
 
         }
 

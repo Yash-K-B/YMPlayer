@@ -291,13 +291,9 @@ public abstract class BasePlayerActivity extends BaseActivity implements Activit
         @Override
         public void onConnected() {
             LogHelper.d(TAG, "onConnected: MainActivity");
-            try {
-                mediaController = new MediaControllerCompat(BasePlayerActivity.this, mediaBrowser.getSessionToken());
-                mediaController.registerCallback(mediaControllerCallback);
-                BasePlayerActivity.this.onConnected(mediaController);
-            } catch (RemoteException e) {
-                e.printStackTrace();
-            }
+            mediaController = new MediaControllerCompat(BasePlayerActivity.this, mediaBrowser.getSessionToken());
+            mediaController.registerCallback(mediaControllerCallback);
+            BasePlayerActivity.this.onConnected(mediaController);
             initialise();
 
         }
