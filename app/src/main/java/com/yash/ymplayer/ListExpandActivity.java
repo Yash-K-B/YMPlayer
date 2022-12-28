@@ -1,18 +1,13 @@
 package com.yash.ymplayer;
 
 import android.app.Activity;
-import android.content.ComponentName;
 import android.content.ContentUris;
 import android.content.Context;
 import android.content.Intent;
 import android.net.Uri;
 import android.os.Bundle;
-import android.os.RemoteException;
 import android.support.v4.media.MediaBrowserCompat;
-import android.support.v4.media.MediaMetadataCompat;
 import android.support.v4.media.session.MediaControllerCompat;
-import android.support.v4.media.session.PlaybackStateCompat;
-import android.util.Log;
 import android.view.MenuItem;
 import android.view.View;
 import android.widget.Toast;
@@ -30,9 +25,7 @@ import androidx.recyclerview.widget.LinearLayoutManager;
 import com.bumptech.glide.Glide;
 import com.yash.ymplayer.databinding.BasePlayerActivityBinding;
 import com.yash.ymplayer.databinding.ListExpandActivityBinding;
-import com.yash.ymplayer.repository.Repository;
 import com.yash.ymplayer.ui.main.LocalViewModel;
-import com.yash.ymplayer.ui.main.SongContextMenuListener;
 import com.yash.ymplayer.util.Keys;
 import com.yash.ymplayer.util.SongListAdapter;
 import com.yash.ymplayer.util.SongsContextMenuClickListener;

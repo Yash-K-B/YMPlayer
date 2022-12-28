@@ -1,12 +1,11 @@
-package com.yash.ymplayer.ui.main;
+package com.yash.ymplayer.interfaces;
 
 import android.support.v4.media.MediaBrowserCompat;
 
 import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.IntentSenderRequest;
-import androidx.recyclerview.widget.RecyclerView;
 
-import com.yash.ymplayer.util.SongsListAdapter;
+import com.yash.ymplayer.util.Keys;
 
 public interface SongContextMenuListener {
     void playSingle(MediaBrowserCompat.MediaItem item);
@@ -15,7 +14,7 @@ public interface SongContextMenuListener {
 
     void queueLast(MediaBrowserCompat.MediaItem item);
 
-    void addToPlaylist(MediaBrowserCompat.MediaItem item, String playlist);
+    void addToPlaylist(MediaBrowserCompat.MediaItem item, String playlist, Keys.PlaylistType playlistType);
 
     void gotoAlbum(MediaBrowserCompat.MediaItem item);
 

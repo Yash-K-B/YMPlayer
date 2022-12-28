@@ -6,6 +6,9 @@
         android:id="@+id/play_single"
         android:title="@string/play_single" />
 
+    <item android:title="Add to playlist"
+        android:id="@+id/add_to_playlist"/>
+
     <item
         android:id="@+id/queue_next"
         android:title="@string/queue_next" />

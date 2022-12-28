@@ -72,6 +72,10 @@ public interface Keys {
         String LAST_PLAYED = "LastPlayed";
     }
 
+    enum PlaylistType {
+        PLAYLIST, HYBRID_PLAYLIST
+    }
+
     enum PLAYING_MODE {
         OFFLINE,
         ONLINE

@@ -14,4 +14,6 @@ public interface Cache<K, V> {
     int size();
 
     void clear();
+
+    V remove(K key);
 }

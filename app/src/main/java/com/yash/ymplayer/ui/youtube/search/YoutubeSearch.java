@@ -41,6 +41,7 @@ import com.yash.ymplayer.storage.AudioProvider;
 import com.yash.ymplayer.ui.youtube.YoutubeTracksAdapter;
 import com.yash.ymplayer.util.Keys;
 import com.yash.ymplayer.util.StringUtil;
+import com.yash.ymplayer.util.TrackContextMenuClickListener;
 import com.yash.ymplayer.util.YoutubeSong;
 
 import java.security.Key;
@@ -96,7 +97,7 @@ public class YoutubeSearch extends BasePlayerActivity {
                     Toast.makeText(YoutubeSearch.this, "Please enter text to search", Toast.LENGTH_SHORT).show();
                 }
                 query = query.trim();
-                String mediaIdFormat = "Search/" + query + "|%s";
+                String mediaIdPrefix = "Search/" + query + "|";
                 utubeSearchBinding.progressBar.setVisibility(View.VISIBLE);
                 LogHelper.d(TAG, "onQueryTextSubmit: " + query);
                 OnlineYoutubeRepository.getInstance(YoutubeSearch.this).searchTracks(query, new OnlineYoutubeRepository.TracksLoadedCallback() {
@@ -104,40 +105,7 @@ public class YoutubeSearch extends BasePlayerActivity {
                     public void onLoaded(List<YoutubeSong> songs) {
                         LogHelper.d(TAG, "onLoaded: Youtube search songs" + songs);
                         runOnUiThread(() -> {
-                            YoutubeTracksAdapter adapter = new YoutubeTracksAdapter(YoutubeSearch.this, songs, new TrackClickListener() {
-                                @Override
-                                public void onClick(YoutubeSong song) {
-                                    String id = String.format(mediaIdFormat, song.getVideoId());
-                                    LogHelper.d(TAG, "onClick: uri" + song.getVideoId() + " mediaController: " + mediaController);
-                                    if (mediaController != null)
-                                        mediaController.getTransportControls().playFromMediaId(id, null);
-                                }
-
-                                @Override
-                                public void onPlaySingle(YoutubeSong song) {
-                                    Bundle extra = new Bundle();
-                                    extra.putBoolean(Keys.PLAY_SINGLE, true);
-                                    mediaController.getTransportControls().playFromMediaId(String.format(mediaIdFormat, song.getVideoId()), extra);
-                                }
-
-                                @Override
-                                public void onQueueNext(YoutubeSong song) {
-                                    Bundle extras = new Bundle();
-                                    extras.putString(Keys.MEDIA_ID, String.format(mediaIdFormat, song.getVideoId()));
-                                    extras.putInt(Keys.QUEUE_HINT, AudioProvider.QueueHint.YOUTUBE_SINGLE_SONG);
-                                    extras.putString(Keys.QUEUE_MODE, Keys.QueueMode.ONLINE.name());
-                                    mediaController.getTransportControls().sendCustomAction(Keys.Action.QUEUE_NEXT, extras);
-                                }
-
-                                @Override
-                                public void onQueueLast(YoutubeSong song) {
-                                    Bundle extras = new Bundle();
-                                    extras.putString(Keys.MEDIA_ID, String.format(mediaIdFormat, song.getVideoId()));
-                                    extras.putInt(Keys.QUEUE_HINT, AudioProvider.QueueHint.YOUTUBE_SINGLE_SONG);
-                                    extras.putString(Keys.QUEUE_MODE, Keys.QueueMode.ONLINE.name());
-                                    mediaController.getTransportControls().sendCustomAction(Keys.Action.QUEUE_LAST, extras);
-                                }
-                            });
+                            YoutubeTracksAdapter adapter = new YoutubeTracksAdapter(YoutubeSearch.this, songs, new TrackContextMenuClickListener(YoutubeSearch.this, mediaController, mediaIdPrefix));
                             utubeSearchBinding.progressBar.setVisibility(View.INVISIBLE);
                             utubeSearchBinding.searchResultContainer.setLayoutManager(new LinearLayoutManager(YoutubeSearch.this));
                             utubeSearchBinding.searchResultContainer.setAdapter(adapter);

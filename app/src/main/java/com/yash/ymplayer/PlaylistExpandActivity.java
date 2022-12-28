@@ -20,6 +20,7 @@ import com.yash.ymplayer.repository.OnlineYoutubeRepository;
 import com.yash.ymplayer.storage.AudioProvider;
 import com.yash.ymplayer.ui.youtube.YoutubeTracksAdapter;
 import com.yash.ymplayer.util.Keys;
+import com.yash.ymplayer.util.TrackContextMenuClickListener;
 import com.yash.ymplayer.util.YoutubeSong;
 
 import java.util.List;
@@ -82,39 +83,7 @@ public class PlaylistExpandActivity extends BasePlayerActivity {
             @Override
             public void onLoaded(List<YoutubeSong> songs) {
                 activityBinding.listProgress.setVisibility(View.GONE);
-                YoutubeTracksAdapter adapter = new YoutubeTracksAdapter(PlaylistExpandActivity.this, songs, new TrackClickListener() {
-                    @Override
-                    public void onClick(YoutubeSong song) {
-                        String id = playlistId + "|" + song.getVideoId();
-                        LogHelper.d(TAG, "onClick: uri" + id);
-                        mediaController.getTransportControls().playFromMediaId(id, null);
-                    }
-
-                    @Override
-                    public void onPlaySingle(YoutubeSong song) {
-                        Bundle extra = new Bundle();
-                        extra.putBoolean(Keys.PLAY_SINGLE, true);
-                        mediaController.getTransportControls().playFromMediaId(playlistId + "|" + song.getVideoId(), extra);
-                    }
-
-                    @Override
-                    public void onQueueNext(YoutubeSong song) {
-                        Bundle extras = new Bundle();
-                        extras.putString(Keys.MEDIA_ID, playlistId + "|" + song.getVideoId());
-                        extras.putInt(Keys.QUEUE_HINT, AudioProvider.QueueHint.YOUTUBE_SINGLE_SONG);
-                        extras.putString(Keys.QUEUE_MODE, Keys.QueueMode.ONLINE.name());
-                        mediaController.getTransportControls().sendCustomAction(Keys.Action.QUEUE_NEXT, extras);
-                    }
-
-                    @Override
-                    public void onQueueLast(YoutubeSong song) {
-                        Bundle extras = new Bundle();
-                        extras.putString(Keys.MEDIA_ID, playlistId + "|" + song.getVideoId());
-                        extras.putInt(Keys.QUEUE_HINT, AudioProvider.QueueHint.YOUTUBE_SINGLE_SONG);
-                        extras.putString(Keys.QUEUE_MODE, Keys.QueueMode.ONLINE.name());
-                        mediaController.getTransportControls().sendCustomAction(Keys.Action.QUEUE_LAST, extras);
-                    }
-                });
+                YoutubeTracksAdapter adapter = new YoutubeTracksAdapter(PlaylistExpandActivity.this, songs, new TrackContextMenuClickListener(PlaylistExpandActivity.this, mediaController, playlistId + "|"));
                 activityBinding.list.setLayoutManager(new LinearLayoutManager(PlaylistExpandActivity.this));
                 activityBinding.list.setAdapter(adapter);
             }

@@ -4,7 +4,6 @@ import android.app.AlertDialog;
 import android.content.ContentUris;
 import android.content.Context;
 import android.graphics.drawable.Drawable;
-import android.media.MediaMetadataRetriever;
 import android.net.Uri;
 import android.os.Handler;
 import android.os.Looper;
@@ -27,7 +26,7 @@ import com.yash.ymplayer.R;
 import com.yash.ymplayer.databinding.ItemMusicBinding;
 import com.yash.ymplayer.repository.Repository;
 import com.yash.ymplayer.ui.main.LocalViewModel;
-import com.yash.ymplayer.ui.main.SongContextMenuListener;
+import com.yash.ymplayer.interfaces.SongContextMenuListener;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -129,7 +128,10 @@ public class SongsListAdapter extends RecyclerView.Adapter<SongsListAdapter.Item
                         for (int i = 0; i < lists.size(); i++) {
                             list[i] = lists.get(i).getDescription().getTitle().toString();
                         }
-                        builder.setItems(list, (dialog, which) -> songContextMenuListener.addToPlaylist(song, list[which]));
+                        builder.setItems(list, (dialog, which) -> {
+                            Keys.PlaylistType playlistType = Keys.PlaylistType.HYBRID_PLAYLIST.name().contentEquals(lists.get(which).getDescription().getDescription())? Keys.PlaylistType.HYBRID_PLAYLIST: Keys.PlaylistType.PLAYLIST;
+                            songContextMenuListener.addToPlaylist(song, list[which], playlistType);
+                        });
                         AlertDialog dialog = builder.create();
                         dialog.show();
                         return true;

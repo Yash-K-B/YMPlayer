@@ -55,7 +55,7 @@ public class YMPlayer extends Application {
             SharedPreferences.Editor editor = preferences.edit();
             editor.putBoolean(Keys.PREFERENCE_KEYS.IS_EXCEPTION,true);
             editor.putString(Keys.PREFERENCE_KEYS.EXCEPTION,exception);
-            editor.commit();
+            editor.apply();
 
             defaultUncaughtExceptionHandler.uncaughtException(t,e);
         });

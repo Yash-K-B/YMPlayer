@@ -1,14 +1,11 @@
 package com.yash.ymplayer.repository;
 
 import android.content.Context;
-import android.media.session.MediaSession;
 import android.net.Uri;
 import android.support.v4.media.MediaBrowserCompat;
 import android.support.v4.media.MediaDescriptionCompat;
 import android.support.v4.media.session.MediaSessionCompat;
 import android.util.Log;
-import android.util.Pair;
-import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.room.Room;
@@ -23,16 +20,15 @@ import com.yash.ymplayer.storage.OfflineMediaProvider;
 import com.yash.ymplayer.storage.PlayList;
 import com.yash.ymplayer.storage.PlayListObject;
 import com.yash.ymplayer.storage.PlaylistMediaProvider;
-import com.yash.ymplayer.ui.main.Playlists;
 import com.yash.ymplayer.util.Keys;
 
-import java.security.Key;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.concurrent.ThreadPoolExecutor;
 
 public class Repository {
     private static final String TAG = "debug";
@@ -60,8 +56,8 @@ public class Repository {
         RoomDatabase.Callback databaseCallback = new RoomDatabase.Callback() {
             @Override
             public void onCreate(@NonNull SupportSQLiteDatabase db) {
-                db.execSQL("insert into playlist values('" + Keys.PLAYLISTS.FAVOURITES + "')");
-                db.execSQL("insert into playlist values('" + Keys.PLAYLISTS.LAST_PLAYED + "')");
+                db.execSQL("insert into playlist (name) values('" + Keys.PLAYLISTS.FAVOURITES + "')");
+                db.execSQL("insert into playlist (name) values('" + Keys.PLAYLISTS.LAST_PLAYED + "')");
             }
 
             @Override
@@ -88,7 +84,18 @@ public class Repository {
         String playlist = parts[parts.length - 1];
         List<MediaBrowserCompat.MediaItem> songs = new ArrayList<>();
 
-        if (playlist.equals("FAVOURITE")) {
+        if(parts[0].equals(Keys.PlaylistType.HYBRID_PLAYLIST.name())) {
+            for (MediaItem item : mediaItemDao.getMediaItemsOfPlaylist(Integer.parseInt(playlist))) {
+                MediaBrowserCompat.MediaItem song = new MediaBrowserCompat.MediaItem(new MediaDescriptionCompat.Builder()
+                        .setMediaId(mediaId + "|" + item.getMediaId())
+                        .setTitle(item.getName())
+                        .setIconUri(item.getArtwork() == null ? null : Uri.parse(item.getArtwork()))
+                        .setSubtitle(item.getArtist())
+                        .setDescription(item.getAlbum())
+                        .build(), MediaBrowserCompat.MediaItem.FLAG_PLAYABLE);
+                songs.add(song);
+            }
+        } else if (playlist.equals("FAVOURITE")) {
             for (MediaItem item : mediaItemDao.getMediaItemsOfPlaylist(Keys.PLAYLISTS.FAVOURITES)) {
                 MediaBrowserCompat.MediaItem song = new MediaBrowserCompat.MediaItem(new MediaDescriptionCompat.Builder()
                         .setMediaId(mediaId + "|" + item.getMediaId())
@@ -120,28 +127,32 @@ public class Repository {
         return songs;
     }
 
-//    public List<MediaBrowserCompat.MediaItem> getAllPlaylists() {
-//
-//
-//        List<MediaBrowserCompat.MediaItem> playlists = new ArrayList<>();
-//
-//        for (PlayListObject playlist : mediaItemDao.getPlaylists()) {
-//            MediaBrowserCompat.MediaItem item = new MediaBrowserCompat.MediaItem(new MediaDescriptionCompat.Builder()
-//                    .setMediaId(playlist.getPlaylist())
-//                    .setTitle(playlist.getPlaylist())
-//                    //.setSubtitle(playlist.getCount() > 1 ? playlist.getCount() + " - songs" : playlist.getCount() + " - song")
-//                    .build(), MediaBrowserCompat.MediaItem.FLAG_BROWSABLE);
-//            playlists.add(item);
-//            Log.d(TAG, "GetAllPlaylists : " + playlist.getPlaylist() + "    " + "PLAYLISTS/" + playlist.getPlaylist());
-//        }
-//
-//
-//        return playlists;
-//
-//    }
+    public List<MediaBrowserCompat.MediaItem> getHybridPlayLists() {
+
+        Set<String> exclude = new HashSet<>(Arrays.asList(Keys.PLAYLISTS.FAVOURITES, Keys.PLAYLISTS.LAST_PLAYED));
+        List<MediaBrowserCompat.MediaItem> playlists = new ArrayList<>();
+        for (PlayListObject playlist : mediaItemDao.getPlaylists()) {
+            if(exclude.contains(playlist.getName()))
+                continue;
+            MediaBrowserCompat.MediaItem item = new MediaBrowserCompat.MediaItem(new MediaDescriptionCompat.Builder()
+                    .setMediaId(Keys.PlaylistType.HYBRID_PLAYLIST.name() + "/" + playlist.getId())
+                    .setTitle(playlist.getName())
+                    .setDescription(Keys.PlaylistType.HYBRID_PLAYLIST.name())
+                    .build(), MediaBrowserCompat.MediaItem.FLAG_BROWSABLE);
+            playlists.add(item);
+        }
+
+
+        return playlists;
+
+    }
 
     public long addToPlaylist(MediaItem item) {
         return mediaItemDao.insert(item);
+    }
+
+    public PlayList getPlaylist(String playlist) {
+        return mediaItemDao.findPlaylist(playlist);
     }
 
     public void addLastPlayed(MediaItem item) {
@@ -152,9 +163,27 @@ public class Repository {
         return mediaItemDao.insert(new PlayList(playlist));
     }
 
+    public void deletePlaylist(Integer id){
+        mediaItemDao.deleteSongs(id);
+        mediaItemDao.deletePlaylist(id);
+    }
+
     public List<MediaSessionCompat.QueueItem> getCurrentPlayingQueue(String mediaId) {
         List<MediaSessionCompat.QueueItem> items = new ArrayList<>();
-        if (mediaId.contains("PLAYLISTS")) {
+        if(mediaId.startsWith(Keys.PlaylistType.HYBRID_PLAYLIST.name())) {
+            String[] parts = mediaId.split("[/|]", 3);
+            int i = 0;
+            for (MediaItem item : mediaItemDao.getMediaItemsOfPlaylist(Integer.parseInt(parts[1]))) {
+                MediaSessionCompat.QueueItem song = new MediaSessionCompat.QueueItem(new MediaDescriptionCompat.Builder()
+                        .setMediaId(item.getMediaId())
+                        .setTitle(item.getName())
+                        .setSubtitle(item.getArtist())
+                        .setIconUri(item.getArtwork() == null ? null : Uri.parse(item.getArtwork()))
+                        .setDescription(item.getAlbum())
+                        .build(), i++);
+                items.add(song);
+            }
+        } else if (mediaId.contains("PLAYLISTS")) {
             String[] parts = mediaId.split("[/|]", 3);
             switch (parts[1]) {
                 case "FAVOURITE":
@@ -231,7 +260,9 @@ public class Repository {
     }
 
     public List<MediaBrowserCompat.MediaItem> getAllPlaylists() {
-        return audioProvider.getAllPlaylists();
+        List<MediaBrowserCompat.MediaItem> offlinePlaylists = audioProvider.getAllPlaylists();
+        offlinePlaylists.addAll(getHybridPlayLists());
+        return offlinePlaylists;
     }
 
     public List<MediaBrowserCompat.MediaItem> getSongsOfAlbum(String albumId) {
@@ -243,4 +274,7 @@ public class Repository {
     }
 
 
+    public void renamePlaylist(Integer id, String newName) {
+        mediaItemDao.renamePlayList(id, newName);
+    }
 }

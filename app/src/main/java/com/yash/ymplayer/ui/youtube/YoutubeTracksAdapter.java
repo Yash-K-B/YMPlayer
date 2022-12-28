@@ -64,28 +64,21 @@ public class YoutubeTracksAdapter extends RecyclerView.Adapter<YoutubeTracksAdap
             PopupMenu menu = new PopupMenu(context, binding.more);
             menu.inflate(R.menu.youtube_song_menu);
             menu.setOnMenuItemClickListener(item -> {
-                Intent downloadIntent;
                 switch (item.getItemId()) {
                     case R.id.play_single:
                         listener.onPlaySingle(song);
                         return true;
+                    case R.id.add_to_playlist:
+                        listener.addToPlaylist(song);
+                        return true;
                     case R.id.download128kbps:
-                        downloadIntent = new Intent(context, DownloadService.class);
-                        downloadIntent.putExtra(Keys.VIDEO_ID, song.getVideoId());
-                        downloadIntent.putExtra(Keys.EXTRA_DOWNLOAD_QUALITY, 128);
-                        context.startService(downloadIntent);
+                        listener.download(song, 128);
                         return true;
                     case R.id.download192kbps:
-                        downloadIntent = new Intent(context, DownloadService.class);
-                        downloadIntent.putExtra(Keys.VIDEO_ID, song.getVideoId());
-                        downloadIntent.putExtra(Keys.EXTRA_DOWNLOAD_QUALITY, 192);
-                        context.startService(downloadIntent);
+                        listener.download(song, 192);
                         return true;
                     case R.id.download320kbps:
-                        downloadIntent = new Intent(context, DownloadService.class);
-                        downloadIntent.putExtra(Keys.VIDEO_ID, song.getVideoId());
-                        downloadIntent.putExtra(Keys.EXTRA_DOWNLOAD_QUALITY, 320);
-                        context.startService(downloadIntent);
+                       listener.download(song, 320);
                         return true;
                     case R.id.queue_next:
                         listener.onQueueNext(song);

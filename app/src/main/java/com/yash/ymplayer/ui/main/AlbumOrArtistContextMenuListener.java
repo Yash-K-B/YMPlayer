@@ -9,5 +9,5 @@ public interface AlbumOrArtistContextMenuListener {
 
     void queueNext(MediaBrowserCompat.MediaItem item, ITEM_TYPE type);
 
-    void addToPlaylist(MediaBrowserCompat.MediaItem item, String playlist, ITEM_TYPE type);
+    void addToPlaylist(MediaBrowserCompat.MediaItem item, ITEM_TYPE type);
 }

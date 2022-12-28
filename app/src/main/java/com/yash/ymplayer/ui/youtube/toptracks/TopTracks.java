@@ -40,6 +40,7 @@ import com.yash.ymplayer.interfaces.TrackClickListener;
 import com.yash.ymplayer.storage.AudioProvider;
 import com.yash.ymplayer.ui.youtube.YoutubeLibraryViewModel;
 import com.yash.ymplayer.util.Keys;
+import com.yash.ymplayer.util.TrackContextMenuClickListener;
 import com.yash.ymplayer.util.YoutubeSong;
 
 import java.util.concurrent.ExecutorService;
@@ -118,38 +119,7 @@ public class TopTracks extends Fragment {
             LogHelper.d(TAG, "onConnected: TopTracks");
             isConnectedToService = true;
             handler.postDelayed(noInternet, 1000);
-            adapter = new TopTracksAdapter(context, new TrackClickListener() {
-                @Override
-                public void onClick(YoutubeSong song) {
-                    String audioUri = "TOP_TRACKS|" + song.getVideoId();
-                    mediaController.getTransportControls().playFromMediaId(audioUri, null);
-                }
-
-                @Override
-                public void onPlaySingle(YoutubeSong song) {
-                    Bundle extra = new Bundle();
-                    extra.putBoolean(Keys.PLAY_SINGLE, true);
-                    mediaController.getTransportControls().playFromMediaId("TOP_TRACKS|" + song.getVideoId(), extra);
-                }
-
-                @Override
-                public void onQueueNext(YoutubeSong song) {
-                    Bundle extras = new Bundle();
-                    extras.putString(Keys.MEDIA_ID, "TOP_TRACKS|" + song.getVideoId());
-                    extras.putInt(Keys.QUEUE_HINT, AudioProvider.QueueHint.YOUTUBE_SINGLE_SONG);
-                    extras.putString(Keys.QUEUE_MODE, Keys.QueueMode.ONLINE.name());
-                    mediaController.getTransportControls().sendCustomAction(Keys.Action.QUEUE_NEXT, extras);
-                }
-
-                @Override
-                public void onQueueLast(YoutubeSong song) {
-                    Bundle extras = new Bundle();
-                    extras.putString(Keys.MEDIA_ID, "TOP_TRACKS|" + song.getVideoId());
-                    extras.putInt(Keys.QUEUE_HINT, AudioProvider.QueueHint.YOUTUBE_SINGLE_SONG);
-                    extras.putString(Keys.QUEUE_MODE, Keys.QueueMode.ONLINE.name());
-                    mediaController.getTransportControls().sendCustomAction(Keys.Action.QUEUE_LAST, extras);
-                }
-            }, mediaController);
+            adapter = new TopTracksAdapter(context, new TrackContextMenuClickListener(context, mediaController, "TOP_TRACKS|"), mediaController);
             topTracksBinding.topTracksContainer.setAdapter(adapter);
 
             if (!isContentLoaded && isNetworkAvailable)

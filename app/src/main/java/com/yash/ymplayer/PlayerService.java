@@ -79,6 +79,8 @@ import com.yash.ymplayer.repository.OnlineYoutubeRepository;
 import com.yash.ymplayer.repository.Repository;
 import com.yash.ymplayer.storage.AudioProvider;
 import com.yash.ymplayer.storage.MediaItem;
+import com.yash.ymplayer.storage.PlayList;
+import com.yash.ymplayer.storage.PlayListObject;
 import com.yash.ymplayer.util.ConverterUtil;
 import com.yash.ymplayer.util.EqualizerUtil;
 import com.yash.ymplayer.util.Keys;
@@ -127,7 +129,7 @@ public class PlayerService extends MediaBrowserServiceCompat implements PlayerHe
     SharedPreferences appPreferences;
     ConnectivityManager connectivityManager;
     boolean isInternetAvailable;
-    int playbackEndedStatus;
+    PlaybackEndedStatus playbackEndedStatus;
     DataSource.Factory factory;
     ExtractorsFactory extractorsFactory;
     boolean isQueueChanged;
@@ -294,7 +296,7 @@ public class PlayerService extends MediaBrowserServiceCompat implements PlayerHe
                 else {
                     mediaItems = Repository.getInstance(this).getSongsOfAlbum(parentId);
                 }
-            } else if (parentId.contains("PLAYLISTS")) {
+            } else if (parentId.contains("PLAYLISTS") || parentId.contains(Keys.PlaylistType.HYBRID_PLAYLIST.name())) {
                 if (parentId.equals("PLAYLISTS")) {
                     mediaItems = Repository.getInstance(this).getAllPlaylists();
                 } else {
@@ -477,7 +479,7 @@ public class PlayerService extends MediaBrowserServiceCompat implements PlayerHe
             handler.removeCallbacks(playNextOnMediaError);
 
             if (player == null) {
-                if (playbackEndedStatus == PlaybackEndedStatus.Finished && !isShuffleModeEnabled && repeatMode == ExoPlayer.REPEAT_MODE_OFF)
+                if (playbackEndedStatus == PlaybackEndedStatus.FINISHED && !isShuffleModeEnabled && repeatMode == ExoPlayer.REPEAT_MODE_OFF)
                     return;
                 player = getSimpleExoPlayer(null);
                 preparePlayer(player);
@@ -641,8 +643,9 @@ public class PlayerService extends MediaBrowserServiceCompat implements PlayerHe
                         String title = extras.getString(Keys.TITLE);
                         String artist = extras.getString(Keys.ARTIST);
                         String album = extras.getString(Keys.ALBUM);
-                        String artwork = extra.getString(Keys.ARTWORK);
-                        MediaItem item = new MediaItem(mediaId, title, artist, album, playlist, artwork);
+                        String artwork = extras.getString(Keys.ARTWORK);
+                        PlayList playlistObj = Repository.getInstance(PlayerService.this).getPlaylist(playlist);
+                        MediaItem item = new MediaItem(mediaId, title, artist, album, playlistObj.getId(), artwork);
 
                         if (Repository.getInstance(PlayerService.this).addToPlaylist(item) == -1)
                             Toast.makeText(PlayerService.this, "Already Added to " + playlist, Toast.LENGTH_SHORT).show();
@@ -794,7 +797,8 @@ public class PlayerService extends MediaBrowserServiceCompat implements PlayerHe
                     String mediaId = extractId(ConverterUtil.toString(description.getMediaId()));
                     String artwork = mediaIdPattern.matcher(mediaId).matches() ? null : String.valueOf(description.getIconUri());
                     if (mSession.getController().getMetadata().getLong(PlayerService.METADATA_KEY_FAVOURITE) == 0) {
-                        Repository.getInstance(PlayerService.this).addToPlaylist(new MediaItem(mediaId, ConverterUtil.toString(description.getTitle()), ConverterUtil.toString(description.getSubtitle()), ConverterUtil.toString(description.getDescription()), Keys.PLAYLISTS.FAVOURITES, artwork));
+                        Integer playListId = Repository.getInstance(PlayerService.this).getPlaylist(Keys.PLAYLISTS.FAVOURITES).getId();
+                        Repository.getInstance(PlayerService.this).addToPlaylist(new MediaItem(mediaId, ConverterUtil.toString(description.getTitle()), ConverterUtil.toString(description.getSubtitle()), ConverterUtil.toString(description.getDescription()), playListId, artwork));
                     } else {
                         Repository.getInstance(PlayerService.this).removeFromPlaylist(mediaId, Keys.PLAYLISTS.FAVOURITES);
                     }
@@ -880,7 +884,7 @@ public class PlayerService extends MediaBrowserServiceCompat implements PlayerHe
             case PlaybackStateCompat.STATE_STOPPED:
                 LogHelper.d(TAG, "dispatchPlayRequest: STATE_STOPPED");
                 player = getSimpleExoPlayer(player);
-                if (playbackEndedStatus == PlaybackEndedStatus.Interrupted)
+                if (playbackEndedStatus == PlaybackEndedStatus.INTERRUPTED)
                     seekPlayer(queuePos, savedPlayerPosition);
                 else seekPlayer(queuePos, 0);
                 setPlayWhenReady(true);
@@ -925,9 +929,9 @@ public class PlayerService extends MediaBrowserServiceCompat implements PlayerHe
         clearMediaSourceAndQueue();
 
         if (!playSingle) {
-            playingQueue = uri.startsWith("PLAYLISTS/") ? Repository.getInstance(this).getCurrentPlayingQueue(uri) : OnlineYoutubeRepository.getInstance(this).getPlayingQueue(uri);
+            playingQueue = uri.startsWith("PLAYLISTS/") || uri.startsWith(Keys.PlaylistType.HYBRID_PLAYLIST.name()) ? Repository.getInstance(this).getCurrentPlayingQueue(uri) : OnlineYoutubeRepository.getInstance(this).getPlayingQueue(uri);
         } else {
-            playingQueue = uri.startsWith("PLAYLISTS/") ? Repository.getInstance(this).getCurrentPlayingQueue(uri) : OnlineYoutubeRepository.getInstance(this).getPlayingQueueSingle(uri);
+            playingQueue = uri.startsWith("PLAYLISTS/") || uri.startsWith(Keys.PlaylistType.HYBRID_PLAYLIST.name()) ? Repository.getInstance(this).getCurrentPlayingQueue(uri) : OnlineYoutubeRepository.getInstance(this).getPlayingQueueSingle(uri);
         }
 
         prepareMediaSource();
@@ -1296,14 +1300,16 @@ public class PlayerService extends MediaBrowserServiceCompat implements PlayerHe
                         handler.postDelayed(playNextOnMediaError, 2000);
                     } else {
                         if (!isInternetAvailable) {
-                            playbackEndedStatus = PlaybackEndedStatus.Interrupted;
+                            playbackEndedStatus = PlaybackEndedStatus.INTERRUPTED;
                             Toast.makeText(PlayerService.this, "No Internet Access", Toast.LENGTH_SHORT).show();
                             mSession.getController().getTransportControls().stop();
                         } else {
                             if (mSession.getController().getPlaybackState().getState() == PlaybackStateCompat.STATE_PAUSED || mSession.getController().getPlaybackState().getState() == PlaybackStateCompat.STATE_STOPPED)
                                 return;
-                            Toast.makeText(PlayerService.this, "Unable to play! Skipping next", Toast.LENGTH_SHORT).show();
-                            handler.postDelayed(playNextOnMediaError, 2000);
+                            Toast.makeText(PlayerService.this, "Hold on, please! URL is refreshing", Toast.LENGTH_SHORT).show();
+                            uriCache.remove(playingQueue.get(queuePos).getDescription().getMediaId());
+                            mSession.getController().getTransportControls().play();
+//                            handler.postDelayed(playNextOnMediaError, 2000);
                         }
                     }
                     LogHelper.d(TAG, "PlayerError: curr indx = " + player.getCurrentWindowIndex() + " next indx = " + player.getNextWindowIndex());
@@ -1329,7 +1335,7 @@ public class PlayerService extends MediaBrowserServiceCompat implements PlayerHe
                     break;
                 case Player.STATE_ENDED:
                     LogHelper.d(TAG, "ExoPlayer PlaybackState: STATE_ENDED");
-                    playbackEndedStatus = PlaybackEndedStatus.Finished;
+                    playbackEndedStatus = PlaybackEndedStatus.FINISHED;
                     mSession.getController().getTransportControls().stop();
                     break;
                 case Player.STATE_IDLE:
@@ -1357,9 +1363,10 @@ public class PlayerService extends MediaBrowserServiceCompat implements PlayerHe
             String artist = String.valueOf(queueItem.getDescription().getSubtitle());
             String album = String.valueOf(queueItem.getDescription().getDescription());
             String artwork = String.valueOf(queueItem.getDescription().getIconUri());
-            MediaItem item = new MediaItem(mediaId, title, artist, album, playlist, artwork);
+            Integer playListId = Repository.getInstance(PlayerService.this).getPlaylist(playlist).getId();
+            MediaItem item = new MediaItem(mediaId, title, artist, album, playListId, artwork);
 
-            LogHelper.d(TAG, "addToLastPlayed: " + item.getPlaylist());
+            LogHelper.d(TAG, "addToLastPlayed: " + item.getPlaylistId());
             Repository.getInstance(PlayerService.this).addLastPlayed(item);
         } catch (Exception e) {
             LogHelper.d(TAG, "Exception while adding to last played : \n" + ExceptionUtil.getStackStrace(e));
@@ -1417,6 +1424,7 @@ public class PlayerService extends MediaBrowserServiceCompat implements PlayerHe
                         try {
                             videoDetails = extractor.extract(uriId);
                         } catch (Exception e) {
+                            // retrying another time
                             videoDetails = extractor.extract(uriId);
                         }
 
@@ -1642,10 +1650,8 @@ public class PlayerService extends MediaBrowserServiceCompat implements PlayerHe
         }
     };
 
-    interface PlaybackEndedStatus {
-        int Invalid = 0;
-        int Finished = 1;
-        int Interrupted = 2;
+    enum PlaybackEndedStatus {
+       INVALID, FINISHED, INTERRUPTED
     }
 
 

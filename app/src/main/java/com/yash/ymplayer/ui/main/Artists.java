@@ -114,7 +114,7 @@ public class Artists extends Fragment {
                         startActivity(intent);
                     }
                 }
-            }, new AlbumOrArtistContextMenuClickListener(context, mMediaController), 1);
+            }, new AlbumOrArtistContextMenuClickListener(context, mMediaController), SongListAdapter.Mode.ARTIST);
             artistsBinding.allArtists.setAdapter(artistsAdapter);
             mMediaController.registerCallback(mMediaControllerCallbacks);
             artistsBinding.artistsRefresh.setColorSchemeColors(BaseActivity.getAttributeColor(context, R.attr.colorPrimary));

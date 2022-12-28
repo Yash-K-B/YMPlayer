@@ -10,4 +10,8 @@ public interface TrackClickListener {
     void onQueueNext(YoutubeSong song);
 
     void onQueueLast(YoutubeSong song);
+
+    void addToPlaylist(YoutubeSong song);
+
+    void download(YoutubeSong song, int bitRateInKbps);
 }

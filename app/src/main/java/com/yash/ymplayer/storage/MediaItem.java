@@ -5,7 +5,9 @@ import androidx.room.ForeignKey;
 import androidx.room.Index;
 import androidx.room.PrimaryKey;
 
-@Entity(indices = {@Index(value = {"mediaId","name","artist","album","playlist"},unique = true)}, foreignKeys = @ForeignKey(entity = PlayList.class,parentColumns = "playlist",childColumns = "playlist"))
+import lombok.Getter;
+
+@Entity(indices = {@Index(value = {"mediaId","name","artist","album","playlistId"},unique = true)}, foreignKeys = @ForeignKey(entity = PlayList.class,parentColumns = "id",childColumns = "playlistId"))
 public class MediaItem {
     @PrimaryKey(autoGenerate = true)
     int id;
@@ -14,27 +16,22 @@ public class MediaItem {
     String name;
     String artist;
     String album;
-    String playlist;
+    Integer playlistId;
     String artwork;
     Long timeStamp;
 
-
-//    public MediaItem(String mediaId, String name, String artist, String album, String playlist) {
-//        this.mediaId = mediaId;
-//        this.name = name;
-//        this.artist = artist;
-//        this.album = album;
-//        this.playlist = playlist;
-//    }
-
-    public MediaItem(String mediaId, String name, String artist, String album, String playlist, String artwork) {
+    public MediaItem(String mediaId, String name, String artist, String album, Integer playlistId, String artwork) {
         this.mediaId = mediaId;
         this.name = name;
         this.artist = artist;
         this.album = album;
-        this.playlist = playlist;
+        this.playlistId = playlistId;
         this.artwork = artwork;
         this.timeStamp = System.currentTimeMillis();
+    }
+
+    public int getId() {
+        return id;
     }
 
     public String getMediaId() {
@@ -53,11 +50,15 @@ public class MediaItem {
         return album;
     }
 
-    public String getPlaylist() {
-        return playlist;
+    public Integer getPlaylistId() {
+        return playlistId;
     }
 
     public String getArtwork() {
         return artwork;
+    }
+
+    public Long getTimeStamp() {
+        return timeStamp;
     }
 }

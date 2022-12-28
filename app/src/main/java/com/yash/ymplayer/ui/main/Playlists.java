@@ -85,7 +85,7 @@ public class Playlists extends Fragment implements PlaylistUpdateListener {
                 intent.putExtra(Keys.EXTRA_TITLE, song.getDescription().getTitle());
                 startActivity(intent);
             }
-        }, new AlbumOrArtistContextMenuClickListener(getContext(), mMediaController), 2);
+        }, new AlbumOrArtistContextMenuClickListener(getContext(), mMediaController), SongListAdapter.Mode.PLAYLIST);
         playlistsBinding.playlists.setAdapter(adapter);
         playlistsBinding.playlists.setLayoutManager(new LinearLayoutManager(getContext()));
         playlistsBinding.playlists.addItemDecoration(new DividerItemDecoration(getContext(), DividerItemDecoration.VERTICAL));

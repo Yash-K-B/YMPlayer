@@ -95,4 +95,7 @@ dependencies {
 
     implementation 'com.google.guava:guava:28.2-android'
 
+    compileOnly 'org.projectlombok:lombok:1.18.24'
+    annotationProcessor 'org.projectlombok:lombok:1.18.24'
+
 }

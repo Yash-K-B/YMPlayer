@@ -130,16 +130,7 @@ public class AlbumListAdapter extends RecyclerView.Adapter<AlbumListAdapter.Albu
                         albumOrArtistContextMenuListener.queueNext(song, AlbumOrArtistContextMenuListener.ITEM_TYPE.ALBUMS);
                         return true;
                     case R.id.add_to_playlist:
-                        AlertDialog.Builder builder = new AlertDialog.Builder(context);
-                        builder.setTitle("Choose Playlist");
-                        List<MediaBrowserCompat.MediaItem> lists = Repository.getInstance(context).getAllPlaylists();
-                        String[] list = new String[lists.size()];
-                        for (int i = 0; i < lists.size(); i++) {
-                            list[i] = lists.get(i).getDescription().getTitle() + "";
-                        }
-                        builder.setItems(list, (dialog, which) -> albumOrArtistContextMenuListener.addToPlaylist(song, list[which], AlbumOrArtistContextMenuListener.ITEM_TYPE.ALBUMS));
-                        AlertDialog dialog = builder.create();
-                        dialog.show();
+                        albumOrArtistContextMenuListener.addToPlaylist(song, AlbumOrArtistContextMenuListener.ITEM_TYPE.ALBUMS);
                         return true;
                     default:
                         return false;

@@ -30,6 +30,13 @@ public class CommonUtil {
         return splits[splits.length - 1];
     }
 
+    public static Integer extractIntegerId(String mediaId) {
+        if (mediaId == null)
+            return null;
+        String[] splits = mediaId.split("[/|]");
+        return Integer.parseInt(splits[splits.length - 1]);
+    }
+
     public static boolean isYoutubeSong(String mediaId) {
         if (mediaId == null)
             return false;

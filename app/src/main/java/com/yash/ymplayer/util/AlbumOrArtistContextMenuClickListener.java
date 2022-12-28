@@ -1,5 +1,6 @@
 package com.yash.ymplayer.util;
 
+import android.app.AlertDialog;
 import android.content.ContentResolver;
 import android.content.ContentValues;
 import android.content.Context;
@@ -16,6 +17,7 @@ import com.yash.ymplayer.storage.AudioProvider;
 import com.yash.ymplayer.storage.OfflineMediaProvider;
 import com.yash.ymplayer.ui.main.AlbumOrArtistContextMenuListener;
 
+import java.security.Key;
 import java.util.List;
 
 import static com.yash.ymplayer.storage.OfflineMediaProvider.*;
@@ -65,39 +67,64 @@ public class AlbumOrArtistContextMenuClickListener implements AlbumOrArtistConte
     }
 
     @Override
-    public void addToPlaylist(MediaBrowserCompat.MediaItem item, String playlist, ITEM_TYPE type) {
+    public void addToPlaylist(MediaBrowserCompat.MediaItem item, ITEM_TYPE type) {
+        AlertDialog.Builder builder = new AlertDialog.Builder(context);
+        builder.setTitle("Choose Playlist");
+        List<MediaBrowserCompat.MediaItem> lists = Repository.getInstance(context).getAllPlaylists();
+        String[] list = new String[lists.size()];
+        for (int i = 0; i < lists.size(); i++) {
+            list[i] = lists.get(i).getDescription().getTitle() + "";
+        }
+        builder.setItems(list, (dialog, which) -> {
+            addToPlaylist(item, type, lists.get(which));
+        });
+        AlertDialog dialog = builder.create();
+        dialog.show();
+    }
 
-        ContentResolver resolver = context.getContentResolver();
-        Cursor cursor = resolver.query(MediaStore.Audio.Playlists.EXTERNAL_CONTENT_URI, new String[]{MediaStore.Audio.Playlists._ID, MediaStore.Audio.Playlists.NAME}, MediaStore.Audio.Playlists.NAME + " = '" + playlist + "'", null, null);
-        cursor.moveToFirst();
-        long id = cursor.getLong(cursor.getColumnIndex(MediaStore.Audio.Playlists._ID));
-        cursor.close();
-        Uri uri = MediaStore.Audio.Playlists.Members.getContentUri("external", id);
-        Cursor cur = resolver.query(uri, new String[]{MediaStore.Audio.Playlists.Members.PLAY_ORDER}, null, null, null);
-        cur.moveToLast();
-        int base = cur.getCount() == 0 ? -1 : cur.getInt(cur.getColumnIndex(MediaStore.Audio.Playlists.Members.PLAY_ORDER));
-        cur.close();
-        if(type == ITEM_TYPE.ALBUMS){
-           List<MediaBrowserCompat.MediaItem> songs =  Repository.getInstance(context).getSongsOfAlbum(item.getMediaId());
-           for(MediaBrowserCompat.MediaItem song:songs){
-               String[] parts = song.getMediaId().split("[/|]");
-               ContentValues values = new ContentValues();
-               values.put(MediaStore.Audio.Playlists.Members.PLAY_ORDER, ++base);
-               values.put(MediaStore.Audio.Playlists.Members.AUDIO_ID, parts[parts.length - 1]);
-               resolver.insert(uri, values);
-           }
-        } else if(type == ITEM_TYPE.ARTISTS){
-            List<MediaBrowserCompat.MediaItem> songs =  Repository.getInstance(context).getSongsOfArtist(item.getMediaId());
-            for(MediaBrowserCompat.MediaItem song:songs){
-                String[] parts = song.getMediaId().split("[/|]");
-                ContentValues values = new ContentValues();
-                values.put(MediaStore.Audio.Playlists.Members.PLAY_ORDER, ++base);
-                values.put(MediaStore.Audio.Playlists.Members.AUDIO_ID, parts[parts.length - 1]);
-                resolver.insert(uri, values);
+    private void addToPlaylist(MediaBrowserCompat.MediaItem item, ITEM_TYPE type, MediaBrowserCompat.MediaItem playlistObj) {
+        Keys.PlaylistType playlistType = playlistObj.getDescription().getDescription() == null? Keys.PlaylistType.PLAYLIST: Keys.PlaylistType.HYBRID_PLAYLIST;
+        String playlist = String.valueOf(playlistObj.getDescription().getTitle());
+        if(playlistType == Keys.PlaylistType.HYBRID_PLAYLIST) {
+            if(type == ITEM_TYPE.ALBUMS){
+
+            } else if(type == ITEM_TYPE.ARTISTS){
+
+            }
+        } else {
+            ContentResolver resolver = context.getContentResolver();
+            Cursor cursor = resolver.query(MediaStore.Audio.Playlists.EXTERNAL_CONTENT_URI, new String[]{MediaStore.Audio.Playlists._ID, MediaStore.Audio.Playlists.NAME}, MediaStore.Audio.Playlists.NAME + " = '" + playlist + "'", null, null);
+            cursor.moveToFirst();
+            long id = cursor.getLong(cursor.getColumnIndexOrThrow(MediaStore.Audio.Playlists._ID));
+            cursor.close();
+            Uri uri = MediaStore.Audio.Playlists.Members.getContentUri("external", id);
+            Cursor cur = resolver.query(uri, new String[]{MediaStore.Audio.Playlists.Members.PLAY_ORDER}, null, null, null);
+            cur.moveToLast();
+            int base = cur.getCount() == 0 ? -1 : cur.getInt(cur.getColumnIndexOrThrow(MediaStore.Audio.Playlists.Members.PLAY_ORDER));
+            cur.close();
+            if(type == ITEM_TYPE.ALBUMS){
+                List<MediaBrowserCompat.MediaItem> songs =  Repository.getInstance(context).getSongsOfAlbum(item.getMediaId());
+                for(MediaBrowserCompat.MediaItem song:songs){
+                    String[] parts = song.getMediaId().split("[/|]");
+                    ContentValues values = new ContentValues();
+                    values.put(MediaStore.Audio.Playlists.Members.PLAY_ORDER, ++base);
+                    values.put(MediaStore.Audio.Playlists.Members.AUDIO_ID, parts[parts.length - 1]);
+                    resolver.insert(uri, values);
+                }
+            } else if(type == ITEM_TYPE.ARTISTS){
+                List<MediaBrowserCompat.MediaItem> songs =  Repository.getInstance(context).getSongsOfArtist(item.getMediaId());
+                for(MediaBrowserCompat.MediaItem song:songs){
+                    String[] parts = song.getMediaId().split("[/|]");
+                    ContentValues values = new ContentValues();
+                    values.put(MediaStore.Audio.Playlists.Members.PLAY_ORDER, ++base);
+                    values.put(MediaStore.Audio.Playlists.Members.AUDIO_ID, parts[parts.length - 1]);
+                    resolver.insert(uri, values);
+                }
             }
         }
-        Toast.makeText(context, "Added to "+playlist, Toast.LENGTH_SHORT).show();
 
+
+        Toast.makeText(context, "Added to "+playlist, Toast.LENGTH_SHORT).show();
     }
 
     String getFirstToken(ITEM_TYPE type) {

@@ -6,13 +6,32 @@ import androidx.room.Entity;
 import androidx.room.Index;
 import androidx.room.PrimaryKey;
 
-@Entity
-public class PlayList {
-    @NonNull
-    @PrimaryKey()
-    String playlist;
+import lombok.Getter;
+import lombok.Setter;
 
-    public PlayList(String playlist) {
-        this.playlist = playlist;
+@Entity(indices = {@Index(value = {"name"}, unique = true)})
+public class PlayList {
+    @PrimaryKey(autoGenerate = true)
+    private Integer id;
+    private String name;
+
+    public PlayList(String name) {
+        this.name = name;
+    }
+
+    public Integer getId() {
+        return id;
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    public void setId(Integer id) {
+        this.id = id;
+    }
+
+    public void setName(String name) {
+        this.name = name;
     }
 }

@@ -36,27 +36,39 @@ public interface MediaItemDao {
     @Query("Select * from MediaItem where mediaId = :mediaId")
     MediaItem getMediaItem(String mediaId);
 
-    @Query("select * from MediaItem where playlist = :playlist")
+    @Query("select mi.* from MediaItem mi join PlayList pl on mi.playlistId=pl.id where pl.name = :playlist")
     List<MediaItem> getMediaItemsOfPlaylist(String playlist);
 
-    @Query("select * from MediaItem where playlist = :playlist order by id desc")
+    @Query("select mi.* from MediaItem mi join PlayList pl on mi.playlistId=pl.id where pl.id = :playlistId order by id desc")
+    List<MediaItem> getMediaItemsOfPlaylist(int playlistId);
+
+    @Query("select mi.* from MediaItem mi join PlayList pl on mi.playlistId=pl.id where pl.name = :playlist order by id desc")
     List<MediaItem> getMediaItemsOfPlaylistDesc(String playlist);
 
-    @Query("select playlist from PLAYLIST")
+    @Query("select id, name from PLAYLIST")
     List<PlayListObject> getPlaylists();
 
     @Insert(onConflict = OnConflictStrategy.IGNORE)
     long insert(PlayList playList);
 
-    @Query("Delete from mediaitem where playlist = :playlist;")
+    @Query("Delete from MediaItem where playlistId = (select id from PlayList where name=:playlist)")
     void deleteSongs(String playlist);
 
-    @Query("Delete from PlayList where playlist = :playlist")
-    void deletePlaylist(String playlist);
+    @Query("Delete from MediaItem where playlistId = :playlistId")
+    void deleteSongs(Integer playlistId);
 
-    @Query("Select count(id) from mediaitem where mediaId = :mediaId and playlist = :playlist")
+    @Query("Delete from PlayList where id = :id")
+    void deletePlaylist(Integer id);
+
+    @Query("Select count(mi.id) from MediaItem mi join PlayList pl on mi.playlistId=pl.id where mediaId = :mediaId and pl.name = :playlist")
     long isAddedTo(String mediaId,String playlist);
 
-    @Query("delete from mediaitem where mediaId = :mediaId and playlist = :playlist")
+    @Query("delete from MediaItem where mediaId = :mediaId and playlistId = (select id from PlayList where name=:playlist)")
     void removeFromPlaylist(String mediaId,String playlist);
+
+    @Query("select * from playlist where name=:playlist")
+    PlayList findPlaylist(String playlist);
+
+    @Query("update PlayList set name=:newName where id=:id")
+    void renamePlayList(Integer id, String newName);
 }

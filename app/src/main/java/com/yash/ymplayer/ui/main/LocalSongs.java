@@ -125,11 +125,18 @@ public class LocalSongs extends Fragment {
                 builder.setTitle("Create playlist")
                         .setView(playlistBinding.getRoot())
                         .setPositiveButton("SAVE", (dialog, which) -> {
-                            ContentValues contentValues = new ContentValues();
-                            contentValues.put(MediaStore.Audio.Playlists.NAME, playlistBinding.playlistName.getText() + "");
-                            contentValues.put(MediaStore.Audio.Playlists.DATE_ADDED, System.currentTimeMillis());
-                            if (context.getContentResolver().insert(MediaStore.Audio.Playlists.EXTERNAL_CONTENT_URI, contentValues) == null)
-                                Toast.makeText(context, "Playlist Already Exist", Toast.LENGTH_SHORT).show();
+                            String playlistName = String.valueOf(playlistBinding.playlistName.getText());
+                            if (playlistBinding.supportYoutube.isChecked()) {
+                                if (Repository.getInstance(context).createPlaylist(playlistName) == 0) {
+                                    Toast.makeText(context, "Playlist Already Exist", Toast.LENGTH_SHORT).show();
+                                }
+                            } else {
+                                ContentValues contentValues = new ContentValues();
+                                contentValues.put(MediaStore.Audio.Playlists.NAME, playlistName);
+                                contentValues.put(MediaStore.Audio.Playlists.DATE_ADDED, System.currentTimeMillis());
+                                if (context.getContentResolver().insert(MediaStore.Audio.Playlists.EXTERNAL_CONTENT_URI, contentValues) == null)
+                                    Toast.makeText(context, "Playlist Already Exist", Toast.LENGTH_SHORT).show();
+                            }
                             playlist.onChanged();
                         })
                         .setNegativeButton("CANCEL", (dialog, which) -> {

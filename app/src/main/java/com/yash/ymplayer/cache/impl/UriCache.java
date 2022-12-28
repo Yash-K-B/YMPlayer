@@ -99,4 +99,11 @@ public class UriCache implements Cache<String, YoutubeSongUriDetail> {
             lock.writeLock().unlock();
         }
     }
+
+    @Override
+    public YoutubeSongUriDetail remove(String key) {
+        if (key == null)
+            return null;
+        return cache.remove(key);
+    }
 }

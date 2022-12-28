@@ -8,11 +8,11 @@ import android.content.Context;
 import android.graphics.drawable.Drawable;
 import android.media.MediaMetadataRetriever;
 import android.net.Uri;
-import android.os.Build;
 import android.os.Handler;
 import android.os.Looper;
 import android.provider.MediaStore;
 import android.support.v4.media.MediaBrowserCompat;
+import android.support.v4.media.MediaDescriptionCompat;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.MenuItem;
@@ -29,7 +29,6 @@ import com.bumptech.glide.Glide;
 import com.bumptech.glide.request.target.CustomTarget;
 import com.bumptech.glide.request.transition.Transition;
 import com.yash.logging.LogHelper;
-import com.yash.ymplayer.BuildConfig;
 import com.yash.ymplayer.R;
 import com.yash.ymplayer.databinding.CreatePlaylistBinding;
 import com.yash.ymplayer.databinding.ItemMusicBinding;
@@ -39,7 +38,6 @@ import com.yash.ymplayer.repository.Repository;
 import com.yash.ymplayer.ui.main.AlbumOrArtistContextMenuListener;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadPoolExecutor;
@@ -52,13 +50,13 @@ public class SongListAdapter extends RecyclerView.Adapter<SongListAdapter.SongVi
     List<MediaBrowserCompat.MediaItem> songs;
     List<MediaBrowserCompat.MediaItem> allSongs = new ArrayList<>();
     private OnItemClickListener listener;
-    private int mode;
+    private Mode mode;
     private Context context;
     ThreadPoolExecutor executor = (ThreadPoolExecutor) Executors.newFixedThreadPool(4);
     private final Handler handler = new Handler(Looper.getMainLooper());
     AlbumOrArtistContextMenuListener albumOrArtistContextMenuListener;
 
-    public SongListAdapter(Context context, List<MediaBrowserCompat.MediaItem> songs, OnItemClickListener listener, AlbumOrArtistContextMenuListener albumOrArtistContextMenuListener, int mode) {
+    public SongListAdapter(Context context, List<MediaBrowserCompat.MediaItem> songs, OnItemClickListener listener, AlbumOrArtistContextMenuListener albumOrArtistContextMenuListener, Mode mode) {
         this.songs = songs;
         this.listener = listener;
         this.mode = mode;
@@ -69,10 +67,10 @@ public class SongListAdapter extends RecyclerView.Adapter<SongListAdapter.SongVi
     @NonNull
     @Override
     public SongViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
-        if (mode == 0 || mode == 1) {
+        if (mode == Mode.ALBUM || mode == Mode.ARTIST) {
             ItemMusicBinding itemMusicBinding = ItemMusicBinding.inflate(LayoutInflater.from(parent.getContext()), parent, false);
             return new ItemViewHolder(itemMusicBinding);
-        } else if (mode == 2) {
+        } else if (mode == Mode.PLAYLIST) {
             ItemPlaylistBinding itemPlaylistBinding = ItemPlaylistBinding.inflate(LayoutInflater.from(parent.getContext()), parent, false);
             return new PlaylistViewHolder(itemPlaylistBinding);
         } else {
@@ -84,11 +82,11 @@ public class SongListAdapter extends RecyclerView.Adapter<SongListAdapter.SongVi
 
     @Override
     public void onBindViewHolder(@NonNull SongViewHolder holder, int position) {
-        if (mode == 0)
+        if (mode == Mode.ALBUM)
             ((ItemViewHolder) holder).bindSongs(songs.get(position), listener);
-        else if (mode == 1)
+        else if (mode == Mode.ARTIST)
             ((ItemViewHolder) holder).bindArtists(songs.get(position), listener, albumOrArtistContextMenuListener);
-        else if (mode == 2)
+        else if (mode == Mode.PLAYLIST)
             ((PlaylistViewHolder) holder).bindPlaylist(songs.get(position), listener);
         else
             ((PlayingQueueViewHolder) holder).bindQueueItem(songs.get(position), listener);
@@ -98,7 +96,7 @@ public class SongListAdapter extends RecyclerView.Adapter<SongListAdapter.SongVi
 
     @Override
     public int getItemViewType(int position) {
-        return mode;
+        return mode.value;
     }
 
     @Override
@@ -159,15 +157,21 @@ public class SongListAdapter extends RecyclerView.Adapter<SongListAdapter.SongVi
                         case R.id.rename:
                             AlertDialog.Builder builder = new AlertDialog.Builder(context);
                             CreatePlaylistBinding playlistBinding = CreatePlaylistBinding.inflate(LayoutInflater.from(context));
+                            playlistBinding.supportYoutube.setVisibility(View.GONE);
                             builder.setTitle("Rename playlist")
                                     .setView(playlistBinding.getRoot())
                                     .setPositiveButton("SAVE", (dialog, which) -> {
-                                        ContentValues values = new ContentValues();
                                         String newName = String.valueOf(playlistBinding.playlistName.getText());
-                                        LogHelper.d(TAG, "bindPlaylist: Playlist renamed to " + newName);
-                                        values.put(MediaStore.Audio.Playlists.NAME, newName);
-                                        Uri uri = MediaStore.Audio.Playlists.EXTERNAL_CONTENT_URI;
-                                        resolver.update(uri, values, where, new String[]{CommonUtil.extractId(song.getMediaId())});
+                                        if(song.getMediaId().startsWith(Keys.PlaylistType.HYBRID_PLAYLIST.name())) {
+                                            Repository.getInstance(context).renamePlaylist(CommonUtil.extractIntegerId(song.getMediaId()), newName);
+                                        } else {
+                                            ContentValues values = new ContentValues();
+                                            LogHelper.d(TAG, "bindPlaylist: Playlist renamed to " + newName);
+                                            values.put(MediaStore.Audio.Playlists.NAME, newName);
+                                            Uri uri = MediaStore.Audio.Playlists.EXTERNAL_CONTENT_URI;
+                                            resolver.update(uri, values, where, new String[]{CommonUtil.extractId(song.getMediaId())});
+                                        }
+                                        simulateRenamePlaylist(newName, getAdapterPosition());
                                         notifyItemChanged(getAdapterPosition());
                                     })
                                     .setNegativeButton("CANCEL", (dialog, which) -> {
@@ -177,16 +181,24 @@ public class SongListAdapter extends RecyclerView.Adapter<SongListAdapter.SongVi
                             dialog.show();
                             return true;
                         case R.id.remove:
-                            resolver.delete(MediaStore.Audio.Playlists.EXTERNAL_CONTENT_URI, where, new String[]{CommonUtil.extractId(song.getMediaId())});
+                            if(song.getMediaId().startsWith(Keys.PlaylistType.HYBRID_PLAYLIST.name())) {
+                                Repository.getInstance(context).deletePlaylist(CommonUtil.extractIntegerId(song.getMediaId()));
+                            } else {
+                                resolver.delete(MediaStore.Audio.Playlists.EXTERNAL_CONTENT_URI, where, new String[]{CommonUtil.extractId(song.getMediaId())});
+                            }
                             songs.remove(getAdapterPosition());
                             notifyItemRemoved(getAdapterPosition());
-                            Toast.makeText(context, "Playlist "+ song.getDescription().getTitle() + " has been deleted successfully", Toast.LENGTH_SHORT).show();
+                            Toast.makeText(context, "Playlist " + song.getDescription().getTitle() + " has been deleted successfully", Toast.LENGTH_SHORT).show();
                             return true;
                         default:
                             return false;
                     }
                 });
                 binding.more.setOnClickListener(v -> menu.show());
+                if(song.getDescription().getDescription() == null)
+                    binding.iconPlaylist.setImageResource(R.drawable.playlist_default);
+                else
+                    binding.iconPlaylist.setImageResource(R.drawable.playlist_hybrid);
             }
             binding.playlistTitle.setText(song.getDescription().getTitle());
             itemView.setOnClickListener(new View.OnClickListener() {
@@ -196,6 +208,16 @@ public class SongListAdapter extends RecyclerView.Adapter<SongListAdapter.SongVi
                 }
             });
         }
+    }
+
+    private void simulateRenamePlaylist(String newName, int adapterPosition) {
+        MediaBrowserCompat.MediaItem mediaItem = songs.get(adapterPosition);
+        MediaBrowserCompat.MediaItem song = new MediaBrowserCompat.MediaItem(new MediaDescriptionCompat.Builder()
+                .setMediaId(mediaItem.getMediaId())
+                .setTitle(newName)
+                .build(),
+                MediaBrowserCompat.MediaItem.FLAG_BROWSABLE);
+        songs.set(adapterPosition, song);
     }
 
     class ItemViewHolder extends SongViewHolder {
@@ -250,31 +272,19 @@ public class SongListAdapter extends RecyclerView.Adapter<SongListAdapter.SongVi
                 public void run() {
                     PopupMenu menu = new PopupMenu(context, binding.more);
                     menu.inflate(R.menu.artists_context_menu);
-                    menu.setOnMenuItemClickListener(new PopupMenu.OnMenuItemClickListener() {
-                        @Override
-                        public boolean onMenuItemClick(MenuItem item) {
-                            switch (item.getItemId()) {
-                                case R.id.play:
-                                    albumOrArtistContextMenuListener.play(song, ITEM_TYPE.ARTISTS);
-                                    return true;
-                                case R.id.queue_next:
-                                    albumOrArtistContextMenuListener.queueNext(song, ITEM_TYPE.ARTISTS);
-                                    return true;
-                                case R.id.add_to_playlist:
-                                    AlertDialog.Builder builder = new AlertDialog.Builder(context);
-                                    builder.setTitle("Choose Playlist");
-                                    List<MediaBrowserCompat.MediaItem> lists = Repository.getInstance(context).getAllPlaylists();
-                                    String[] list = new String[lists.size()];
-                                    for (int i = 0; i < lists.size(); i++) {
-                                        list[i] = lists.get(i).getDescription().getTitle() + "";
-                                    }
-                                    builder.setItems(list, (dialog, which) -> albumOrArtistContextMenuListener.addToPlaylist(song, list[which], ITEM_TYPE.ARTISTS));
-                                    AlertDialog dialog = builder.create();
-                                    dialog.show();
-                                    return true;
-                                default:
-                                    return false;
-                            }
+                    menu.setOnMenuItemClickListener(item -> {
+                        switch (item.getItemId()) {
+                            case R.id.play:
+                                albumOrArtistContextMenuListener.play(song, ITEM_TYPE.ARTISTS);
+                                return true;
+                            case R.id.queue_next:
+                                albumOrArtistContextMenuListener.queueNext(song, ITEM_TYPE.ARTISTS);
+                                return true;
+                            case R.id.add_to_playlist:
+                                albumOrArtistContextMenuListener.addToPlaylist(song, ITEM_TYPE.ARTISTS);
+                                return true;
+                            default:
+                                return false;
                         }
                     });
                     handler.post(() -> binding.more.setOnClickListener(v -> {
@@ -298,5 +308,18 @@ public class SongListAdapter extends RecyclerView.Adapter<SongListAdapter.SongVi
 
     public interface OnItemClickListener {
         void onClick(View v, MediaBrowserCompat.MediaItem song);
+    }
+
+    public enum Mode {
+        ALBUM(0), ARTIST(1), PLAYLIST(2);
+        private final int value;
+
+        Mode(int value) {
+            this.value = value;
+        }
+
+        public int getValue() {
+            return value;
+        }
     }
 }

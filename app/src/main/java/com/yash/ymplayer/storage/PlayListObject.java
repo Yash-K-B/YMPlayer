@@ -2,17 +2,38 @@ package com.yash.ymplayer.storage;
 
 import androidx.room.ColumnInfo;
 
-public class PlayListObject{
-    @ColumnInfo(name = "playlist")
-    String playlist;
-//    @ColumnInfo(name = "count(playlist)")
-//    Integer count;
+import lombok.AllArgsConstructor;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 
-    public String getPlaylist() {
-        return playlist;
+public class PlayListObject{
+    @ColumnInfo(name = "id")
+    private Integer id;
+    @ColumnInfo(name = "name")
+    private String name;
+
+    public PlayListObject(Integer id, String name) {
+        this.id = id;
+        this.name = name;
     }
 
-//    public Integer getCount() {
-//        return count;
-//    }
+    public PlayListObject() {
+    }
+
+    public Integer getId() {
+        return id;
+    }
+
+    public void setId(Integer id) {
+        this.id = id;
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    public void setName(String name) {
+        this.name = name;
+    }
 }
