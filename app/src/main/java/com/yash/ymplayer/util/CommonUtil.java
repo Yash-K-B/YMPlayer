@@ -9,8 +9,7 @@ import android.provider.MediaStore;
 import android.view.View;
 import android.widget.PopupMenu;
 
-import com.yash.ymplayer.DownloadService;
-import com.yash.ymplayer.MainActivity;
+import com.yash.ymplayer.download.manager.DownloadService;
 import com.yash.ymplayer.R;
 import com.yash.ymplayer.constant.Constants;
 import com.yash.ymplayer.interfaces.MediaIDProvider;

@@ -1,34 +1,21 @@
 package com.yash.ymplayer.ui.youtube.toptracks;
 
-import android.app.AlertDialog;
 import android.content.Context;
-import android.content.Intent;
-import android.net.Uri;
-import android.os.Bundle;
-import android.support.v4.media.MediaBrowserCompat;
 import android.support.v4.media.session.MediaControllerCompat;
 import android.view.LayoutInflater;
 import android.view.ViewGroup;
 import android.widget.PopupMenu;
 
 import androidx.annotation.NonNull;
-import androidx.annotation.Nullable;
-import androidx.paging.PagedList;
 import androidx.paging.PagedListAdapter;
 import androidx.recyclerview.widget.DiffUtil;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.bumptech.glide.Glide;
-import com.yash.ymplayer.DownloadService;
 import com.yash.ymplayer.R;
 import com.yash.ymplayer.databinding.ItemMusicBinding;
 import com.yash.ymplayer.interfaces.TrackClickListener;
-import com.yash.ymplayer.repository.Repository;
-import com.yash.ymplayer.util.Keys;
 import com.yash.ymplayer.util.YoutubeSong;
-
-import java.security.Key;
-import java.util.List;
 
 public class TopTracksAdapter extends PagedListAdapter<YoutubeSong, TopTracksAdapter.TopTracksViewHolder> {
     TrackClickListener listener;

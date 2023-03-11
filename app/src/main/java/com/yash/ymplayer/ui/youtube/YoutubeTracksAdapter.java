@@ -1,10 +1,7 @@
 package com.yash.ymplayer.ui.youtube;
 
 import android.content.Context;
-import android.content.Intent;
-import android.os.Bundle;
 import android.view.LayoutInflater;
-import android.view.View;
 import android.view.ViewGroup;
 import android.widget.PopupMenu;
 
@@ -13,11 +10,9 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import com.bumptech.glide.Glide;
 import com.yash.logging.LogHelper;
-import com.yash.ymplayer.DownloadService;
 import com.yash.ymplayer.R;
 import com.yash.ymplayer.databinding.ItemMusicBinding;
 import com.yash.ymplayer.interfaces.TrackClickListener;
-import com.yash.ymplayer.util.Keys;
 import com.yash.ymplayer.util.YoutubeSong;
 
 import java.util.List;

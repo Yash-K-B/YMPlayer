@@ -1308,8 +1308,7 @@ public class PlayerService extends MediaBrowserServiceCompat implements PlayerHe
                                 return;
                             Toast.makeText(PlayerService.this, "Hold on, please! URL is refreshing", Toast.LENGTH_SHORT).show();
                             uriCache.remove(playingQueue.get(queuePos).getDescription().getMediaId());
-                            mSession.getController().getTransportControls().play();
-//                            handler.postDelayed(playNextOnMediaError, 2000);
+                            initializeAndPlay();
                         }
                     }
                     LogHelper.d(TAG, "PlayerError: curr indx = " + player.getCurrentWindowIndex() + " next indx = " + player.getNextWindowIndex());
@@ -1615,6 +1614,9 @@ public class PlayerService extends MediaBrowserServiceCompat implements PlayerHe
         return player;
     }
 
+    /**
+     *  Stop player or play next song
+     */
     Runnable playNextOnMediaError = new Runnable() {
         @Override
         public void run() {
@@ -1623,12 +1625,17 @@ public class PlayerService extends MediaBrowserServiceCompat implements PlayerHe
                 mSession.getController().getTransportControls().stop();
             else {
                 queuePos = player.getNextWindowIndex();
-                preparePlayer(player);
-                player.setPlayWhenReady(true);
+                initializeAndPlay();
                 LogHelper.d(TAG, "onPlayerError: Next");
             }
         }
     };
+
+    private void initializeAndPlay() {
+        LogHelper.d(TAG, "Initialising player");
+        preparePlayer(player);
+        player.setPlayWhenReady(true);
+    }
 
     NetworkRequest networkRequest = new NetworkRequest.Builder().addCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET)
             .addTransportType(NetworkCapabilities.TRANSPORT_ETHERNET)
@@ -1652,10 +1659,6 @@ public class PlayerService extends MediaBrowserServiceCompat implements PlayerHe
 
     enum PlaybackEndedStatus {
        INVALID, FINISHED, INTERRUPTED
-    }
-
-
-    void Test() {
     }
 
     void loadEqualizer(int audioSessionId) {

@@ -1,13 +1,13 @@
 apply plugin: 'com.android.application'
 
 android {
-    compileSdkVersion 32
+    compileSdkVersion 33
     buildToolsVersion '32.1.0 rc1'
 
     defaultConfig {
         applicationId "com.yash.ymplayer"
-        minSdkVersion 21
-        targetSdkVersion 32
+        minSdkVersion 24
+        targetSdkVersion 33
         versionCode 8
         versionName "1.8"
 
@@ -97,5 +97,7 @@ dependencies {
 
     compileOnly 'org.projectlombok:lombok:1.18.24'
     annotationProcessor 'org.projectlombok:lombok:1.18.24'
+
+    implementation 'com.arthenica:ffmpeg-kit-full:5.1'
 
 }

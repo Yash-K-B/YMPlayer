@@ -7,7 +7,7 @@ import android.os.Bundle;
 import android.support.v4.media.MediaBrowserCompat;
 import android.support.v4.media.session.MediaControllerCompat;
 
-import com.yash.ymplayer.DownloadService;
+import com.yash.ymplayer.download.manager.DownloadService;
 import com.yash.ymplayer.interfaces.TrackClickListener;
 import com.yash.ymplayer.repository.Repository;
 import com.yash.ymplayer.storage.AudioProvider;

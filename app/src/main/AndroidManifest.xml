@@ -88,7 +88,7 @@
             </intent-filter>
         </service>
         <service
-            android:name=".DownloadService"
+            android:name=".download.manager.DownloadService"
             android:exported="true" />
 
         <receiver

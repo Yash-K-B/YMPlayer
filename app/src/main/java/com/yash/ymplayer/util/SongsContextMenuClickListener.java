@@ -155,6 +155,7 @@ public class SongsContextMenuClickListener implements SongContextMenuListener {
             cursor.close();
         } else {
             StorageXI.getInstance().with(context).delete(launcher, fileUri);
+            return true;
         }
 
         return false;
