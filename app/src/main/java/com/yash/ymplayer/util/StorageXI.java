@@ -5,6 +5,7 @@ import android.annotation.SuppressLint;
 import android.app.PendingIntent;
 import android.app.RecoverableSecurityException;
 import android.content.ContentResolver;
+import android.content.ContentUris;
 import android.content.ContentValues;
 import android.content.Context;
 import android.content.IntentSender;
@@ -12,10 +13,14 @@ import android.database.Cursor;
 import android.net.Uri;
 import android.os.Build;
 import android.provider.MediaStore;
+import android.widget.Toast;
 
 import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.IntentSenderRequest;
 
+import com.yash.logging.LogHelper;
+
+import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -36,6 +41,7 @@ import java.util.Collection;
  * @since 1.0.3.2
  */
 public class StorageXI {
+    private static final String TAG = "StorageXI";
 
     private Context context;
 
@@ -84,7 +90,7 @@ public class StorageXI {
      * SDK version is >= 29(Q)? use {@link SecurityException} and again request for delete.
      * SDK version is >= 30(R)? use {@link MediaStore#createDeleteRequest(ContentResolver, Collection)}.
      */
-    public void delete(ActivityResultLauncher<IntentSenderRequest> launcher, Uri uri) {
+    private void delete(ActivityResultLauncher<IntentSenderRequest> launcher, Uri uri) {
 
         ContentResolver contentResolver = context.getContentResolver();
 
@@ -183,5 +189,31 @@ public class StorageXI {
         cursor.close();
 
         return text;
+    }
+
+    public boolean delete(ActivityResultLauncher<IntentSenderRequest> launcher, long mediaId) {
+        Uri fileUri = ContentUris.withAppendedId(MediaStore.Audio.Media.EXTERNAL_CONTENT_URI, mediaId);
+
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q) {
+            Cursor cursor = context.getContentResolver().query(fileUri, new String[]{MediaStore.Audio.Media.DATA}, null, null, null);
+            while (cursor != null && cursor.moveToNext()) {
+                @SuppressLint("Range") File file = new File(cursor.getString(cursor.getColumnIndex(MediaStore.Audio.Media.DATA)));
+                if (file.delete()) {
+                    int x = context.getContentResolver().delete(fileUri, null, null);
+                    LogHelper.d(TAG, "deleteFromStorage: " + fileUri.getEncodedPath() + " exist:" + file.exists());
+                    Toast.makeText(context, "File Deleted", Toast.LENGTH_SHORT).show();
+                    return x != 0;
+                } else {
+                    Toast.makeText(context, "File Not Deleted", Toast.LENGTH_SHORT).show();
+                    return false;
+                }
+
+            }
+            cursor.close();
+        } else {
+            StorageXI.getInstance().with(context).delete(launcher, fileUri);
+            return true;
+        }
+        return false;
     }
 }

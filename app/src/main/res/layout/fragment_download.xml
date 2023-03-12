@@ -8,16 +8,24 @@
     <TextView
         android:layout_width="match_parent"
         android:layout_height="40dp"
+        android:layout_marginTop="50dp"
         android:gravity="center"
-        android:textStyle="bold"
         android:text="No downloads available"
-        android:layout_marginTop="50dp"/>
+        android:textStyle="bold" />
 
-    <androidx.recyclerview.widget.RecyclerView
-        android:id="@+id/downloads"
+
+    <androidx.swiperefreshlayout.widget.SwipeRefreshLayout
+        android:id="@+id/downloadsRefresh"
         android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        tools:itemCount="2"
-        tools:listitem="@layout/download_item" />
+        android:layout_height="match_parent">
+
+        <androidx.recyclerview.widget.RecyclerView
+            android:id="@+id/downloads"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            tools:itemCount="2"
+            tools:listitem="@layout/download_item" />
+    </androidx.swiperefreshlayout.widget.SwipeRefreshLayout>
+
 
 </FrameLayout>

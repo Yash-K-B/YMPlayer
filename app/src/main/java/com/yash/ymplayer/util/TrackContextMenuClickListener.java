@@ -65,7 +65,7 @@ public class TrackContextMenuClickListener implements TrackClickListener {
         List<MediaBrowserCompat.MediaItem> lists = Repository.getInstance(context).getAllPlaylists();
         List<String> playlistNames = new ArrayList<>();
         for (int i = 0; i < lists.size(); i++) {
-            if(lists.get(i).getDescription().getDescription() == null)
+            if (lists.get(i).getDescription().getDescription() == null)
                 continue;
             playlistNames.add(lists.get(i).getDescription().getTitle().toString());
         }
@@ -87,8 +87,8 @@ public class TrackContextMenuClickListener implements TrackClickListener {
     @Override
     public void download(YoutubeSong song, int bitRateInKbps) {
         Intent downloadIntent = new Intent(context, DownloadService.class);
-        downloadIntent.putExtra(Keys.VIDEO_ID,song.getVideoId());
-        downloadIntent.putExtra(Keys.EXTRA_DOWNLOAD_QUALITY,bitRateInKbps);
+        downloadIntent.putExtra(Keys.DownloadManager.EXTRA_VIDEO_ID, song.getVideoId());
+        downloadIntent.putExtra(Keys.DownloadManager.EXTRA_BITRATE, bitRateInKbps);
         context.startService(downloadIntent);
     }
 }

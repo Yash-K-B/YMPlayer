@@ -12,11 +12,14 @@ import androidx.lifecycle.MutableLiveData;
 import androidx.lifecycle.ViewModel;
 
 import com.yash.ymplayer.repository.Repository;
+import com.yash.ymplayer.util.Keys;
+import com.yash.ymplayer.util.SearchListAdapter;
 
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 public class SearchViewModel extends ViewModel {
     //albums
@@ -114,14 +117,33 @@ public class SearchViewModel extends ViewModel {
     void updateSearchData(int type) {
         searchListUpdateCalls++;
         if (type == UPDATE_TYPE.ALBUMS) {
-            searchList.add(1, allAlbums.getValue());
+            List<MediaBrowserCompat.MediaItem> mediaItems = allAlbums.getValue().stream().map(mediaItem -> mapToNew(mediaItem, SearchListAdapter.ItemType.ALBUMS)).collect(Collectors.toList());
+            searchList.add(1, mediaItems);
         } else if (type == UPDATE_TYPE.ARTISTS) {
-            searchList.add(2, allArtists.getValue());
+            List<MediaBrowserCompat.MediaItem> mediaItems = allArtists.getValue().stream().map(mediaItem -> mapToNew(mediaItem, SearchListAdapter.ItemType.ARTISTS)).collect(Collectors.toList());
+            searchList.add(2, mediaItems);
         } else if (type == UPDATE_TYPE.ALL_SONGS) {
-            searchList.add(0, songs.getValue());
+            List<MediaBrowserCompat.MediaItem> mediaItems = songs.getValue().stream().map(mediaItem -> mapToNew(mediaItem, SearchListAdapter.ItemType.SONGS)).collect(Collectors.toList());
+            searchList.add(0, mediaItems);
         }
         if (searchListUpdateCalls == 3)
             allSearchData.setValue(searchList);
+    }
+
+    private MediaBrowserCompat.MediaItem mapToNew(MediaBrowserCompat.MediaItem mediaItem, int type) {
+        MediaDescriptionCompat description = mediaItem.getDescription();
+        Bundle extra = new Bundle();
+        extra.putInt(Keys.EXTRA_TYPE, type);
+        return new MediaBrowserCompat.MediaItem(new MediaDescriptionCompat.Builder()
+                .setMediaId(mediaItem.getMediaId())
+                .setTitle(description.getTitle())
+                .setSubtitle(description.getSubtitle())
+                .setDescription(description.getDescription())
+                .setIconUri(description.getIconUri())
+                .setMediaUri(description.getMediaUri())
+                .setExtras(extra)
+
+                .build(), mediaItem.getFlags());
     }
 
     interface UPDATE_TYPE {

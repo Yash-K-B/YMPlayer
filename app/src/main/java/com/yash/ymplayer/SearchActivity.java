@@ -7,6 +7,7 @@ import android.os.Handler;
 import android.os.Looper;
 import android.os.RemoteException;
 import android.support.v4.media.MediaBrowserCompat;
+import android.support.v4.media.MediaDescriptionCompat;
 import android.support.v4.media.session.MediaControllerCompat;
 import android.view.Menu;
 import android.view.MenuItem;
@@ -20,11 +21,14 @@ import androidx.lifecycle.Observer;
 import androidx.lifecycle.ViewModelProvider;
 import androidx.recyclerview.widget.GridLayoutManager;
 import androidx.recyclerview.widget.LinearLayoutManager;
+import androidx.recyclerview.widget.StaggeredGridLayoutManager;
 
+import com.yash.logging.LogHelper;
 import com.yash.ymplayer.databinding.ActivitySearchBinding;
 import com.yash.ymplayer.databinding.BasePlayerActivityBinding;
 import com.yash.ymplayer.ui.main.SearchViewModel;
 import com.yash.ymplayer.ui.youtube.search.YoutubeSearch;
+import com.yash.ymplayer.util.Keys;
 import com.yash.ymplayer.util.SearchListAdapter;
 import com.yash.ymplayer.util.StringUtil;
 
@@ -44,9 +48,7 @@ public class SearchActivity extends BasePlayerActivity {
     MediaControllerCompat mediaController;
     SearchViewModel viewModel;
 
-    SearchListAdapter searchListSongAdapter;
-    SearchListAdapter searchListAlbumAdapter;
-    SearchListAdapter searchListArtistAdapter;
+    SearchListAdapter searchResultAdapter;
 
     List<List<MediaBrowserCompat.MediaItem>> lists = null;
     ExecutorService executorService;
@@ -59,73 +61,29 @@ public class SearchActivity extends BasePlayerActivity {
         playerActivityBinding.container.addView(searchBinding.getRoot());
         setCustomToolbar(searchBinding.toolbar, "Search");
         getSupportActionBar().setDisplayHomeAsUpEnabled(true);
-        long duration = 5000;
         viewModel = new ViewModelProvider(this).get(SearchViewModel.class);
         this.mediaBrowser = mediaBrowser;
         executorService = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors() > 3 ? Runtime.getRuntime().availableProcessors() - 2 : 1);
 
-        searchListSongAdapter = new SearchListAdapter(this, new SearchListAdapter.OnItemClickListener() {
+        searchResultAdapter = new SearchListAdapter(this, new SearchListAdapter.OnItemClickListener() {
             @Override
             public void onClick(MediaBrowserCompat.MediaItem song) {
                 if (song.isPlayable()) {
                     searchView.clearFocus();
                     mediaController.getTransportControls().playFromMediaId(song.getMediaId(), null);
-                }
-            }
-        }, SearchListAdapter.ItemType.SONGS, searchBinding.songsHeading, searchBinding.searchListSongsContainer);
-        searchListSongAdapter.setHasStableIds(true);
-        searchBinding.searchListSongsContainer.setLayoutManager(new LinearLayoutManager(this));
-        searchBinding.searchListSongsContainer.setNestedScrollingEnabled(false);
-//        searchBinding.searchListSongsContainer.addItemDecoration(new DividerItemDecoration(this, DividerItemDecoration.VERTICAL));
-        searchBinding.searchListSongsContainer.setHasFixedSize(true);
-        searchBinding.searchListSongsContainer.setItemViewCacheSize(20);
-        searchBinding.searchListSongsContainer.setAdapter(searchListSongAdapter);
-
-        searchListAlbumAdapter = new SearchListAdapter(this, new SearchListAdapter.OnItemClickListener() {
-            @Override
-            public void onClick(MediaBrowserCompat.MediaItem song, long id) {
-                if (song.isBrowsable()) {
+                } else if (song.isBrowsable()) {
                     Intent intent = new Intent(SearchActivity.this, ListExpandActivity.class);
                     intent.putExtra("parent_id", song.getMediaId());
-                    intent.putExtra("type", "album");
-                    intent.putExtra("imageId", id);
+                    intent.putExtra("type", song.getDescription().getExtras().getInt(Keys.EXTRA_TYPE) == SearchListAdapter.ItemType.ALBUMS ? "album" : "artist");
                     startActivity(intent);
-//                    finish();
                 }
             }
-        }, SearchListAdapter.ItemType.ALBUMS, searchBinding.albumsHeading, searchBinding.searchListAlbumsContainer);
-//        searchListAlbumAdapter.setHasStableIds(true);
+        });
+        searchBinding.searchListContainer.setLayoutManager(new StaggeredGridLayoutManager(3, StaggeredGridLayoutManager.VERTICAL));
+        searchBinding.searchListContainer.setItemViewCacheSize(20);
+        searchBinding.searchListContainer.setAdapter(searchResultAdapter);
 
-        searchBinding.searchListAlbumsContainer.setLayoutManager(new GridLayoutManager(this, 2));
-        searchBinding.searchListAlbumsContainer.setNestedScrollingEnabled(false);
-        searchBinding.searchListAlbumsContainer.setHasFixedSize(true);
-        searchBinding.searchListAlbumsContainer.setItemViewCacheSize(20);
-        searchBinding.searchListAlbumsContainer.setAdapter(searchListAlbumAdapter);
-
-        searchListArtistAdapter = new SearchListAdapter(this, new SearchListAdapter.OnItemClickListener() {
-            @Override
-            public void onClick(MediaBrowserCompat.MediaItem song) {
-                if (song.isBrowsable()) {
-                    Intent intent = new Intent(SearchActivity.this, ListExpandActivity.class);
-                    intent.putExtra("parent_id", song.getMediaId());
-                    intent.putExtra("type", "artist");
-                    startActivity(intent);
-//                    finish();
-                }
-            }
-        }, SearchListAdapter.ItemType.SONGS, searchBinding.artistsHeading, searchBinding.searchListArtistsContainer);
-        searchBinding.searchListArtistsContainer.setLayoutManager(new LinearLayoutManager(this));
-        searchBinding.searchListArtistsContainer.setNestedScrollingEnabled(false);
-        searchBinding.searchListArtistsContainer.setHasFixedSize(true);
-        searchBinding.searchListArtistsContainer.setItemViewCacheSize(20);
-        searchBinding.searchListArtistsContainer.setAdapter(searchListArtistAdapter);
-
-        searchBinding.searchListSongsContainer.setVisibility(View.GONE);
-        searchBinding.searchListAlbumsContainer.setVisibility(View.GONE);
-        searchBinding.searchListArtistsContainer.setVisibility(View.GONE);
-        searchBinding.songsHeading.setVisibility(View.GONE);
-        searchBinding.albumsHeading.setVisibility(View.GONE);
-        searchBinding.artistsHeading.setVisibility(View.GONE);
+        searchBinding.noResult.setVisibility(View.VISIBLE);
 
         searchBinding.onlineSearch.setOnClickListener(onlineSearchClickListener);
     }
@@ -167,27 +125,19 @@ public class SearchActivity extends BasePlayerActivity {
 
             @Override
             public boolean onQueryTextChange(String newText) {
+                LogHelper.d(TAG, "onQueryTextChange: text - %s", newText);
                 if (StringUtil.hasText(newText)) {
                     searchBinding.onlineSearch.setVisibility(View.VISIBLE);
                     searchBinding.onlineSearch.setText("\tSearch online \"" + newText + "\"");
                 } else {
                     searchBinding.onlineSearch.setVisibility(View.INVISIBLE);
                 }
-                if (searchListSongAdapter == null || searchListArtistAdapter == null || searchListAlbumAdapter == null)
-                    return false;
+
                 handler.removeCallbacks(null);
                 final String query = newText.toLowerCase();
-//                searchQuery = query;
                 if (query.isEmpty()) {
-                    searchListSongAdapter.updateList(new ArrayList<>());
-                    searchListAlbumAdapter.updateList(new ArrayList<>());
-                    searchListArtistAdapter.updateList(new ArrayList<>());
-                    searchBinding.searchListSongsContainer.setVisibility(View.GONE);
-                    searchBinding.searchListAlbumsContainer.setVisibility(View.GONE);
-                    searchBinding.searchListArtistsContainer.setVisibility(View.GONE);
-                    searchBinding.songsHeading.setVisibility(View.GONE);
-                    searchBinding.albumsHeading.setVisibility(View.GONE);
-                    searchBinding.artistsHeading.setVisibility(View.GONE);
+                    searchResultAdapter.updateList(new ArrayList<>());
+                    searchBinding.noResult.setVisibility(View.VISIBLE);
                     return true;
                 }
 
@@ -195,69 +145,35 @@ public class SearchActivity extends BasePlayerActivity {
                 handler.post(new RunnableWithParams(query) {
                     @Override
                     public void run(String text) {
+                        LogHelper.d(TAG, "run: Searching with key - %s", text);
+
                         executorService.execute(new RunnableWithParams(text) {
                             @Override
                             public void run(String text) {
                                 final List<MediaBrowserCompat.MediaItem> filteredModelList = new ArrayList<>();
-                                for (MediaBrowserCompat.MediaItem model : lists.get(0)) {
-                                    final String title = model.getDescription().getTitle().toString().toLowerCase();
-                                    if (title.contains(text)) {
-                                        filteredModelList.add(model);
+                                for (int i = 0; i < lists.size(); i++) {
+                                    List<MediaBrowserCompat.MediaItem> items = new ArrayList<>();
+                                    for (MediaBrowserCompat.MediaItem model : lists.get(i)) {
+                                        final String title = model.getDescription().getTitle().toString().toLowerCase();
+                                        if (title.contains(text)) {
+                                            items.add(model);
+                                        }
                                     }
+                                    if (!items.isEmpty()) {
+                                        String title = (i == 0) ? "Songs" : ((i == 1) ? "Albums" : "Artists");
+                                        Bundle bundle = new Bundle();
+                                        bundle.putInt(Keys.EXTRA_TYPE, SearchListAdapter.ItemType.HEADING);
+                                        filteredModelList.add(new MediaBrowserCompat.MediaItem(new MediaDescriptionCompat.Builder()
+                                                .setMediaId("0").setTitle(title).setExtras(bundle).build(), MediaBrowserCompat.MediaItem.FLAG_BROWSABLE));
+                                        filteredModelList.addAll(items);
+                                    }
+
                                 }
+
                                 handler.post(() -> {
-                                    if (filteredModelList.isEmpty()) {
-                                        searchBinding.searchListSongsContainer.setVisibility(View.GONE);
-                                        searchBinding.songsHeading.setVisibility(View.GONE);
-                                    } else {
-                                        searchBinding.searchListSongsContainer.setVisibility(View.VISIBLE);
-                                        searchBinding.songsHeading.setVisibility(View.VISIBLE);
-                                    }
-                                    searchListSongAdapter.updateList(filteredModelList);
-                                });
-                            }
-                        });
-                        executorService.execute(new RunnableWithParams(text) {
-                            @Override
-                            public void run(String text) {
-                                final List<MediaBrowserCompat.MediaItem> filteredModelList = new ArrayList<>();
-                                for (MediaBrowserCompat.MediaItem model : lists.get(2)) {
-                                    final String title = model.getDescription().getTitle().toString().toLowerCase();
-                                    if (!title.isEmpty() && title.contains(text)) {
-                                        filteredModelList.add(model);
-                                    }
-                                }
-                                handler.post(() -> {
-                                    if (filteredModelList.isEmpty()) {
-                                        searchBinding.searchListArtistsContainer.setVisibility(View.GONE);
-                                        searchBinding.artistsHeading.setVisibility(View.GONE);
-                                    } else {
-                                        searchBinding.searchListArtistsContainer.setVisibility(View.VISIBLE);
-                                        searchBinding.artistsHeading.setVisibility(View.VISIBLE);
-                                    }
-                                    searchListArtistAdapter.updateList(filteredModelList);
-                                });
-                            }
-                        });
-                        executorService.execute(new RunnableWithParams(text) {
-                            @Override
-                            public void run(String text) {
-                                final List<MediaBrowserCompat.MediaItem> filteredModelList = new ArrayList<>();
-                                for (MediaBrowserCompat.MediaItem model : lists.get(1)) {
-                                    final String title = model.getDescription().getTitle().toString().toLowerCase();
-                                    if (title.contains(text)) {
-                                        filteredModelList.add(model);
-                                    }
-                                }
-                                handler.post(() -> {
-                                    if (filteredModelList.isEmpty()) {
-                                        searchBinding.searchListAlbumsContainer.setVisibility(View.GONE);
-                                        searchBinding.albumsHeading.setVisibility(View.GONE);
-                                    } else {
-                                        searchBinding.searchListAlbumsContainer.setVisibility(View.VISIBLE);
-                                        searchBinding.albumsHeading.setVisibility(View.VISIBLE);
-                                    }
-                                    searchListAlbumAdapter.updateList(filteredModelList);
+                                    LogHelper.d(TAG, "run: update filtered list size - %s", filteredModelList.size());
+                                    searchBinding.noResult.setVisibility(filteredModelList.isEmpty() ? View.VISIBLE : View.INVISIBLE);
+                                    searchResultAdapter.updateList(filteredModelList);
                                 });
                             }
                         });

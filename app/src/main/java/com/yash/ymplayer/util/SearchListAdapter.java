@@ -16,15 +16,19 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.palette.graphics.Palette;
 import androidx.recyclerview.widget.DiffUtil;
+import androidx.recyclerview.widget.GridLayoutManager;
 import androidx.recyclerview.widget.ListUpdateCallback;
 import androidx.recyclerview.widget.RecyclerView;
+import androidx.recyclerview.widget.StaggeredGridLayoutManager;
 
 import com.bumptech.glide.Glide;
 import com.bumptech.glide.request.target.CustomTarget;
 import com.bumptech.glide.request.transition.Transition;
+import com.yash.logging.LogHelper;
 import com.yash.ymplayer.R;
 import com.yash.ymplayer.databinding.ItemAlbumBinding;
 import com.yash.ymplayer.databinding.ItemPlayingQueueBinding;
+import com.yash.ymplayer.databinding.ItemSearchHeaderBinding;
 import com.yash.ymplayer.databinding.ItemSearchSongBinding;
 
 import java.util.ArrayList;
@@ -32,7 +36,7 @@ import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
-public class SearchListAdapter extends RecyclerView.Adapter<SearchListAdapter.SongViewHolder>{
+public class SearchListAdapter extends RecyclerView.Adapter<SearchListAdapter.SongViewHolder> {
     private static final String TAG = "SearchListAdapter";
 
     List<MediaBrowserCompat.MediaItem> songs;
@@ -41,26 +45,26 @@ public class SearchListAdapter extends RecyclerView.Adapter<SearchListAdapter.So
     ExecutorService executor;
     private final Handler handler = new Handler(Looper.getMainLooper());
     int listPos;
-    int type;
-    View headView;
-    View recyclerView;
 
-    public SearchListAdapter(Context context, OnItemClickListener listener, int type, View headView, View recyclerview) {
+    public SearchListAdapter(Context context, OnItemClickListener listener) {
         this.songs = new ArrayList<>();
         this.listener = listener;
         this.context = context;
-        this.type = type;
-        this.headView = headView;
         this.executor = Executors.newFixedThreadPool(2);
-        this.recyclerView = recyclerview;
     }
 
     @NonNull
     @Override
     public SongViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
-        if (type == ItemType.SONGS || type == ItemType.ARTISTS) {
+        LogHelper.d(TAG, "onCreateViewHolder: " + viewType);
+        if (viewType == ItemType.SONGS || viewType == ItemType.ARTISTS) {
             ItemSearchSongBinding itemSearchSongBinding = ItemSearchSongBinding.inflate(LayoutInflater.from(parent.getContext()), parent, false);
+            setLinearLayout(parent, itemSearchSongBinding.getRoot());
             return new ItemViewHolder(itemSearchSongBinding);
+        } else if (viewType == ItemType.HEADING) {
+            ItemSearchHeaderBinding itemSearchHeaderBinding = ItemSearchHeaderBinding.inflate(LayoutInflater.from(parent.getContext()), parent, false);
+            setLinearLayout(parent, itemSearchHeaderBinding.getRoot());
+            return new HeadingViewHolder(itemSearchHeaderBinding);
         } else {
             ItemAlbumBinding itemAlbumBinding = ItemAlbumBinding.inflate(LayoutInflater.from(parent.getContext()), parent, false);
             return new AlbumViewHolder(itemAlbumBinding);
@@ -68,14 +72,23 @@ public class SearchListAdapter extends RecyclerView.Adapter<SearchListAdapter.So
     }
 
 
+    private void setLinearLayout(ViewGroup parent, View view) {
+        StaggeredGridLayoutManager.LayoutParams lp = (StaggeredGridLayoutManager.LayoutParams) view.getLayoutParams();
+        lp.setFullSpan(true);
+    }
+
     @Override
     public void onBindViewHolder(@NonNull SongViewHolder holder, int position) {
+        int type = getItemViewType(position);
+        LogHelper.d(TAG, "onBindViewHolder: " + type);
         if (type == ItemType.SONGS)
             ((ItemViewHolder) holder).bindSongs(songs.get(holder.getAdapterPosition()), listener);
         else if (type == ItemType.ALBUMS)
             ((AlbumViewHolder) holder).bindAlbums(songs.get(holder.getAdapterPosition()), listener);
         else if (type == ItemType.ARTISTS)
             ((ItemViewHolder) holder).bindArtists(songs.get(holder.getAdapterPosition()), listener);
+        else if (type == ItemType.HEADING)
+            ((HeadingViewHolder) holder).bindHeading(songs.get(holder.getAdapterPosition()), listener);
 
 
     }
@@ -83,7 +96,15 @@ public class SearchListAdapter extends RecyclerView.Adapter<SearchListAdapter.So
 
     @Override
     public int getItemCount() {
+        LogHelper.d(TAG, "getItemCount: " + songs.size());
         return songs.size();
+    }
+
+    @Override
+    public int getItemViewType(int position) {
+        int anInt = songs.get(position).getDescription().getExtras().getInt(Keys.EXTRA_TYPE);
+        LogHelper.d(TAG, "getItemViewType: " + anInt);
+        return anInt;
     }
 
     public void setModels(List<MediaBrowserCompat.MediaItem> models) {
@@ -111,7 +132,7 @@ public class SearchListAdapter extends RecyclerView.Adapter<SearchListAdapter.So
             binding.trackName.setOnClickListener(new View.OnClickListener() {
                 @Override
                 public void onClick(View v) {
-                    listener.onClick(v,song);
+                    listener.onClick(v, song);
                 }
             });
         }
@@ -126,7 +147,7 @@ public class SearchListAdapter extends RecyclerView.Adapter<SearchListAdapter.So
         }
 
         void bindAlbums(MediaBrowserCompat.MediaItem song, OnItemClickListener listener) {
-            long id = Long.parseLong(song.getMediaId().split("[/]",2)[1]);
+            long id = Long.parseLong(song.getMediaId().split("[/]", 2)[1]);
             executor.execute(new Runnable() {
                 @Override
                 public void run() {
@@ -153,7 +174,7 @@ public class SearchListAdapter extends RecyclerView.Adapter<SearchListAdapter.So
 
                         @Override
                         public void onLoadFailed(@Nullable Drawable errorDrawable) {
-                            Drawable drawable = context.getResources().getDrawable(R.drawable.album_art_placeholder,context.getTheme());
+                            Drawable drawable = context.getResources().getDrawable(R.drawable.album_art_placeholder, context.getTheme());
                             handler.post(() -> binding.albumArt.setImageDrawable(drawable));
                             Palette.from(((BitmapDrawable) drawable).getBitmap())
                                     .generate(new Palette.PaletteAsyncListener() {
@@ -184,7 +205,7 @@ public class SearchListAdapter extends RecyclerView.Adapter<SearchListAdapter.So
             itemView.setOnClickListener(new View.OnClickListener() {
                 @Override
                 public void onClick(View v) {
-                    listener.onClick(song, id);
+                    listener.onClick(song);
                 }
 
             });
@@ -225,10 +246,28 @@ public class SearchListAdapter extends RecyclerView.Adapter<SearchListAdapter.So
             });
 
         }
+
+        public void bindHeading(MediaBrowserCompat.MediaItem song, OnItemClickListener listener) {
+            binding.title.setText(song.getDescription().getTitle());
+        }
+    }
+
+
+    class HeadingViewHolder extends SongViewHolder {
+        ItemSearchHeaderBinding binding;
+
+        public HeadingViewHolder(ItemSearchHeaderBinding binding) {
+            super(binding.getRoot());
+            this.binding = binding;
+        }
+
+        public void bindHeading(MediaBrowserCompat.MediaItem song, OnItemClickListener listener) {
+            binding.searchHeading.setText(song.getDescription().getTitle());
+        }
     }
 
     public void updateList(List<MediaBrowserCompat.MediaItem> newList) {
-        DiffUtil.DiffResult diffResult = DiffUtil.calculateDiff(new SearchListDiffCallback(this.songs,newList));
+        DiffUtil.DiffResult diffResult = DiffUtil.calculateDiff(new SearchListDiffCallback(this.songs, newList));
         this.songs.clear();
         this.songs.addAll(newList);
         diffResult.dispatchUpdatesTo(this);
@@ -250,6 +289,7 @@ public class SearchListAdapter extends RecyclerView.Adapter<SearchListAdapter.So
             }
         }
     }
+
     private void applyAndAnimateAdditions(List<MediaBrowserCompat.MediaItem> newModels) {
         for (int i = 0, count = newModels.size(); i < count; i++) {
             final MediaBrowserCompat.MediaItem model = newModels.get(i);
@@ -258,6 +298,7 @@ public class SearchListAdapter extends RecyclerView.Adapter<SearchListAdapter.So
             }
         }
     }
+
     private void applyAndAnimateMovedItems(List<MediaBrowserCompat.MediaItem> newModels) {
         for (int toPosition = newModels.size() - 1; toPosition >= 0; toPosition--) {
             final MediaBrowserCompat.MediaItem model = newModels.get(toPosition);
@@ -298,11 +339,12 @@ public class SearchListAdapter extends RecyclerView.Adapter<SearchListAdapter.So
         int SONGS = 0;
         int ALBUMS = 1;
         int ARTISTS = 2;
+        int HEADING = 3;
 
     }
 
-    public static class SearchListDiffCallback extends DiffUtil.Callback{
-        List<MediaBrowserCompat.MediaItem> oldList,newList;
+    public static class SearchListDiffCallback extends DiffUtil.Callback {
+        List<MediaBrowserCompat.MediaItem> oldList, newList;
 
         public SearchListDiffCallback(List<MediaBrowserCompat.MediaItem> oldList, List<MediaBrowserCompat.MediaItem> newList) {
             this.oldList = oldList;
@@ -311,12 +353,12 @@ public class SearchListAdapter extends RecyclerView.Adapter<SearchListAdapter.So
 
         @Override
         public int getOldListSize() {
-            return oldList!=null?oldList.size():0;
+            return oldList != null ? oldList.size() : 0;
         }
 
         @Override
         public int getNewListSize() {
-            return newList!=null?newList.size():0;
+            return newList != null ? newList.size() : 0;
         }
 
         @Override

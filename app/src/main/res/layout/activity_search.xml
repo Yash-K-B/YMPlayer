@@ -17,118 +17,52 @@
             android:layout_height="?attr/actionBarSize" />
     </com.google.android.material.appbar.AppBarLayout>
 
-    <androidx.core.widget.NestedScrollView
+    <androidx.constraintlayout.widget.ConstraintLayout
+        android:id="@+id/container"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         app:layout_behavior="com.google.android.material.appbar.AppBarLayout$ScrollingViewBehavior">
 
-        <androidx.constraintlayout.widget.ConstraintLayout
-            android:id="@+id/container"
+        <TextView
+            android:id="@+id/onlineSearch"
+            android:layout_width="0dp"
+            android:layout_height="60dp"
+            android:background="?attr/selectableItemBackground"
+            android:clickable="true"
+            android:focusable="true"
+            android:gravity="start|center_vertical"
+            android:padding="10dp"
+            android:text="Search online "
+            android:textColor="?attr/backgroundHeadingTextColor"
+            android:textStyle="bold"
+            android:visibility="invisible"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent" />
+
+        <androidx.recyclerview.widget.RecyclerView
+            android:id="@+id/searchListContainer"
             android:layout_width="match_parent"
-            android:layout_height="wrap_content">
+            android:layout_height="0dp"
+            android:background="?attr/layoutBackground"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintTop_toBottomOf="@+id/onlineSearch"
+            tools:itemCount="5"
+            tools:listitem="@layout/item_search_song" />
 
-            <TextView
-                android:id="@+id/onlineSearch"
-                android:visibility="invisible"
-                android:layout_width="0dp"
-                android:layout_height="60dp"
-                android:text="Search online "
-                android:gravity="start|center_vertical"
-                android:textColor="?attr/backgroundHeadingTextColor"
-                android:background="?attr/selectableItemBackground"
-                android:clickable="true"
-                android:focusable="true"
-                android:textStyle="bold"
-                android:padding="10dp"
-                app:layout_constraintEnd_toEndOf="parent"
-                app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintTop_toTopOf="parent" />
+        <TextView
+            android:id="@+id/noResult"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="108dp"
+            android:gravity="center"
+            android:text="No Results"
+            android:visibility="invisible"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintHorizontal_bias="0.0"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent" />
 
-            <TextView
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="108dp"
-                android:gravity="center"
-                android:text="No Results"
-                app:layout_constraintEnd_toEndOf="parent"
-                app:layout_constraintHorizontal_bias="0.0"
-                app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintTop_toTopOf="parent" />
-
-            <TextView
-                android:id="@+id/songsHeading"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:focusable="true"
-                android:focusableInTouchMode="true"
-                android:padding="25dp"
-                android:text="@string/songs"
-                android:textColor="?attr/backgroundHeadingTextColor"
-                android:background="?attr/layoutBackground"
-                android:textSize="22sp"
-                android:textStyle="bold"
-                android:visibility="gone"
-                app:layout_constraintEnd_toEndOf="parent"
-                app:layout_constraintHorizontal_bias="0.5"
-                app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintTop_toBottomOf="@+id/onlineSearch" />
-
-            <androidx.recyclerview.widget.RecyclerView
-                android:id="@+id/searchListSongsContainer"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:background="?attr/layoutBackground"
-                app:layout_constraintTop_toBottomOf="@+id/songsHeading"
-                tools:listitem="@layout/item_search_song" />
-
-            <TextView
-                android:id="@+id/artistsHeading"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:padding="25dp"
-                android:text="@string/artists"
-                android:textColor="?attr/backgroundHeadingTextColor"
-                android:background="?attr/layoutBackground"
-                android:textSize="22sp"
-                android:textStyle="bold"
-                android:visibility="gone"
-                app:layout_constraintEnd_toEndOf="parent"
-                app:layout_constraintHorizontal_bias="0.5"
-                app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintTop_toBottomOf="@+id/searchListSongsContainer" />
-
-            <androidx.recyclerview.widget.RecyclerView
-                android:id="@+id/searchListArtistsContainer"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:background="?attr/layoutBackground"
-                app:layout_constraintTop_toBottomOf="@+id/artistsHeading"
-                tools:listitem="@layout/item_search_song"/>
-
-            <TextView
-                android:id="@+id/albumsHeading"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:padding="25dp"
-                android:text="@string/albums"
-                android:textColor="?attr/backgroundHeadingTextColor"
-                android:textSize="22sp"
-                android:textStyle="bold"
-                android:visibility="gone"
-                android:background="?attr/layoutBackground"
-                app:layout_constraintEnd_toEndOf="parent"
-                app:layout_constraintHorizontal_bias="0.5"
-                app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintTop_toBottomOf="@+id/searchListArtistsContainer" />
-
-            <androidx.recyclerview.widget.RecyclerView
-                android:id="@+id/searchListAlbumsContainer"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:background="?attr/layoutBackground"
-                app:layout_constraintTop_toBottomOf="@+id/albumsHeading"
-                tools:listitem="@layout/item_album"/>
-        </androidx.constraintlayout.widget.ConstraintLayout>
-    </androidx.core.widget.NestedScrollView>
+    </androidx.constraintlayout.widget.ConstraintLayout>
 
 </androidx.coordinatorlayout.widget.CoordinatorLayout>

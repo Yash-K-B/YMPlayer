@@ -1,15 +1,20 @@
 package com.yash.ymplayer;
 
+import android.app.Activity;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.os.Bundle;
 
+import androidx.activity.result.ActivityResultLauncher;
+import androidx.activity.result.IntentSenderRequest;
+import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
 import androidx.lifecycle.LifecycleOwner;
 import androidx.lifecycle.Observer;
+import androidx.recyclerview.widget.DiffUtil;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
@@ -21,6 +26,7 @@ import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.PopupMenu;
+import android.widget.Toast;
 
 import com.bumptech.glide.Glide;
 import com.yash.logging.LogHelper;
@@ -32,8 +38,10 @@ import com.yash.ymplayer.download.manager.DownloadTask;
 import com.yash.ymplayer.download.manager.Downloader;
 import com.yash.ymplayer.download.manager.constants.DownloadStatus;
 import com.yash.ymplayer.download.manager.models.Download;
+import com.yash.ymplayer.repository.Repository;
 import com.yash.ymplayer.util.ConverterUtil;
 import com.yash.ymplayer.util.Keys;
+import com.yash.ymplayer.util.StorageXI;
 
 import org.jetbrains.annotations.NotNull;
 
@@ -78,14 +86,24 @@ public class DownloadFragment extends Fragment {
     @Override
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
-        ((ActivityActionProvider) context).setCustomToolbar(null, "Downloads");
-        List<Download> downloads = DownloadRepository.getInstance(context).getDownloadDao().findAll();
-        files.addAll(downloads);
-        adapter = new DownloadFileAdapter(context, getViewLifecycleOwner(), files, onClickListener);
+        refresh();
+        downloadBinding.downloadsRefresh.setOnRefreshListener(() -> {
+            downloadBinding.downloadsRefresh.setRefreshing(true);
+            refresh();
+            adapter.notifyDataSetChanged();
+            downloadBinding.downloadsRefresh.setRefreshing(false);
+        });
+        adapter = new DownloadFileAdapter(context, getViewLifecycleOwner(), files, onClickListener, launcher);
         downloadBinding.downloads.setLayoutManager(new LinearLayoutManager(context));
         downloadBinding.downloads.setAdapter(adapter);
     }
 
+    public void refresh() {
+        files.clear();
+        ((ActivityActionProvider) context).setCustomToolbar(null, "Downloads");
+        List<Download> downloads = DownloadRepository.getInstance(context).getDownloadDao().findAll();
+        files.addAll(downloads);
+    }
 
     private final DownloadFileAdapter.OnClickListener onClickListener = new DownloadFileAdapter.OnClickListener() {
         @Override
@@ -103,8 +121,10 @@ public class DownloadFragment extends Fragment {
                 context.startService(downloadIntent);
                 handler.postDelayed(() -> adapter.notifyItemChanged(adapterPosition), 500);
             } else {
-                if (file.getUri() == null)
+                if (file.getUri() == null) {
+                    Toast.makeText(context, "Corrupted file", Toast.LENGTH_SHORT).show();
                     return;
+                }
                 LogHelper.d(TAG, "onClick: URI : %s", file.getUri());
                 String mediaId = file.getUri().substring(file.getUri().lastIndexOf('/') + 1);
                 ((ActivityActionProvider) context).interactWithMediaSession(mediaController -> {
@@ -123,12 +143,14 @@ public class DownloadFragment extends Fragment {
         List<Download> files;
         OnClickListener listener;
         LifecycleOwner lifecycleOwner;
+        ActivityResultLauncher<IntentSenderRequest> launcher;
 
-        public DownloadFileAdapter(Context context, LifecycleOwner lifecycleOwner, List<Download> files, OnClickListener listener) {
+        public DownloadFileAdapter(Context context, LifecycleOwner lifecycleOwner, List<Download> files, OnClickListener listener, ActivityResultLauncher<IntentSenderRequest> launcher) {
             this.context = context;
             this.files = files;
             this.listener = listener;
             this.lifecycleOwner = lifecycleOwner;
+            this.launcher = launcher;
         }
 
         @NonNull
@@ -182,16 +204,25 @@ public class DownloadFragment extends Fragment {
 
 
             private boolean showLongPressMenu() {
-                PopupMenu menu = new PopupMenu(context, binding.fileName,  Gravity.END);
+                PopupMenu menu = new PopupMenu(context, binding.fileName, Gravity.END);
                 menu.inflate(R.menu.download_item_context_menu);
                 menu.setOnMenuItemClickListener(item -> {
                     switch (item.getItemId()) {
                         case R.id.remove:
                             DownloadRepository.getInstance(context).getDownloadDao().delete(file.getId());
+                            files.remove(getAdapterPosition());
                             notifyItemRemoved(getAdapterPosition());
                             return true;
 
                         case R.id.deleteFromStorage:
+                            if (file.getUri() != null) {
+                                String[] parts = file.getUri().split("[/|]");
+                                long mediaId = Long.parseLong(parts[parts.length - 1]);
+                                StorageXI.getInstance().with(context).delete(launcher, mediaId);
+                            }
+                            DownloadRepository.getInstance(context).getDownloadDao().delete(file.getId());
+                            files.remove(getAdapterPosition());
+                            notifyItemRemoved(getAdapterPosition());
                             return true;
                     }
                     return true;
@@ -203,9 +234,8 @@ public class DownloadFragment extends Fragment {
             public void attachInprogressTask(Download file) {
                 Downloader instance = Downloader.getInstance();
                 DownloadTask task;
-                if (instance != null && (task = instance.findTask(file.getVideoId(), file.getBitrate())) != null) {
+                if (instance != null && (task = instance.findTask(file.getId())) != null) {
                     task.getStatus().observe(lifecycleOwner, statusChangeObserver);
-
                     task.getProgress().observe(lifecycleOwner, progressChangeObserver);
                 } else if (file.getStatus() == DownloadStatus.DOWNLOADING || file.getStatus() == DownloadStatus.PROCESSING) {
                     file.setStatus(DownloadStatus.PAUSED);
@@ -224,8 +254,11 @@ public class DownloadFragment extends Fragment {
             private final Observer<DownloadStatus> statusChangeObserver = status -> {
                 file.setStatus(status);
                 if (status == DownloadStatus.DOWNLOADED) {
+                    Download download = DownloadRepository.getInstance(context).getDownloadDao().find(file.getId());
+                    file.setFileLength(download.getFileLength());
+                    file.setUri(download.getUri());
                     binding.status.setText("");
-                    binding.fileSize.setText(ConverterUtil.getFormattedFileSize(file.getFileLength()));
+                    binding.fileSize.setText(ConverterUtil.getFormattedFileSize(download.getFileLength()));
                     return;
                 }
                 binding.status.setText(status.getValue());
@@ -242,4 +275,12 @@ public class DownloadFragment extends Fragment {
         }
 
     }
+
+    private final ActivityResultLauncher<IntentSenderRequest> launcher = registerForActivityResult(
+            new ActivityResultContracts.StartIntentSenderForResult(),
+            result -> {
+                if (result.getResultCode() == Activity.RESULT_OK) {
+                    Toast.makeText(context, "File deleted successfully", Toast.LENGTH_SHORT).show();
+                }
+            });
 }

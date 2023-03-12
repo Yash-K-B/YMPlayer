@@ -130,9 +130,13 @@ public class Downloader {
         }
     }
 
-    public DownloadTask findTask(String videoId, int bitrate) {
-        String uniqueId = getUniqueId(videoId, bitrate);
-        return runningTasks.get(uniqueId);
+    public DownloadTask findTask(int downloadId) {
+        for (String key : runningTasks.keySet()) {
+            DownloadTask task = runningTasks.get(key);
+            if (task != null && task.getDownloadId() == downloadId)
+                return task;
+        }
+        return null;
     }
 
 //    public void addStatusObserver(String videoId, Observer<DownloadStatus> observer) {

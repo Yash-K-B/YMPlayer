@@ -157,7 +157,7 @@ public class DownloadTask extends Thread {
             VideoDetails videoDetails = extractor.extract(videoId);
 
             if (downloadId == 0) {
-                LogHelper.d(TAG, "run: Creating entry in the downloads");
+                LogHelper.d(TAG, "run: Creating entry in the downloads [bitrate - %s]", bitrate);
                 downloadId = addToDownloads(videoDetails, bitrate);
             } else {
                 LogHelper.d(TAG, "run: Has download id - %s", downloadId);
@@ -189,7 +189,7 @@ public class DownloadTask extends Thread {
             updateProgress(0, fileLength);
             if (downloadFile.length() == fileLength) {
                 LogHelper.d(TAG, "run: File already downloaded and merged");
-            } else downloadWithParallel(url, fileLength, downloadFile);
+            } else downloadWithParallel(url, fileLength, bitrate, downloadFile);
 
             if (DownloadTask.this.isCanceled) {
                 updateStatus(DownloadStatus.PAUSED);
@@ -267,11 +267,13 @@ public class DownloadTask extends Thread {
 
 
             LogHelper.d(TAG, "File downloaded and converted successfully");
-            updateStatus(DownloadStatus.DOWNLOADED);
+
 
             //Deleting temp files
             if (downloadFile.exists())
                 downloadFile.delete();
+
+            DownloadRepository.getInstance(context).getDownloadDao().updateLength(downloadId, outFile.length());
 
             if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q) {
                 MediaScannerConnection.scanFile(context,
@@ -337,6 +339,7 @@ public class DownloadTask extends Thread {
                 }
             }
 
+            updateStatus(DownloadStatus.DOWNLOADED);
 
             notificationBuilder.setContentText("Completed");
             Bitmap bitmap = BitmapFactory.decodeFile(image.getAbsolutePath());
@@ -372,9 +375,11 @@ public class DownloadTask extends Thread {
         return dFilePendingIntent;
     }
 
-    private void downloadWithParallel(URL url, int fileLength, File file) throws IOException, InterruptedException {
+    private void downloadWithParallel(URL url, int fileLength, int bitrate, File file) throws IOException, InterruptedException {
         if (fileLength == 0)
             return;
+
+        String partNameFormat = "%s.part.%s.%s";
 
         int blockSize = fileLength / NUM_THREADS; // Divide the file size into NUM_THREADS blocks
 
@@ -394,7 +399,7 @@ public class DownloadTask extends Thread {
             int finalI = i;
             CompletableFuture<Boolean> uCompletableFuture = CompletableFuture.supplyAsync(() -> {
                 try {
-                    String partFileName = fileName + ".part." + finalI;
+                    String partFileName = String.format(partNameFormat, fileName, bitrate, finalI);
                     File downloadFile = new File(context.getExternalFilesDir(Environment.DIRECTORY_MUSIC), partFileName);
                     HttpsURLConnection connection = (HttpsURLConnection) url.openConnection();
                     if (downloadFile.exists())
@@ -451,7 +456,7 @@ public class DownloadTask extends Thread {
             FileOutputStream fout = new FileOutputStream(file);
             for (int i = 0; i < NUM_THREADS; i++) {
                 byte[] bytes = new byte[8 * 1024];
-                File partFile = new File(context.getExternalFilesDir(Environment.DIRECTORY_MUSIC), fileName + ".part." + i);
+                File partFile = new File(context.getExternalFilesDir(Environment.DIRECTORY_MUSIC), String.format(partNameFormat, fileName, bitrate, i));
                 FileInputStream fin = new FileInputStream(partFile);
                 int count;
                 while (!DownloadTask.this.isCanceled && (count = fin.read(bytes)) != -1) {

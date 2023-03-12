@@ -15,6 +15,9 @@ public interface DownloadDao {
     @Insert
     long insert(Download download);
 
+    @Query("select * from Download where id=:id")
+    Download find(int id);
+
     @Query("select count(videoId) from Download")
     int getCount();
 
