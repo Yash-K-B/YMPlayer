@@ -17,7 +17,7 @@
         android:id="@+id/downloads"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        tools:itemCount="0"
+        tools:itemCount="2"
         tools:listitem="@layout/download_item" />
 
 </FrameLayout>

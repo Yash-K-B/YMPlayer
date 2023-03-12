@@ -1,36 +1,42 @@
 package com.yash.ymplayer;
 
 import android.content.Context;
+import android.content.Intent;
 import android.content.SharedPreferences;
 import android.os.Bundle;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
+import androidx.lifecycle.LifecycleOwner;
+import androidx.lifecycle.Observer;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
-import android.support.v4.media.session.MediaControllerCompat;
+import android.os.Handler;
+import android.os.Looper;
+import android.view.Gravity;
 import android.view.LayoutInflater;
+import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.PopupMenu;
 
 import com.bumptech.glide.Glide;
-import com.google.gson.Gson;
 import com.yash.logging.LogHelper;
 import com.yash.ymplayer.databinding.DownloadItemBinding;
 import com.yash.ymplayer.databinding.FragmentDownloadBinding;
-import com.yash.ymplayer.models.DownloadFile;
+import com.yash.ymplayer.download.manager.DownloadRepository;
+import com.yash.ymplayer.download.manager.DownloadService;
+import com.yash.ymplayer.download.manager.DownloadTask;
+import com.yash.ymplayer.download.manager.Downloader;
+import com.yash.ymplayer.download.manager.constants.DownloadStatus;
+import com.yash.ymplayer.download.manager.models.Download;
 import com.yash.ymplayer.util.ConverterUtil;
 import com.yash.ymplayer.util.Keys;
-import com.yash.youtube_extractor.Extractor;
-import com.yash.youtube_extractor.exceptions.ExtractionException;
-import com.yash.youtube_extractor.models.VideoDetails;
 
 import org.jetbrains.annotations.NotNull;
 
-import java.security.Key;
-import java.text.DecimalFormat;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
@@ -41,8 +47,9 @@ public class DownloadFragment extends Fragment {
     FragmentDownloadBinding downloadBinding;
     Context context;
     SharedPreferences preferences;
-    List<DownloadFile> files = new ArrayList<>();
-    Gson gson;
+    List<Download> files = new ArrayList<>();
+    DownloadFileAdapter adapter;
+    private final Handler handler = new Handler(Looper.getMainLooper());
 
     public DownloadFragment() {
         // Required empty public constructor
@@ -51,14 +58,12 @@ public class DownloadFragment extends Fragment {
     @Override
     public void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        gson = new Gson();
     }
 
     @Override
     public void onAttach(@NonNull Context context) {
         super.onAttach(context);
         this.context = context;
-        preferences = context.getSharedPreferences(Keys.SHARED_PREFERENCES.DOWNLOADS, Context.MODE_PRIVATE);
     }
 
     @Override
@@ -74,36 +79,56 @@ public class DownloadFragment extends Fragment {
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
         ((ActivityActionProvider) context).setCustomToolbar(null, "Downloads");
-        int numFiles = preferences.getInt(Keys.PREFERENCE_KEYS.TOTAL_DOWNLOADS, 0);
-        for (int i = numFiles - 1; i >= 0; i--) {
-            String fileJson = preferences.getString(Keys.PREFERENCE_KEYS.DOWNLOADS + i, "{}");
-            DownloadFile file = gson.fromJson(fileJson, DownloadFile.class);
-            files.add(file);
-        }
-        DownloadFileAdapter adapter = new DownloadFileAdapter(context, files, new DownloadFileAdapter.OnClickListener() {
-            @Override
-            public void onClick(DownloadFile file) {
-                String mediaId = file.uri.substring(file.uri.lastIndexOf('/'));
-                ((ActivityActionProvider) context).interactWithMediaSession(mediaController -> {
-                    Bundle extra = new Bundle();
-                    extra.putBoolean(Keys.PLAY_SINGLE,true);
-                    mediaController.getTransportControls().playFromMediaId(mediaId, extra);
-                });
-            }
-        });
+        List<Download> downloads = DownloadRepository.getInstance(context).getDownloadDao().findAll();
+        files.addAll(downloads);
+        adapter = new DownloadFileAdapter(context, getViewLifecycleOwner(), files, onClickListener);
         downloadBinding.downloads.setLayoutManager(new LinearLayoutManager(context));
         downloadBinding.downloads.setAdapter(adapter);
     }
 
+
+    private final DownloadFileAdapter.OnClickListener onClickListener = new DownloadFileAdapter.OnClickListener() {
+        @Override
+        public void onClick(Download file, int adapterPosition) {
+            if (file.getStatus() == DownloadStatus.DOWNLOADING || file.getStatus() == DownloadStatus.PROCESSING) {
+                Downloader instance = Downloader.getInstance();
+                if (instance != null)
+                    instance.pause(file.getId(), file.getVideoId());
+            } else if (file.getStatus() == DownloadStatus.PAUSED || file.getStatus() == DownloadStatus.FAILED) {
+                LogHelper.d(TAG, "onClick: Download id - %s", file.getId());
+                Intent downloadIntent = new Intent(context, DownloadService.class);
+                downloadIntent.putExtra(Keys.DownloadManager.EXTRA_VIDEO_ID, file.getVideoId());
+                downloadIntent.putExtra(Keys.DownloadManager.EXTRA_BITRATE, file.getBitrate());
+                downloadIntent.putExtra(Keys.DownloadManager.DOWNLOAD_ID, file.getId());
+                context.startService(downloadIntent);
+                handler.postDelayed(() -> adapter.notifyItemChanged(adapterPosition), 500);
+            } else {
+                if (file.getUri() == null)
+                    return;
+                LogHelper.d(TAG, "onClick: URI : %s", file.getUri());
+                String mediaId = file.getUri().substring(file.getUri().lastIndexOf('/') + 1);
+                ((ActivityActionProvider) context).interactWithMediaSession(mediaController -> {
+                    Bundle extra = new Bundle();
+                    extra.putBoolean(Keys.PLAY_SINGLE, true);
+                    mediaController.getTransportControls().playFromMediaId(mediaId, extra);
+                });
+            }
+
+        }
+
+    };
+
     public static class DownloadFileAdapter extends RecyclerView.Adapter<DownloadFileAdapter.DownloadFileViewHolder> {
         Context context;
-        List<DownloadFile> files;
+        List<Download> files;
         OnClickListener listener;
+        LifecycleOwner lifecycleOwner;
 
-        public DownloadFileAdapter(Context context, List<DownloadFile> files, OnClickListener listener) {
+        public DownloadFileAdapter(Context context, LifecycleOwner lifecycleOwner, List<Download> files, OnClickListener listener) {
             this.context = context;
             this.files = files;
             this.listener = listener;
+            this.lifecycleOwner = lifecycleOwner;
         }
 
         @NonNull
@@ -119,34 +144,101 @@ public class DownloadFragment extends Fragment {
         }
 
         @Override
+        public void onViewRecycled(@NonNull DownloadFileViewHolder holder) {
+            holder.destroy();
+        }
+
+        @Override
         public int getItemCount() {
             return files.size();
         }
 
         class DownloadFileViewHolder extends RecyclerView.ViewHolder {
             DownloadItemBinding binding;
+            Download file;
+            DownloadTask task = null;
 
             public DownloadFileViewHolder(DownloadItemBinding binding) {
                 super(binding.getRoot());
                 this.binding = binding;
             }
 
-            public void bind(DownloadFile file, OnClickListener listener) {
-                Glide.with(context).load(file.fileImageUrl).into(binding.fileArt);
+            public void bind(Download file, OnClickListener listener) {
+                this.file = file;
+                Glide.with(context).load(file.getFileImageUrl()).into(binding.fileArt);
                 binding.fileArt.setClipToOutline(true);
-                binding.fileName.setText(file.fileName);
-                binding.subName.setText(String.format("by %s", file.fileSubText));
-                binding.fileSize.setText(ConverterUtil.getFormattedFileSize(file.fileLength));
-                binding.fileFormat.setText(file.extension.toUpperCase());
-                binding.bitrate.setText(String.format(Locale.US,"%d kbps", file.bitrate));
-                itemView.setOnClickListener(v -> listener.onClick(file));
+                binding.fileName.setText(file.getFileName());
+                binding.subName.setText(String.format("by %s", file.getFileSubText()));
+                binding.fileSize.setText(ConverterUtil.getFormattedFileSize(file.getFileLength()));
+                binding.fileFormat.setText(file.getExtension().toUpperCase());
+                binding.bitrate.setText(String.format(Locale.US, "%d kbps", file.getBitrate()));
+                if (file.getStatus() != DownloadStatus.DOWNLOADED)
+                    binding.status.setText(file.getStatus().getValue());
+                itemView.setOnClickListener(v -> listener.onClick(file, getAdapterPosition()));
+                itemView.setOnLongClickListener(v -> showLongPressMenu());
+                attachInprogressTask(file);
+
             }
 
+
+            private boolean showLongPressMenu() {
+                PopupMenu menu = new PopupMenu(context, binding.fileName,  Gravity.END);
+                menu.inflate(R.menu.download_item_context_menu);
+                menu.setOnMenuItemClickListener(item -> {
+                    switch (item.getItemId()) {
+                        case R.id.remove:
+                            DownloadRepository.getInstance(context).getDownloadDao().delete(file.getId());
+                            notifyItemRemoved(getAdapterPosition());
+                            return true;
+
+                        case R.id.deleteFromStorage:
+                            return true;
+                    }
+                    return true;
+                });
+                menu.show();
+                return true;
+            }
+
+            public void attachInprogressTask(Download file) {
+                Downloader instance = Downloader.getInstance();
+                DownloadTask task;
+                if (instance != null && (task = instance.findTask(file.getVideoId(), file.getBitrate())) != null) {
+                    task.getStatus().observe(lifecycleOwner, statusChangeObserver);
+
+                    task.getProgress().observe(lifecycleOwner, progressChangeObserver);
+                } else if (file.getStatus() == DownloadStatus.DOWNLOADING || file.getStatus() == DownloadStatus.PROCESSING) {
+                    file.setStatus(DownloadStatus.PAUSED);
+                    binding.status.setText(file.getStatus().getValue());
+                }
+            }
+
+            public void destroy() {
+                if (task == null)
+                    return;
+                LogHelper.d(TAG, "Download item recycled");
+                task.getProgress().removeObserver(progressChangeObserver);
+                task.getStatus().removeObserver(statusChangeObserver);
+            }
+
+            private final Observer<DownloadStatus> statusChangeObserver = status -> {
+                file.setStatus(status);
+                if (status == DownloadStatus.DOWNLOADED) {
+                    binding.status.setText("");
+                    binding.fileSize.setText(ConverterUtil.getFormattedFileSize(file.getFileLength()));
+                    return;
+                }
+                binding.status.setText(status.getValue());
+            };
+
+            private final Observer<DownloadTask.DownloadProgress> progressChangeObserver = progress -> {
+                binding.fileSize.setText(String.format(Locale.US, "%s / %s", ConverterUtil.getFormattedFileSize(progress.receivedBytes), ConverterUtil.getFormattedFileSize(progress.totalBytes)));
+            };
 
         }
 
         public interface OnClickListener {
-            void onClick(DownloadFile file);
+            void onClick(Download file, int adapterPosition);
         }
 
     }

@@ -43,6 +43,7 @@ import com.yash.ymplayer.models.DownloadFile;
 import com.yash.ymplayer.util.ConverterUtil;
 import com.yash.ymplayer.util.DownloadUtil;
 import com.yash.ymplayer.util.Keys;
+import com.yash.ymplayer.util.StringUtil;
 import com.yash.youtube_extractor.Extractor;
 import com.yash.youtube_extractor.exceptions.ExtractionException;
 import com.yash.youtube_extractor.models.StreamingData.AdaptiveAudioFormat;
@@ -74,7 +75,7 @@ public class DownloadService extends Service {
     public void onCreate() {
         super.onCreate();
         LogHelper.d(TAG, "onCreate: ");
-        downloader = new Downloader(2);
+        downloader = Downloader.getInstance(this, 2);
     }
 
     @Nullable
@@ -85,90 +86,26 @@ public class DownloadService extends Service {
 
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
-        LogHelper.d(TAG, "onStartCommand: ");
-        if (intent == null) return START_NOT_STICKY;
+        LogHelper.d(TAG, "onStartCommand: %s", intent);
+        if (intent == null) {
+            LogHelper.d(TAG, "onStartCommand: Intent doesn't have task details");
+            return START_NOT_STICKY;
+        }
+        String videoId = intent.getStringExtra(Keys.DownloadManager.EXTRA_VIDEO_ID);
+        int downloadId = intent.getIntExtra(Keys.DownloadManager.DOWNLOAD_ID, 0);
+        int bitrate = intent.getIntExtra(Keys.DownloadManager.EXTRA_BITRATE, 128);
+        LogHelper.d(TAG, "onStartCommand: video id - %s, quality - %s, download id - %s", videoId, bitrate, downloadId);
         if (intent.hasExtra(Keys.DownloadManager.EXTRA_ACTION) && ("pause").equals(intent.getStringExtra(Keys.DownloadManager.EXTRA_ACTION))) {
-            downloader.pause(intent.getStringExtra(Keys.DownloadManager.EXTRA_VIDEO_ID));
+            downloader.pause(downloadId, videoId);
         } else if (intent.hasExtra(Keys.DownloadManager.EXTRA_ACTION) && ("play").equals(intent.getStringExtra(Keys.DownloadManager.EXTRA_ACTION))) {
-            String videoId = intent.getStringExtra(Keys.DownloadManager.EXTRA_VIDEO_ID);
-            int taskId = intent.getIntExtra(Keys.DownloadManager.EXTRA_TASK_ID, 100);
-            int bitrate = intent.getIntExtra(Keys.DownloadManager.EXTRA_BITRATE, 128);
-            downloader.resume(new DownloadTask(this, videoId, bitrate, taskId));
+            downloader.resume(new DownloadTask(this, videoId, bitrate, downloadId));
         } else {
-
-            if (!intent.hasExtra(Keys.VIDEO_ID) || !intent.hasExtra(Keys.EXTRA_DOWNLOAD_QUALITY))
+            if (!StringUtil.hasText(videoId))
                 return super.onStartCommand(intent, flags, startId);
-            String videoId = intent.getStringExtra(Keys.VIDEO_ID);
-            int bitrate = intent.getIntExtra(Keys.EXTRA_DOWNLOAD_QUALITY, 128);
-            downloader.enqueue(new DownloadTask(this, videoId, bitrate));
+
+            downloader.enqueue(new DownloadTask(this, videoId, bitrate, downloadId));
         }
         return START_NOT_STICKY;
-    }
-
-    class Downloader {
-        Queue<DownloadTask> taskQueue;
-        LinkedList<DownloadTask> runningTasks;
-        int runningTaskCount = 0;
-        int maxRunningTasks;
-        Queue<Integer> taskIds;
-
-        public Downloader(int maxRunningTasks) {
-            this.maxRunningTasks = maxRunningTasks;
-            taskQueue = new ArrayDeque<>();
-            runningTasks = new LinkedList<>();
-            taskIds = new ArrayDeque<>(100);
-            for (int i = 100; i < 200; i++)
-                taskIds.add(i);
-        }
-
-        void enqueue(DownloadTask task) {
-            LogHelper.d(TAG, "enqueue: ");
-            Integer id = taskIds.poll();
-            if (id == null) return;
-            task.setCallbackObject(this);
-            task.setTaskId(id);
-            taskQueue.add(task);
-            execute();
-        }
-
-        void resume(DownloadTask thread) {
-            thread.setCallbackObject(this);
-            taskQueue.add(thread);
-            execute();
-        }
-
-        void execute() {
-            LogHelper.d(TAG, "execute: ");
-            if (runningTaskCount == maxRunningTasks) return;
-            if (taskQueue.isEmpty()) return;
-            DownloadTask thread = taskQueue.poll();
-            runningTasks.add(thread);
-            runningTaskCount++;
-            LogHelper.d(TAG, "execute:  running task videoId: " + thread.getVideoId());
-            thread.start();
-        }
-
-        void taskFinished(String videoId, int taskId) {
-            taskIds.add(taskId);
-            runningTaskCount--;
-            LogHelper.d(TAG, "taskFinished videoId: " + videoId);
-            if (!taskQueue.isEmpty()) execute();
-            else if (runningTaskCount == 0) DownloadService.this.stopSelf();
-        }
-
-        public void pause(String videoId) {
-            for (int i = 0; i < runningTasks.size(); i++) {
-                if (runningTasks.get(i).getVideoId().equals(videoId)) {
-                    DownloadTask task = runningTasks.remove(i);
-                    task.interrupt();
-                    task.notifyProgressPaused();
-
-                    LogHelper.d(TAG, "Task paused");
-                    execute();
-
-                }
-            }
-        }
     }
 
     @Override
