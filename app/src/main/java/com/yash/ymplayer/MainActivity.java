@@ -1,29 +1,18 @@
 package com.yash.ymplayer;
 
 import android.Manifest;
-import android.animation.TimeInterpolator;
 import android.animation.ValueAnimator;
 import android.app.AlertDialog;
 import android.app.NotificationChannel;
 import android.app.NotificationManager;
 import android.content.ComponentName;
-import android.content.ContentUris;
-import android.content.Context;
-import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.pm.ApplicationInfo;
 import android.content.pm.PackageManager;
-import android.graphics.Bitmap;
 import android.graphics.Color;
 import android.graphics.drawable.BitmapDrawable;
 import android.graphics.drawable.Drawable;
-import android.media.MediaCodec;
-import android.media.MediaCodecInfo;
-import android.media.MediaCodecList;
-import android.media.MediaFormat;
-import android.media.MediaMetadataRetriever;
-import android.media.MediaMuxer;
 import android.media.audiofx.AudioEffect;
 import android.net.Uri;
 import android.os.Build;
@@ -31,31 +20,21 @@ import android.os.Bundle;
 import android.os.Environment;
 import android.os.Handler;
 import android.os.Looper;
-import android.os.RemoteException;
 import android.os.ResultReceiver;
-import android.provider.MediaStore;
-import android.provider.Settings;
-import android.provider.Settings.Secure;
 import android.support.v4.media.MediaBrowserCompat;
 import android.support.v4.media.MediaMetadataCompat;
 import android.support.v4.media.session.MediaControllerCompat;
 import android.support.v4.media.session.MediaSessionCompat;
 import android.support.v4.media.session.PlaybackStateCompat;
-import android.telephony.TelephonyManager;
-import android.view.Gravity;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.animation.DecelerateInterpolator;
 import android.view.animation.LinearInterpolator;
-import android.webkit.WebView;
-import android.webkit.WebViewClient;
 import android.widget.HorizontalScrollView;
 import android.widget.ImageView;
-import android.widget.LinearLayout;
 import android.widget.PopupMenu;
-import android.widget.RelativeLayout;
 import android.widget.ScrollView;
 import android.widget.SeekBar;
 import android.widget.TextView;
@@ -65,7 +44,6 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.ActionBarDrawerToggle;
 import androidx.appcompat.widget.Toolbar;
-import androidx.constraintlayout.widget.ConstraintLayout;
 import androidx.coordinatorlayout.widget.CoordinatorLayout;
 import androidx.core.content.FileProvider;
 import androidx.core.view.GravityCompat;
@@ -78,7 +56,6 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import com.bumptech.glide.Glide;
 import com.bumptech.glide.load.DataSource;
-import com.bumptech.glide.load.Key;
 import com.bumptech.glide.load.engine.GlideException;
 import com.bumptech.glide.request.RequestListener;
 import com.bumptech.glide.request.target.CustomTarget;
@@ -88,7 +65,6 @@ import com.google.android.material.bottomsheet.BottomSheetBehavior;
 import com.google.android.material.navigation.NavigationView;
 import com.naman14.androidlame.AndroidLame;
 import com.naman14.androidlame.LameBuilder;
-import com.sothree.slidinguppanel.SlidingUpPanelLayout;
 import com.yash.logging.utils.ExceptionUtil;
 import com.yash.ymplayer.constant.Constants;
 import com.yash.ymplayer.databinding.ActivityMainBinding;
@@ -108,7 +84,6 @@ import com.yash.ymplayer.util.Song;
 import org.json.JSONObject;
 
 import java.io.BufferedReader;
-import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
@@ -116,11 +91,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
-import java.io.OutputStreamWriter;
-import java.io.Reader;
-import java.io.Writer;
 import java.net.HttpURLConnection;
-import java.net.MalformedURLException;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
@@ -294,7 +265,11 @@ public class MainActivity extends BaseActivity implements ActivityActionProvider
             @Override
             public boolean onNavigationItemSelected(@NonNull MenuItem item) {
                 navigationItemId = item.getItemId();
-                activityMainBinding.drawerLayout.closeDrawer(GravityCompat.START);
+                boolean isDrawerFixed = getResources().getBoolean(R.bool.isDrawerFixed);
+                if(!isDrawerFixed) {
+                    activityMainBinding.drawerLayout.closeDrawer(GravityCompat.START);
+                } else
+                    handleDrawerEvent();
                 return true;
             }
         });
@@ -313,37 +288,7 @@ public class MainActivity extends BaseActivity implements ActivityActionProvider
             public void onDrawerClosed(@NonNull View drawerView) {
                 LogHelper.d(TAG, "onDrawerClosed: ");
                 if (navigationItemId == -1) return;
-                switch (navigationItemId) {
-                    case R.id.youtubeLibSongs:
-                        if (currentFragment.equals(Keys.Fragments.YOUTUBE_SONGS)) return;
-                        currentFragment = Keys.Fragments.YOUTUBE_SONGS;
-                        getSupportFragmentManager().beginTransaction().replace(activityMainBinding.container.getId(), new YoutubeLibrary(), Keys.Fragments.YOUTUBE_SONGS).commit();
-                        return;
-                    case R.id.localSongs:
-                        if (currentFragment.equals(Keys.Fragments.LOCAL_SONGS)) return;
-                        currentFragment = Keys.Fragments.LOCAL_SONGS;
-                        getSupportFragmentManager().beginTransaction().replace(activityMainBinding.container.getId(), new LocalSongs(), Keys.Fragments.LOCAL_SONGS).commit();
-                        return;
-                    case R.id.downloads:
-                        if (currentFragment.equals(Keys.Fragments.DOWNLOADS)) return;
-                        currentFragment = Keys.Fragments.DOWNLOADS;
-                        getSupportFragmentManager().beginTransaction().replace(activityMainBinding.container.getId(), new DownloadFragment(), Keys.Fragments.DOWNLOADS).commit();
-                        return;
-                    case R.id.settings:
-                        if (currentFragment.equals(Keys.Fragments.SETTINGS)) return;
-                        currentFragment = Keys.Fragments.SETTINGS;
-                        getSupportFragmentManager().beginTransaction().replace(activityMainBinding.container.getId(), new SettingsFragment(), Keys.Fragments.SETTINGS).commit();
-                        return;
-                    case R.id.share:
-                        shareMyApp();
-                        return;
-                    case R.id.about:
-                        if (currentFragment.equals(Keys.Fragments.ABOUT)) return;
-                        currentFragment = Keys.Fragments.ABOUT;
-                        getSupportFragmentManager().beginTransaction().replace(activityMainBinding.container.getId(), new AboutFragment(), Keys.Fragments.ABOUT).commit();
-                        return;
-                    default:
-                }
+                handleDrawerEvent();
             }
 
             @Override
@@ -433,6 +378,40 @@ public class MainActivity extends BaseActivity implements ActivityActionProvider
 
         mediaBrowser = new MediaBrowserCompat(this, new ComponentName(this, PlayerService.class), connectionCallback, null);
         mediaBrowser.connect();
+    }
+
+    private void handleDrawerEvent() {
+        switch (navigationItemId) {
+            case R.id.youtubeLibSongs:
+                if (currentFragment.equals(Keys.Fragments.YOUTUBE_SONGS)) return;
+                currentFragment = Keys.Fragments.YOUTUBE_SONGS;
+                getSupportFragmentManager().beginTransaction().replace(activityMainBinding.container.getId(), new YoutubeLibrary(), Keys.Fragments.YOUTUBE_SONGS).commit();
+                return;
+            case R.id.localSongs:
+                if (currentFragment.equals(Keys.Fragments.LOCAL_SONGS)) return;
+                currentFragment = Keys.Fragments.LOCAL_SONGS;
+                getSupportFragmentManager().beginTransaction().replace(activityMainBinding.container.getId(), new LocalSongs(), Keys.Fragments.LOCAL_SONGS).commit();
+                return;
+            case R.id.downloads:
+                if (currentFragment.equals(Keys.Fragments.DOWNLOADS)) return;
+                currentFragment = Keys.Fragments.DOWNLOADS;
+                getSupportFragmentManager().beginTransaction().replace(activityMainBinding.container.getId(), new DownloadFragment(), Keys.Fragments.DOWNLOADS).commit();
+                return;
+            case R.id.settings:
+                if (currentFragment.equals(Keys.Fragments.SETTINGS)) return;
+                currentFragment = Keys.Fragments.SETTINGS;
+                getSupportFragmentManager().beginTransaction().replace(activityMainBinding.container.getId(), new SettingsFragment(), Keys.Fragments.SETTINGS).commit();
+                return;
+            case R.id.share:
+                shareMyApp();
+                return;
+            case R.id.about:
+                if (currentFragment.equals(Keys.Fragments.ABOUT)) return;
+                currentFragment = Keys.Fragments.ABOUT;
+                getSupportFragmentManager().beginTransaction().replace(activityMainBinding.container.getId(), new AboutFragment(), Keys.Fragments.ABOUT).commit();
+                return;
+            default:
+        }
     }
 
     Pattern shortsPattern = Pattern.compile("https://youtube.com/shorts/(.*)\\?feature=share");
@@ -839,9 +818,12 @@ public class MainActivity extends BaseActivity implements ActivityActionProvider
         getSupportActionBar().setDisplayHomeAsUpEnabled(true);
         if (title != null)
             getSupportActionBar().setTitle(title);
-        drawerToggle = new ActionBarDrawerToggle(this, activityMainBinding.drawerLayout, R.string.open, R.string.close);
-        //activityMainBinding.drawerLayout.addDrawerListener(drawerToggle);
-        drawerToggle.syncState();
+        boolean isDrawerFixed = getResources().getBoolean(R.bool.isDrawerFixed);
+        if(!isDrawerFixed) {
+            drawerToggle = new ActionBarDrawerToggle(this, activityMainBinding.drawerLayout, R.string.open, R.string.close);
+            //activityMainBinding.drawerLayout.addDrawerListener(drawerToggle);
+            drawerToggle.syncState();
+        }
     }
 
     @Override

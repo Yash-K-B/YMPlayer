@@ -5,14 +5,36 @@
     android:id="@+id/drawerLayout"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
+    android:fitsSystemWindows="true"
     tools:openDrawer="start">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal">
+
+        <com.google.android.material.navigation.NavigationView
+            android:id="@+id/nav_view"
+            android:layout_width="300dp"
+            android:layout_height="match_parent"
+            android:layout_gravity="start"
+            android:fitsSystemWindows="true"
+            app:headerLayout="@layout/nav_header_layout"
+            app:itemBackground="@android:color/transparent"
+            app:menu="@menu/nav_menu" />
+
+        <View
+            android:layout_width="0.5dp"
+            android:layout_height="match_parent"
+            android:background="?android:attr/dividerVertical"/>
+
 
     <androidx.coordinatorlayout.widget.CoordinatorLayout
         android:id="@+id/sliding_layout"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:gravity="bottom"
-        android:layout_marginStart="300dp"
+        android:layout_marginStart="0dp"
         android:orientation="vertical">
 
         <androidx.coordinatorlayout.widget.CoordinatorLayout
@@ -492,15 +514,7 @@
 
     </androidx.coordinatorlayout.widget.CoordinatorLayout>
 
-    <com.google.android.material.navigation.NavigationView
-        android:id="@+id/nav_view"
-        android:layout_width="300dp"
-        android:layout_height="match_parent"
-        android:layout_gravity="start"
-        android:fitsSystemWindows="true"
-        app:headerLayout="@layout/nav_header_layout"
-        app:itemBackground="@android:color/transparent"
-        app:menu="@menu/nav_menu" />
+    </LinearLayout>
 
 
 </androidx.drawerlayout.widget.DrawerLayout>
