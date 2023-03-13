@@ -19,6 +19,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.stream.Collectors;
 
 public class SearchViewModel extends ViewModel {
@@ -117,13 +118,25 @@ public class SearchViewModel extends ViewModel {
     void updateSearchData(int type) {
         searchListUpdateCalls++;
         if (type == UPDATE_TYPE.ALBUMS) {
-            List<MediaBrowserCompat.MediaItem> mediaItems = allAlbums.getValue().stream().map(mediaItem -> mapToNew(mediaItem, SearchListAdapter.ItemType.ALBUMS)).collect(Collectors.toList());
+            List<MediaBrowserCompat.MediaItem> mediaItems = new ArrayList<>();
+            for (MediaBrowserCompat.MediaItem mediaItem : Objects.requireNonNull(allAlbums.getValue())) {
+                MediaBrowserCompat.MediaItem item = mapToNew(mediaItem, SearchListAdapter.ItemType.ALBUMS);
+                mediaItems.add(item);
+            }
             searchList.add(1, mediaItems);
         } else if (type == UPDATE_TYPE.ARTISTS) {
-            List<MediaBrowserCompat.MediaItem> mediaItems = allArtists.getValue().stream().map(mediaItem -> mapToNew(mediaItem, SearchListAdapter.ItemType.ARTISTS)).collect(Collectors.toList());
+            List<MediaBrowserCompat.MediaItem> mediaItems = new ArrayList<>();
+            for (MediaBrowserCompat.MediaItem mediaItem : Objects.requireNonNull(allArtists.getValue())) {
+                MediaBrowserCompat.MediaItem item = mapToNew(mediaItem, SearchListAdapter.ItemType.ARTISTS);
+                mediaItems.add(item);
+            }
             searchList.add(2, mediaItems);
         } else if (type == UPDATE_TYPE.ALL_SONGS) {
-            List<MediaBrowserCompat.MediaItem> mediaItems = songs.getValue().stream().map(mediaItem -> mapToNew(mediaItem, SearchListAdapter.ItemType.SONGS)).collect(Collectors.toList());
+            List<MediaBrowserCompat.MediaItem> mediaItems = new ArrayList<>();
+            for (MediaBrowserCompat.MediaItem mediaItem : Objects.requireNonNull(songs.getValue())) {
+                MediaBrowserCompat.MediaItem item = mapToNew(mediaItem, SearchListAdapter.ItemType.SONGS);
+                mediaItems.add(item);
+            }
             searchList.add(0, mediaItems);
         }
         if (searchListUpdateCalls == 3)

@@ -55,6 +55,8 @@ import java.io.InputStream;
 import java.io.InterruptedIOException;
 import java.io.OutputStream;
 import java.net.URL;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Locale;
 import java.util.concurrent.CompletableFuture;
@@ -65,6 +67,14 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Stream;
 
 import javax.net.ssl.HttpsURLConnection;
+
+import io.reactivex.rxjava3.android.schedulers.AndroidSchedulers;
+import io.reactivex.rxjava3.annotations.NonNull;
+import io.reactivex.rxjava3.core.Completable;
+import io.reactivex.rxjava3.core.Scheduler;
+import io.reactivex.rxjava3.core.Single;
+import io.reactivex.rxjava3.disposables.Disposable;
+import io.reactivex.rxjava3.schedulers.Schedulers;
 
 public class DownloadTask extends Thread {
 
@@ -375,6 +385,7 @@ public class DownloadTask extends Thread {
         return dFilePendingIntent;
     }
 
+    @SuppressLint("CheckResult")
     private void downloadWithParallel(URL url, int fileLength, int bitrate, File file) throws IOException, InterruptedException {
         if (fileLength == 0)
             return;
@@ -387,7 +398,7 @@ public class DownloadTask extends Thread {
 
         String fileName = file.getName();
 
-        CompletableFuture<Boolean>[] futures = new CompletableFuture[NUM_THREADS];
+        List<Single<Boolean>> futures = new ArrayList<>();
         for (int i = 0; i < NUM_THREADS; i++) {
             final long[] startByte = {i * blockSize};
             long endByte = (i + 1) * blockSize - 1;
@@ -397,7 +408,7 @@ public class DownloadTask extends Thread {
             }
             long finalEndByte = endByte;
             int finalI = i;
-            CompletableFuture<Boolean> uCompletableFuture = CompletableFuture.supplyAsync(() -> {
+            Single<Boolean> uCompletableFuture = Single.fromSupplier(() -> {
                 try {
                     String partFileName = String.format(partNameFormat, fileName, bitrate, finalI);
                     File downloadFile = new File(context.getExternalFilesDir(Environment.DIRECTORY_MUSIC), partFileName);
@@ -434,24 +445,26 @@ public class DownloadTask extends Thread {
                 } catch (Exception e) {
                     return false;
                 }
-            }, executorService);
+            }).subscribeOn(Schedulers.computation());
 
-            futures[i] = uCompletableFuture;
+            futures.add(uCompletableFuture);
 
         }
 
         LogHelper.d(TAG, "downloadWithParallel: Waiting for all files to be downloaded");
-        CompletableFuture.allOf(futures);
+        boolean isAllSuccessfullyCompleted = Single.zip(futures, objects -> {
+                    for (Object obj : objects) {
+                        if (!(boolean) obj) {
+                            return false;
+                        }
+                    }
+                    return true;
+                })
+                .observeOn(AndroidSchedulers.mainThread())
+                .blockingGet();
 
-        boolean allMatch = Stream.of(futures).allMatch(f -> {
-            try {
-                return f.get();
-            } catch (ExecutionException | InterruptedException e) {
-                return false;
-            }
-        });
 
-        if (allMatch) {
+        if (isAllSuccessfullyCompleted) {
             LogHelper.d(TAG, "downloadWithParallel: Merging all files ");
             FileOutputStream fout = new FileOutputStream(file);
             for (int i = 0; i < NUM_THREADS; i++) {

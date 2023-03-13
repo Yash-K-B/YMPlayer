@@ -69,7 +69,8 @@ dependencies {
     implementation "androidx.paging:paging-runtime:2.1.2"
 
     //RxJava
-    implementation 'io.reactivex.rxjava3:rxjava:3.0.4'
+    implementation 'io.reactivex.rxjava3:rxjava:3.1.1'
+    implementation 'io.reactivex.rxjava3:rxandroid:3.0.0'
 
     //Audio Converter
     implementation 'com.github.naman14:TAndroidLame:1.1'
@@ -98,7 +99,7 @@ dependencies {
     compileOnly 'org.projectlombok:lombok:1.18.24'
     annotationProcessor 'org.projectlombok:lombok:1.18.24'
 
-    implementation 'com.arthenica:ffmpeg-kit-full:5.1'
+    implementation 'com.arthenica:ffmpeg-kit-full:5.1.LTS'
 
     implementation 'org.apache.commons:commons-text:1.10.0'
 
