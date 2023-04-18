@@ -95,7 +95,10 @@ import com.yash.youtube_extractor.models.VideoDetails;
 import java.io.IOException;
 import java.security.Key;
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 import java.util.regex.Pattern;
@@ -1200,7 +1203,11 @@ public class PlayerService extends MediaBrowserServiceCompat implements PlayerHe
         startForeground(10, notification);
 
         if (state != PlaybackStateCompat.STATE_PLAYING) {
-            stopForeground(false);
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+                stopForeground(STOP_FOREGROUND_DETACH);
+            } else {
+                stopForeground(false);
+            }
         }
     }
 
@@ -1454,7 +1461,28 @@ public class PlayerService extends MediaBrowserServiceCompat implements PlayerHe
                                         LogHelper.d(TAG, "resolveDataSpec: bitrate : " + audioStreams.get(i).getBitrate());
                                     break;
 
+                                case 0:
+                                    break;
+
                                 default:
+                                    Map<Integer, List<StreamingData.AdaptiveAudioFormat>> streamMap = new LinkedHashMap<>();
+                                    for (var stream: audioStreams) {
+                                        Integer itag = stream.getItag();
+                                        List<StreamingData.AdaptiveAudioFormat> adaptiveAudioFormats = streamMap.get(itag);
+                                        if(adaptiveAudioFormats == null) {
+                                            adaptiveAudioFormats = new ArrayList<>();
+                                            streamMap.put(itag, adaptiveAudioFormats);
+                                        }
+                                        adaptiveAudioFormats.add(stream);
+                                    }
+                                    int itag = getFromQuality(quality);
+                                    List<StreamingData.AdaptiveAudioFormat> audioFormats = streamMap.get(itag) == null? new ArrayList<>(): streamMap.get(itag);
+                                    audioUri = Uri.parse(audioFormats.get(audioFormats.size() - 1).getUrl());
+                                    uriCache.put(dataSpec.uri.toString(), new YoutubeSongUriDetail(dataSpec.uri.toString(), audioStreams.get(1).getUrl(), audioStreams.get(2).getUrl(), audioStreams.get(3).getUrl(), songLength));
+                                    LogHelper.d(TAG, "resolveDataSpec: quality:" + quality + " selected bitrate:" + audioStreams.get(quality).getBitrate());
+                                    for (int i = 0; i < 4; i++)
+                                        LogHelper.d(TAG, "resolveDataSpec: bitrate : " + audioStreams.get(i).getBitrate());
+                                    break;
                             }
                             LogHelper.d(TAG, "resolveDataSpec: new uri:" + audioUri);
 
@@ -1477,6 +1505,20 @@ public class PlayerService extends MediaBrowserServiceCompat implements PlayerHe
             }
 
         });
+    }
+
+    private Integer getFromQuality(int quality) {
+        switch (quality) {
+            case 0:
+                return 140;
+            case 1:
+                return 249;
+            case 2:
+                return 250;
+            case 3:
+                return 251;
+        }
+        return 140;
     }
 
     private void updatePlayingQueueItemLength(int index, long songLength) {

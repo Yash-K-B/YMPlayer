@@ -7,7 +7,6 @@ import android.net.ConnectivityManager.NetworkCallback;
 import android.net.Network;
 import android.net.NetworkCapabilities;
 import android.net.NetworkRequest;
-import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
 
@@ -15,19 +14,14 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
 import androidx.fragment.app.FragmentActivity;
-import androidx.lifecycle.Observer;
 import androidx.lifecycle.ViewModelProvider;
-import androidx.paging.PagedList;
 import androidx.recyclerview.widget.LinearLayoutManager;
 
 import android.os.Handler;
 import android.os.Looper;
-import android.os.RemoteException;
 import android.support.v4.media.MediaBrowserCompat;
 import android.support.v4.media.session.MediaControllerCompat;
 import android.text.Html;
-import android.text.Spanned;
-import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -36,12 +30,9 @@ import com.google.android.material.snackbar.Snackbar;
 import com.yash.ymplayer.PlayerService;
 import com.yash.ymplayer.databinding.FragmentTopTracksBinding;
 import com.yash.logging.LogHelper;
-import com.yash.ymplayer.interfaces.TrackClickListener;
-import com.yash.ymplayer.storage.AudioProvider;
 import com.yash.ymplayer.ui.youtube.YoutubeLibraryViewModel;
-import com.yash.ymplayer.util.Keys;
+import com.yash.ymplayer.ui.youtube.livepage.YoutubePagedListAdapter;
 import com.yash.ymplayer.util.TrackContextMenuClickListener;
-import com.yash.ymplayer.util.YoutubeSong;
 
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -51,7 +42,7 @@ public class TopTracks extends Fragment {
     FragmentTopTracksBinding topTracksBinding;
     FragmentActivity activity;
     Context context;
-    TopTracksAdapter adapter;
+    YoutubePagedListAdapter adapter;
     MediaBrowserCompat mediaBrowser;
     MediaControllerCompat mediaController;
     private final Handler handler = new Handler(Looper.getMainLooper());
@@ -119,7 +110,7 @@ public class TopTracks extends Fragment {
             LogHelper.d(TAG, "onConnected: TopTracks");
             isConnectedToService = true;
             handler.postDelayed(noInternet, 1000);
-            adapter = new TopTracksAdapter(context, new TrackContextMenuClickListener(context, mediaController, "TOP_TRACKS|"), mediaController);
+            adapter = new YoutubePagedListAdapter(context, new TrackContextMenuClickListener(context, mediaController, "TOP_TRACKS|"), mediaController);
             topTracksBinding.topTracksContainer.setAdapter(adapter);
 
             if (!isContentLoaded && isNetworkAvailable)
@@ -174,8 +165,9 @@ public class TopTracks extends Fragment {
             topTracksBinding.noInternetHint.setVisibility(View.INVISIBLE);
             isContentLoaded = true;
             viewModel.getTopTracks().observe(getViewLifecycleOwner(), youtubeSongs -> {
-                LogHelper.d(TAG, "onChanged: TopTracks : " + youtubeSongs.isEmpty());
-                adapter.submitList(youtubeSongs);
+                LogHelper.d(TAG, "onChanged: TopTracks : " + youtubeSongs);
+                adapter.submitData(getLifecycle(), youtubeSongs);
+                topTracksBinding.topTracksLoadingHint.setVisibility(View.GONE);
             });
         }
 

@@ -187,7 +187,7 @@ public class YoutubeSearch extends BasePlayerActivity {
             try {
                 String url = "https://suggestqueries-clients6.youtube.com/complete/search?client=youtube&hl=en&gl=in&sugexp=foo%2Chm.evie%3D0&gs_rn=64&gs_ri=youtube&ds=yt&cp=1&gs_id=4&q=" + URLEncoder.encode(query) + "&xhr=t&xssi=t";
                 byte[] download = DownloadUtil.download(url);
-                String response = StringEscapeUtils.unescapeJava(new String(download, StandardCharsets.UTF_8));
+                String response = unescapeUTF8(new String(download, StandardCharsets.UTF_8));
                 String result = JsonUtil.extractJsonFromHtml("[", response);
                 Matcher matcher = pattern.matcher(result);
                 MatrixCursor cursor = new MatrixCursor(new String[]{SearchManager.SUGGEST_COLUMN_TEXT_1, "_id"});
@@ -204,6 +204,30 @@ public class YoutubeSearch extends BasePlayerActivity {
         });
     }
 
+
+    public static String unescapeUTF8(String input) {
+        StringBuilder output = new StringBuilder();
+        int i = 0;
+        while (i < input.length()) {
+            char c = input.charAt(i);
+            if (c == '\\' && i + 5 < input.length() && input.charAt(i + 1) == 'u') {
+                try {
+                    int codepoint = Integer.parseInt(input.substring(i + 2, i + 6), 16);
+                    output.append((char) codepoint);
+                    i += 6;
+                } catch (NumberFormatException e) {
+                    // If the Unicode escape sequence is invalid, treat it as a literal backslash and 'u'
+                    output.append('\\');
+                    output.append('u');
+                    i += 2;
+                }
+            } else {
+                output.append(c);
+                i++;
+            }
+        }
+        return output.toString();
+    }
 
     public static class SuggestionAdapter extends CursorAdapter {
 

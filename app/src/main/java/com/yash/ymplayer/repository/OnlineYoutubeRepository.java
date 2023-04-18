@@ -11,8 +11,6 @@ import android.text.TextUtils;
 import android.util.Log;
 import android.util.Pair;
 
-import androidx.room.util.StringUtil;
-
 import com.android.volley.Cache;
 import com.android.volley.NetworkResponse;
 import com.android.volley.ParseError;
@@ -28,12 +26,15 @@ import com.yash.ymplayer.models.PopularPlaylist;
 import com.yash.ymplayer.models.PopularPlaylists;
 import com.yash.ymplayer.models.YoutubePlaylist;
 import com.yash.ymplayer.storage.AudioProvider;
+import com.yash.ymplayer.ui.youtube.livepage.PagedResponse;
 import com.yash.ymplayer.util.YoutubeSong;
 import com.yash.youtube_extractor.Extractor;
 import com.yash.youtube_extractor.ExtractorHelper;
+import com.yash.youtube_extractor.constants.ContinuationType;
 import com.yash.youtube_extractor.exceptions.ExtractionException;
 import com.yash.youtube_extractor.models.VideoData;
 import com.yash.youtube_extractor.models.VideoDetails;
+import com.yash.youtube_extractor.models.YoutubeResponse;
 import com.yash.youtube_extractor.utility.CollectionUtility;
 import com.yash.youtube_extractor.utility.CommonUtility;
 
@@ -42,7 +43,6 @@ import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.io.UnsupportedEncodingException;
-import java.util.AbstractMap;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
@@ -62,7 +62,7 @@ public class OnlineYoutubeRepository {
     Context context;
     static OnlineYoutubeRepository instance;
     RequestQueue requestQueue;
-    TopTracksLoadedCallback callback;
+    RequestedTracksLoadedCallback callback;
     ExecutorService executor = Executors.newSingleThreadExecutor();
     Handler handler = new Handler(Looper.getMainLooper());
 
@@ -81,7 +81,7 @@ public class OnlineYoutubeRepository {
         return instance;
     }
 
-    public void topTracks(String pageToken, TopTracksLoadedCallback callback) {
+    public void topTracks(String pageToken, RequestedTracksLoadedCallback callback) {
         this.callback = callback;
         LogHelper.d(TAG, "topTracks: Extraction");
         String url = "https://www.googleapis.com/youtube/v3/playlistItems?part=snippet&fields=prevPageToken,nextPageToken,items(snippet(title,thumbnails(default,medium,high),channelTitle,resourceId))&playlistId=PL4fGSI1pDJn40WjZ6utkIuj2rNg-7iGsq&maxResults=50&key=AIzaSyAdfvLnL55J-5dOwiL_IDF5PydkF3r2jQA";
@@ -160,7 +160,7 @@ public class OnlineYoutubeRepository {
 
     }
 
-    private void loadSongDuration(List<YoutubeSong> songs, TopTracksLoadedCallback callback, String pageToken, String prevToken, String nextToken) {
+    private void loadSongDuration(List<YoutubeSong> songs, RequestedTracksLoadedCallback callback, String pageToken, String prevToken, String nextToken) {
         StringBuilder ids = new StringBuilder();
         for (YoutubeSong song : songs)
             ids.append(song.getVideoId()).append(",");
@@ -256,7 +256,7 @@ public class OnlineYoutubeRepository {
         return mediaItems;
     }
 
-    public interface TopTracksLoadedCallback {
+    public interface RequestedTracksLoadedCallback {
         void onLoaded(List<YoutubeSong> tracks, String prevToken, String nextToken);
     }
 
@@ -797,7 +797,7 @@ public class OnlineYoutubeRepository {
         executor.execute(() -> {
             try {
                 List<YoutubeSong> songs = new ArrayList<>();
-                List<com.yash.youtube_extractor.models.YoutubeSong> youtubeSongs = ExtractorHelper.playlistSongs(id);
+                List<com.yash.youtube_extractor.models.YoutubeSong> youtubeSongs = ExtractorHelper.playlistSongs(id).getSongs();
                 for (com.yash.youtube_extractor.models.YoutubeSong youtubeSong : youtubeSongs) {
                     YoutubeSong song = new YoutubeSong(youtubeSong.getTitle(), youtubeSong.getVideoId(), youtubeSong.getChannelTitle(), youtubeSong.getArtUrlSmall(), youtubeSong.getArtUrlMedium(), youtubeSong.getArtUrlHigh());
                     song.setDurationMillis(youtubeSong.getDurationMillis());
@@ -810,6 +810,47 @@ public class OnlineYoutubeRepository {
                 handler.post(() -> callback.onError(e));
             }
         });
+    }
+
+
+    public PagedResponse<YoutubeSong> getPlaylistTracks(String id, String desc) {
+        LogHelper.d(TAG, "loadPlaylistTracks: [%s]", id);
+
+        try {
+            List<YoutubeSong> songs = new ArrayList<>();
+            YoutubeResponse youtubeResponse = ExtractorHelper.playlistSongs(id);
+            for (com.yash.youtube_extractor.models.YoutubeSong youtubeSong : youtubeResponse.getSongs()) {
+                YoutubeSong song = new YoutubeSong(youtubeSong.getTitle(), youtubeSong.getVideoId(), youtubeSong.getChannelTitle(), youtubeSong.getArtUrlSmall(), youtubeSong.getArtUrlMedium(), youtubeSong.getArtUrlHigh());
+                song.setDurationMillis(youtubeSong.getDurationMillis());
+                song.setChannelDesc(desc);
+                songs.add(song);
+            }
+            LogHelper.d(TAG, "loadPlaylistTracks: Next token : %s", youtubeResponse.getContinuationToken());
+            return new PagedResponse<>(songs, null, youtubeResponse.getContinuationToken());
+        } catch (Exception e) {
+            Log.i(TAG, "loadPlaylistTracks: ", e);
+            return new PagedResponse<>(new ArrayList<>(), null, null);
+        }
+    }
+
+    public PagedResponse<YoutubeSong> getMorePlaylistTracks(String continuationToken, String desc) {
+        LogHelper.d(TAG, "loadMorePlaylistTracks: with token [%s]", continuationToken);
+
+        try {
+            List<YoutubeSong> songs = new ArrayList<>();
+            YoutubeResponse youtubeResponse = ExtractorHelper.continuationResponse(continuationToken, ContinuationType.BROWSE);
+            for (com.yash.youtube_extractor.models.YoutubeSong youtubeSong : youtubeResponse.getSongs()) {
+                YoutubeSong song = new YoutubeSong(youtubeSong.getTitle(), youtubeSong.getVideoId(), youtubeSong.getChannelTitle(), youtubeSong.getArtUrlSmall(), youtubeSong.getArtUrlMedium(), youtubeSong.getArtUrlHigh());
+                song.setDurationMillis(youtubeSong.getDurationMillis());
+                song.setChannelDesc(desc);
+                songs.add(song);
+            }
+            LogHelper.d(TAG, "loadMorePlaylistTracks: Next token : %s", youtubeResponse.getContinuationToken());
+            return new PagedResponse<>(songs, null, youtubeResponse.getContinuationToken());
+        } catch (Exception e) {
+            Log.i(TAG, "loadMorePlaylistTracks: ", e);
+            return new PagedResponse<>(new ArrayList<>(), null, null);
+        }
     }
 
     public void getChannelPlaylists(String channelId, PlaylistLoadedCallback callback) {

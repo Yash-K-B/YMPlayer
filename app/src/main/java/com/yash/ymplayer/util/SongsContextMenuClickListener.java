@@ -123,9 +123,9 @@ public class SongsContextMenuClickListener implements SongContextMenuListener {
         long mediaId = Long.parseLong(parts[parts.length - 1]);
         Uri contentUri = ContentUris.withAppendedId(MediaStore.Audio.Media.EXTERNAL_CONTENT_URI, mediaId);
         Intent intent = new Intent(Intent.ACTION_SEND);
-        intent.setType("audio/*");
+        intent.setType("audio/mp3");
         intent.putExtra(Intent.EXTRA_STREAM, contentUri);
-        intent.putExtra(Intent.EXTRA_TITLE, item.getDescription().getTitle());
+        intent.putExtra(Intent.EXTRA_TEXT, item.getDescription().getTitle());
         intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
         context.startActivity(Intent.createChooser(intent, "Share song via"));
     }

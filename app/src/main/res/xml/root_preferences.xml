@@ -71,6 +71,15 @@
             app:entryValues="@array/loudness_gain_values"
             app:useSimpleSummaryProvider="true" />
 
+        <ListPreference
+            app:defaultValue="4"
+            app:key="download_threads"
+            app:title="Download Threads"
+            android:entries="@array/download_threads"
+            android:entryValues="@array/download_threads"
+            app:useSimpleSummaryProvider="true"
+            android:inputType="number"
+            android:maxLength="3" />
 
     </PreferenceCategory>
 

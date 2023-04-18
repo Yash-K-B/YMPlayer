@@ -22,14 +22,20 @@ import android.os.Environment;
 import android.os.Handler;
 import android.os.Looper;
 import android.provider.MediaStore;
+import android.util.Log;
 import android.webkit.MimeTypeMap;
+import android.webkit.URLUtil;
 import android.widget.Toast;
 
+import androidx.annotation.NonNull;
 import androidx.annotation.RequiresApi;
 import androidx.core.app.NotificationCompat;
 import androidx.lifecycle.LiveData;
 import androidx.lifecycle.MutableLiveData;
+import androidx.preference.PreferenceManager;
 
+import com.arthenica.ffmpegkit.FFmpegSession;
+import com.google.common.net.HttpHeaders;
 import com.yash.logging.LogHelper;
 import com.yash.ymplayer.R;
 import com.yash.ymplayer.download.manager.constants.DownloadStatus;
@@ -47,14 +53,20 @@ import com.yash.youtube_extractor.models.VideoData;
 import com.yash.youtube_extractor.models.VideoDetails;
 
 import java.io.BufferedInputStream;
+import java.io.DataInputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
+import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.io.InterruptedIOException;
 import java.io.OutputStream;
+import java.net.HttpURLConnection;
 import java.net.URL;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -65,20 +77,26 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Stream;
+import java.util.zip.DeflaterInputStream;
+import java.util.zip.GZIPInputStream;
 
 import javax.net.ssl.HttpsURLConnection;
 
 import io.reactivex.rxjava3.android.schedulers.AndroidSchedulers;
-import io.reactivex.rxjava3.annotations.NonNull;
 import io.reactivex.rxjava3.core.Completable;
 import io.reactivex.rxjava3.core.Scheduler;
 import io.reactivex.rxjava3.core.Single;
 import io.reactivex.rxjava3.disposables.Disposable;
 import io.reactivex.rxjava3.schedulers.Schedulers;
+import okhttp3.Call;
+import okhttp3.Callback;
+import okhttp3.OkHttpClient;
+import okhttp3.Request;
+import okhttp3.Response;
 
 public class DownloadTask extends Thread {
 
-    public static final int NUM_THREADS = 8;
+    public final int NUM_THREADS;
 
     private static final String TAG = "DownloadTask";
 
@@ -91,28 +109,23 @@ public class DownloadTask extends Thread {
     private boolean isTerminate;
     private final NotificationManager manager;
     private final Handler handler = new Handler(Looper.getMainLooper());
-    private final ExecutorService executorService = Executors.newFixedThreadPool(NUM_THREADS);
+    private final ExecutorService executorService;
     private boolean isCanceled;
     private int downloadId;
 
     SharedPreferences preferences;
+
+    FFmpegSession fFmpegSession = null;
     MutableLiveData<DownloadStatus> downloadStatusLiveData = new MutableLiveData<>();
     MutableLiveData<DownloadProgress> downloadProgressLiveData = new MutableLiveData<>();
+    private static final int BUFFER_SIZE = 32 * 1024; // 32 KB
 
     public DownloadTask(Context context, String videoId) {
-        this.context = context;
-        this.videoId = videoId;
-        manager = (NotificationManager) context.getSystemService(NOTIFICATION_SERVICE);
-        preferences = context.getSharedPreferences(Keys.SHARED_PREFERENCES.DOWNLOADS, MODE_PRIVATE);
-
+        this(context, videoId, 128, 0);
     }
 
     public DownloadTask(Context context, String videoId, int bitrate) {
-        this.context = context;
-        this.videoId = videoId;
-        this.bitrate = bitrate;
-        manager = (NotificationManager) context.getSystemService(NOTIFICATION_SERVICE);
-        preferences = context.getSharedPreferences(Keys.SHARED_PREFERENCES.DOWNLOADS, MODE_PRIVATE);
+        this(context, videoId, bitrate, 0);
     }
 
     public DownloadTask(Context context, String videoId, int bitrate, int downloadId) {
@@ -121,7 +134,9 @@ public class DownloadTask extends Thread {
         this.bitrate = bitrate;
         this.downloadId = downloadId;
         manager = (NotificationManager) context.getSystemService(NOTIFICATION_SERVICE);
-        preferences = context.getSharedPreferences(Keys.SHARED_PREFERENCES.DOWNLOADS, MODE_PRIVATE);
+        preferences = PreferenceManager.getDefaultSharedPreferences(context);
+        NUM_THREADS = Integer.parseInt(preferences.getString("download_threads", "4"));
+        executorService = Executors.newFixedThreadPool(NUM_THREADS);
     }
 
     void setCallbackObject(Downloader downloader) {
@@ -189,17 +204,23 @@ public class DownloadTask extends Thread {
 
 
             int index = getIndex(bitrate, audioStreams);
-            URL url = new URL(audioStreams.get(index).getUrl());
+            String url = audioStreams.get(index).getUrl();
             LogHelper.d(TAG, "Downloading file using url : %s", url);
-            HttpsURLConnection connection = (HttpsURLConnection) url.openConnection();
-            int fileLength = connection.getContentLength();
+            if(!url.contains("ratebypass"))
+                url = url + "&ratebypass=yes";
+            Uri httpUri = Uri.parse(url);
+            String format = httpUri.getQueryParameter("mime") != null? httpUri.getQueryParameter("mime").split("/")[1]: "aac";
+            int fileLength = Integer.parseInt(httpUri.getQueryParameter("clen"));
             DownloadRepository.getInstance(context).getDownloadDao().updateLength(downloadId, fileLength);
-            String fileName = String.format(Locale.US, "%s-%d.opus", videoDetails.getVideoData().getVideoId(), index);
+            String fileName = String.format(Locale.US, "%s-%d.%s", videoDetails.getVideoData().getVideoId(), index, format);
             File downloadFile = new File(context.getExternalFilesDir(Environment.DIRECTORY_MUSIC), fileName);
             updateProgress(0, fileLength);
             if (downloadFile.length() == fileLength) {
                 LogHelper.d(TAG, "run: File already downloaded and merged");
-            } else downloadWithParallel(url, fileLength, bitrate, downloadFile);
+            } else {
+                LogHelper.d(TAG, "Starting parallel download with threads %s",  NUM_THREADS);
+                downloadWithParallel(url, fileLength, bitrate, downloadFile);
+            }
 
             if (DownloadTask.this.isCanceled) {
                 updateStatus(DownloadStatus.PAUSED);
@@ -224,11 +245,11 @@ public class DownloadTask extends Thread {
                 directory = Environment.getExternalStoragePublicDirectory("YMPlayer");
             }
 
-            File outFile = new File(directory, file_name + "-" + bitrate + "Kbps.mp3");
+            File outFile = new File(directory, file_name + "-" + bitrate + " Kbps.mp3");
             int i = 0;
             while (outFile.exists()) {
                 i++;
-                outFile = new File(directory, file_name + "-" + i + "-" + bitrate + "Kbps.mp3");
+                outFile = new File(directory, file_name + "-" + i + "-" + bitrate + " Kbps.mp3");
             }
 
             VideoData.Thumbnail thumbnail = videoDetails.getVideoData().getThumbnail();
@@ -239,7 +260,7 @@ public class DownloadTask extends Thread {
                     .withTitle(videoDetails.getVideoData().getTitle())
                     .withArtist(videoDetails.getVideoData().getAuthor())
                     .withAlbum("YMPlayer")
-                    .withAlbumArt(image.getAbsolutePath())
+                    .withAlbumArt(image.getPath())
                     .build();
 
             AudioFile audioFile = new AudioFile.Builder()
@@ -247,7 +268,6 @@ public class DownloadTask extends Thread {
                     .inputFile(downloadFile.getAbsolutePath())
                     .outputFile(outFile.getPath())
                     .bitrate(bitrate + "k")
-                    .sampleRate("48000")
                     .channelCount(2)
                     .build();
 
@@ -257,7 +277,7 @@ public class DownloadTask extends Thread {
                 return;
             }
 
-            FFMpegUtil.convert(audioFile, new FFMpegUtil.OnConversionListener() {
+            fFmpegSession = FFMpegUtil.createSession(audioFile, new FFMpegUtil.OnConversionListener() {
                 @Override
                 public void onSuccess(AudioFile audioFile) {
 
@@ -268,6 +288,8 @@ public class DownloadTask extends Thread {
 
                 }
             });
+
+            FFMpegUtil.convert(fFmpegSession);
 
             if (DownloadTask.this.isCanceled) {
                 updateStatus(DownloadStatus.PAUSED);
@@ -280,8 +302,8 @@ public class DownloadTask extends Thread {
 
 
             //Deleting temp files
-            if (downloadFile.exists())
-                downloadFile.delete();
+//            if (downloadFile.exists())
+//                downloadFile.delete();
 
             DownloadRepository.getInstance(context).getDownloadDao().updateLength(downloadId, outFile.length());
 
@@ -359,15 +381,17 @@ public class DownloadTask extends Thread {
             notificationBuilder.setLargeIcon(bitmap);
             notifyProgressComplete();
 
-        } catch (InterruptedException | ExtractionException | IOException e) {
+        } catch (Exception e) {
             LogHelper.e(TAG, "Exception while downloading mp3", e);
-            notifyProgressPaused("Failed");
-            updateStatus(DownloadStatus.FAILED);
-            handler.post(() -> {
-                Toast.makeText(context, "Error occurred while downloading", Toast.LENGTH_SHORT).show();
-            });
+            notifyProgressPaused(isCanceled? "Paused" : "Failed");
+            updateStatus(isCanceled? DownloadStatus.PAUSED: DownloadStatus.FAILED);
+            if (!isCanceled)
+                handler.post(() -> {
+                    Toast.makeText(context, "Error occurred while downloading", Toast.LENGTH_SHORT).show();
+                });
         }
 
+        executorService.shutdown();
         downloader.taskFinished(this);
 
     }
@@ -386,13 +410,13 @@ public class DownloadTask extends Thread {
     }
 
     @SuppressLint("CheckResult")
-    private void downloadWithParallel(URL url, int fileLength, int bitrate, File file) throws IOException, InterruptedException {
+    private void downloadWithParallel(String url, int fileLength, int bitrate, File file) throws IOException, InterruptedException {
         if (fileLength == 0)
             return;
 
-        String partNameFormat = "%s.part.%s.%s";
+        String partNameFormat = "%s.part.%s.%s-%s";
 
-        int blockSize = fileLength / NUM_THREADS; // Divide the file size into NUM_THREADS blocks
+        long blockSize = fileLength / NUM_THREADS; // Divide the file size into NUM_THREADS blocks
 
         AtomicLong bytesReceived = new AtomicLong(0);
 
@@ -402,7 +426,7 @@ public class DownloadTask extends Thread {
         for (int i = 0; i < NUM_THREADS; i++) {
             final long[] startByte = {i * blockSize};
             long endByte = (i + 1) * blockSize - 1;
-            if (i == 7) {
+            if (i == NUM_THREADS - 1) {
                 // The last thread downloads the remaining bytes
                 endByte = fileLength - 1;
             }
@@ -410,13 +434,20 @@ public class DownloadTask extends Thread {
             int finalI = i;
             Single<Boolean> uCompletableFuture = Single.fromSupplier(() -> {
                 try {
-                    String partFileName = String.format(partNameFormat, fileName, bitrate, finalI);
+                    String partFileName = String.format(partNameFormat, fileName, bitrate, NUM_THREADS, finalI);
                     File downloadFile = new File(context.getExternalFilesDir(Environment.DIRECTORY_MUSIC), partFileName);
-                    HttpsURLConnection connection = (HttpsURLConnection) url.openConnection();
+                    URL httpUrl = new URL(url);
+                    HttpsURLConnection connection = (HttpsURLConnection) httpUrl.openConnection();
                     if (downloadFile.exists())
                         startByte[0] = startByte[0] + downloadFile.length();
 
                     connection.setRequestProperty("Range", "bytes=" + startByte[0] + "-" + finalEndByte);
+                    connection.setRequestProperty("accept-encoding", "gzip, deflate, br");
+                    connection.setRequestProperty("accept-language", "en-GB,en-US;q=0.9,en;q=0.8");
+                    connection.setRequestProperty("sec-fetch-mode", "navigate");
+                    connection.setRequestProperty("sec-fetch-site", "same-origin");
+                    connection.setRequestProperty("user-agent", "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/111.0.0.0 Safari/537.36");
+                    connection.setRequestProperty("referer", url);
 
                     if (connection.getResponseCode() != 416) {
                         byte[] bytes = new byte[8 * 1024];
@@ -445,7 +476,8 @@ public class DownloadTask extends Thread {
                 } catch (Exception e) {
                     return false;
                 }
-            }).subscribeOn(Schedulers.computation());
+
+            }).subscribeOn(Schedulers.from(executorService));
 
             futures.add(uCompletableFuture);
 
@@ -468,8 +500,8 @@ public class DownloadTask extends Thread {
             LogHelper.d(TAG, "downloadWithParallel: Merging all files ");
             FileOutputStream fout = new FileOutputStream(file);
             for (int i = 0; i < NUM_THREADS; i++) {
-                byte[] bytes = new byte[8 * 1024];
-                File partFile = new File(context.getExternalFilesDir(Environment.DIRECTORY_MUSIC), String.format(partNameFormat, fileName, bitrate, i));
+                byte[] bytes = new byte[BUFFER_SIZE];
+                File partFile = new File(context.getExternalFilesDir(Environment.DIRECTORY_MUSIC), String.format(partNameFormat, fileName, bitrate, NUM_THREADS, i));
                 FileInputStream fin = new FileInputStream(partFile);
                 int count;
                 while (!DownloadTask.this.isCanceled && (count = fin.read(bytes)) != -1) {
@@ -486,13 +518,12 @@ public class DownloadTask extends Thread {
     }
 
     private int getIndex(int bitrate, List<StreamingData.AdaptiveAudioFormat> audioStreams) {
-        return 0;
+        return audioStreams.size() - 2;
     }
 
     long prevTime = -1, currentTime;
 
     void notifyProgress(long received, long total) {
-        LogHelper.d(TAG, "notifyProgress: %s / %s", received, total);
         if (isTerminate) return;
         currentTime = System.currentTimeMillis();
         if (prevTime == -1) prevTime = System.currentTimeMillis();
@@ -506,6 +537,7 @@ public class DownloadTask extends Thread {
         LogHelper.d(TAG, String.format(Locale.US, "progress : %d %%", progress));
         updateProgress(received, total);
         updateStatus(DownloadStatus.DOWNLOADING);
+        DownloadRepository.getInstance(context).getDownloadDao().updateLength(downloadId, received);
     }
 
     void updateProgress(long current, long total) {
@@ -570,6 +602,9 @@ public class DownloadTask extends Thread {
 
     public void cancel() {
         this.isCanceled = true;
+        if(fFmpegSession != null) {
+            FFMpegUtil.cancel(fFmpegSession);
+        }
         DownloadTask.this.interrupt();
         notifyProgressPaused("Paused");
         LogHelper.d(TAG, "cancel: Task id %s is interrupted", videoId);

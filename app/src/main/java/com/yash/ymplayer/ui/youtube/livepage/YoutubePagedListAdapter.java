@@ -1,4 +1,4 @@
-package com.yash.ymplayer.ui.youtube.toptracks;
+package com.yash.ymplayer.ui.youtube.livepage;
 
 import android.content.Context;
 import android.support.v4.media.session.MediaControllerCompat;
@@ -8,21 +8,24 @@ import android.widget.PopupMenu;
 
 import androidx.annotation.NonNull;
 import androidx.paging.PagedListAdapter;
+import androidx.paging.PagingDataAdapter;
 import androidx.recyclerview.widget.DiffUtil;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.bumptech.glide.Glide;
+import com.yash.logging.LogHelper;
 import com.yash.ymplayer.R;
 import com.yash.ymplayer.databinding.ItemMusicBinding;
 import com.yash.ymplayer.interfaces.TrackClickListener;
 import com.yash.ymplayer.util.YoutubeSong;
 
-public class TopTracksAdapter extends PagedListAdapter<YoutubeSong, TopTracksAdapter.TopTracksViewHolder> {
+public class YoutubePagedListAdapter extends PagingDataAdapter<YoutubeSong, YoutubePagedListAdapter.TopTracksViewHolder> {
+    private static final String TAG = "YoutubePagedListAdapter";
     TrackClickListener listener;
     MediaControllerCompat mediaController;
     Context context;
 
-    public TopTracksAdapter(Context context, TrackClickListener listener, MediaControllerCompat mediaController) {
+    public YoutubePagedListAdapter(Context context, TrackClickListener listener, MediaControllerCompat mediaController) {
         super(DiffCallback);
         this.listener = listener;
         this.context = context;
@@ -41,6 +44,9 @@ public class TopTracksAdapter extends PagedListAdapter<YoutubeSong, TopTracksAda
         YoutubeSong song = getItem(position);
         if (song != null)
             holder.onBindTracks(song, listener,mediaController);
+        if(getItemCount() - 1 == position) {
+            LogHelper.d(TAG, "onBindViewHolder: End of the list");
+        }
     }
 
     class TopTracksViewHolder extends RecyclerView.ViewHolder {

@@ -8,10 +8,13 @@ import androidx.preference.PreferenceManager;
 import com.yash.logging.LogHelper;
 import com.yash.ymplayer.util.ConverterUtil;
 import com.yash.ymplayer.util.Keys;
+import com.yash.youtube_extractor.utility.HttpUtility;
 
 import java.lang.Thread.UncaughtExceptionHandler;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+
+import okhttp3.Cache;
 
 public class YMPlayer extends Application {
     private static final String TAG = "YMPlayer";
@@ -30,6 +33,7 @@ public class YMPlayer extends Application {
         LogHelper.deploy(this, TAG);
         executor = Executors.newSingleThreadExecutor();
 
+        HttpUtility.initialise(new Cache(getCacheDir(), 40*1024*1024), null);
 
         Thread.setDefaultUncaughtExceptionHandler((t, e) -> {
 
@@ -38,6 +42,8 @@ public class YMPlayer extends Application {
             editor.putBoolean(Keys.PREFERENCE_KEYS.IS_EXCEPTION,true);
             editor.putString(Keys.PREFERENCE_KEYS.EXCEPTION,exception);
             editor.apply();
+
+            LogHelper.flush();
 
             defaultUncaughtExceptionHandler.uncaughtException(t,e);
         });

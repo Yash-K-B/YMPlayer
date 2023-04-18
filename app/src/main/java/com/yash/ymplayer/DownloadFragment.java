@@ -99,9 +99,9 @@ public class DownloadFragment extends Fragment {
     }
 
     public void refresh() {
-        files.clear();
         ((ActivityActionProvider) context).setCustomToolbar(null, "Downloads");
-        List<Download> downloads = DownloadRepository.getInstance(context).getDownloadDao().findAll();
+        List<Download> downloads = DownloadRepository.getInstance(context).getDownloadDao().findAllDesc();
+        files.clear();
         files.addAll(downloads);
     }
 

@@ -6,20 +6,19 @@ import androidx.annotation.NonNull;
 import androidx.lifecycle.AndroidViewModel;
 import androidx.lifecycle.LiveData;
 import androidx.lifecycle.MutableLiveData;
-import androidx.paging.LivePagedListBuilder;
-import androidx.paging.PagedList;
+import androidx.paging.Pager;
+import androidx.paging.PagingConfig;
+import androidx.paging.PagingData;
 
-import com.yash.ymplayer.ListExpandActivity;
 import com.yash.ymplayer.models.PopularPlaylist;
 import com.yash.ymplayer.repository.OnlineYoutubeRepository;
 import com.yash.ymplayer.ui.youtube.constants.Constants;
-import com.yash.ymplayer.ui.youtube.todayspopular.PopularHit;
-import com.yash.ymplayer.ui.youtube.toptracks.TopTracksDataSourceFactory;
+import com.yash.ymplayer.ui.youtube.livepage.YoutubePageKeyedDataSource;
+import com.yash.ymplayer.util.KotlinConverterUtil;
 import com.yash.ymplayer.util.YoutubeSong;
 
 import java.util.List;
 
-import io.reactivex.rxjava3.core.Observable;
 
 public class YoutubeLibraryViewModel extends AndroidViewModel {
     Application application;
@@ -33,12 +32,16 @@ public class YoutubeLibraryViewModel extends AndroidViewModel {
         this.application = application;
     }
 
-    public LiveData<PagedList<YoutubeSong>> getTopTracks() {
-        PagedList.Config config = new PagedList.Config.Builder()
-                .setPageSize(50)
-                .setPrefetchDistance(50)
-                .build();
-        return new LivePagedListBuilder<>(new TopTracksDataSourceFactory(application.getApplicationContext()), config).build();
+    public LiveData<PagingData<YoutubeSong>> getTopTracks() {
+        PagingConfig pagingConfig = new PagingConfig(30, 3, true);
+        Pager<String, YoutubeSong> pager = new Pager<>(pagingConfig, () -> new YoutubePageKeyedDataSource(application.getApplicationContext(), "PL4fGSI1pDJn40WjZ6utkIuj2rNg-7iGsq"));
+        return KotlinConverterUtil.Companion.toFlowable(pager.getFlow());
+    }
+
+    public LiveData<PagingData<YoutubeSong>> getPlaylistTracks(String playlistId) {
+        PagingConfig pagingConfig = new PagingConfig(30, 3, true);
+        Pager<String, YoutubeSong> pager = new Pager<>(pagingConfig, () -> new YoutubePageKeyedDataSource(application.getApplicationContext(), playlistId));
+        return KotlinConverterUtil.Companion.toFlowable(pager.getFlow());
     }
 
     public LiveData<List<PopularPlaylist>> getPopularPlaylist() {

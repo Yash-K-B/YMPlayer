@@ -2,6 +2,7 @@ package com.yash.ymplayer;
 
 import android.Manifest;
 import android.animation.ValueAnimator;
+import android.app.Activity;
 import android.app.AlertDialog;
 import android.app.NotificationChannel;
 import android.app.NotificationManager;
@@ -45,6 +46,7 @@ import androidx.annotation.Nullable;
 import androidx.appcompat.app.ActionBarDrawerToggle;
 import androidx.appcompat.widget.Toolbar;
 import androidx.coordinatorlayout.widget.CoordinatorLayout;
+import androidx.core.app.ActivityCompat;
 import androidx.core.content.FileProvider;
 import androidx.core.view.GravityCompat;
 import androidx.drawerlayout.widget.DrawerLayout;
@@ -63,8 +65,6 @@ import com.bumptech.glide.request.target.Target;
 import com.bumptech.glide.request.transition.Transition;
 import com.google.android.material.bottomsheet.BottomSheetBehavior;
 import com.google.android.material.navigation.NavigationView;
-import com.naman14.androidlame.AndroidLame;
-import com.naman14.androidlame.LameBuilder;
 import com.yash.logging.utils.ExceptionUtil;
 import com.yash.ymplayer.constant.Constants;
 import com.yash.ymplayer.databinding.ActivityMainBinding;
@@ -537,10 +537,32 @@ public class MainActivity extends BaseActivity implements ActivityActionProvider
         super.onRequestPermissionsResult(requestCode, permissions, grantResults);
         LogHelper.d(TAG, "onRequestPermissionsResult: ");
         if (requestCode == 100) {
-            for (int i = 0; i < permissions.length; i++)
-                if (grantResults[i] != PackageManager.PERMISSION_GRANTED)
-                    finish();
+            for (int i = 0; i < permissions.length; i++) {
+                if (grantResults[i] != PackageManager.PERMISSION_GRANTED) {
+                    verifyStoragePermissions(this);
+                }
+            }
             getSupportFragmentManager().beginTransaction().replace(activityMainBinding.container.getId(), new LocalSongs()).commitAllowingStateLoss();
+        }
+    }
+
+
+    private static final int REQUEST_EXTERNAL_STORAGE = 1;
+    private static final String[] PERMISSIONS_STORAGE = {
+            Manifest.permission.READ_EXTERNAL_STORAGE,
+            Manifest.permission.WRITE_EXTERNAL_STORAGE
+    };
+    public static void verifyStoragePermissions(Activity activity) {
+        // Check if we have write permission
+        int permission = ActivityCompat.checkSelfPermission(activity, Manifest.permission.WRITE_EXTERNAL_STORAGE);
+
+        if (permission != PackageManager.PERMISSION_GRANTED) {
+            // We don't have permission so prompt the user
+            ActivityCompat.requestPermissions(
+                    activity,
+                    PERMISSIONS_STORAGE,
+                    REQUEST_EXTERNAL_STORAGE
+            );
         }
     }
 
@@ -765,7 +787,6 @@ public class MainActivity extends BaseActivity implements ActivityActionProvider
                 activityMainBinding.drawerLayout.openDrawer(GravityCompat.START);
                 return true;
             case R.id.test:
-                encodeToMP3();
                 return true;
             case R.id.exit:
                 LogHelper.d(TAG, "onOptionsItemSelected: Exit");
@@ -815,11 +836,11 @@ public class MainActivity extends BaseActivity implements ActivityActionProvider
             activityMainBinding.mainToolbar.setVisibility(View.GONE);
             setSupportActionBar(toolbar);
         }
-        getSupportActionBar().setDisplayHomeAsUpEnabled(true);
         if (title != null)
             getSupportActionBar().setTitle(title);
         boolean isDrawerFixed = getResources().getBoolean(R.bool.isDrawerFixed);
         if(!isDrawerFixed) {
+            getSupportActionBar().setDisplayHomeAsUpEnabled(true);
             drawerToggle = new ActionBarDrawerToggle(this, activityMainBinding.drawerLayout, R.string.open, R.string.close);
             //activityMainBinding.drawerLayout.addDrawerListener(drawerToggle);
             drawerToggle.syncState();
@@ -1236,163 +1257,6 @@ public class MainActivity extends BaseActivity implements ActivityActionProvider
 
 
     public static final int CHUNK_SIZE = 8192;
-
-    void encodeToMP3() {
-        List<Integer> x = null;
-        x.add(5);
-
-        for (File f : getExternalMediaDirs()) {
-            LogHelper.d(TAG, "encodeToMP3: " + f.getName() + " " + f.getAbsolutePath());
-        }
-        ;
-        LogHelper.d(TAG, "encodeToMP3: " + Environment.getRootDirectory().getName() + " " + Environment.getRootDirectory().getAbsolutePath());
-        LogHelper.d(TAG, "encodeToMP3: " + getDir("YMPlayer", MODE_PRIVATE).getName() + " " + getDir("YMPlayer", MODE_PRIVATE).getAbsolutePath());
-        LogHelper.d(TAG, "encodeToMP3: " + Environment.getExternalStoragePublicDirectory("YMPlayer").getName() + " " + Environment.getExternalStoragePublicDirectory("YMPlayer").getAbsolutePath());
-
-//        for(File f : Environment.getExternalStoragePublicDirectory("YMPlayer")) {
-//            LogHelper.d(TAG, "encodeToMP3: " + f.getName() + " "+ f.getAbsolutePath());
-//        }
-
-//        Intent downloadIntent = new Intent(MainActivity.this,DownloadService.class);
-//        downloadIntent.putExtra(Keys.VIDEO_ID,"jjdjgfhj");
-//        MainActivity.this.startService(downloadIntent);
-//        extractID3Tags("/storage/emulated/0/Test/soja.mp3");
-//        try {
-//            MediaExtractor extractor = new MediaExtractor();
-//            extractor.setDataSource("/storage/emulated/0/Test/soja.mp3");
-//            LogHelper.d(TAG, "encodeToMP3: " + extractor.getTrackCount());
-//
-//            for (int i = 0; i < extractor.getTrackCount(); i++) {
-//                MediaFormat format = extractor.getTrackFormat(i);
-//                extractor.selectTrack(i);
-//                LogHelper.d(TAG, "encodeToMP3: " + format.toString());
-//            }
-//
-//
-//            File file = new File("/storage/emulated/0/Test/soja_zara.pcm");
-//            FileOutputStream outfile = new FileOutputStream(file);
-//            // WritableByteChannel channel = Channels.newChannel(outfile);
-//            //format.setInteger(MediaFormat.);
-//            MediaFormat format = MediaFormat.createAudioFormat(MediaFormat.MIMETYPE_AUDIO_MPEG, 48000, 2);
-//            format.setInteger(MediaFormat.KEY_BIT_RATE, 128000);
-//            MediaCodec decoder = MediaCodec.createDecoderByType(MediaFormat.MIMETYPE_AUDIO_MPEG);
-//            decoder.configure(format, null, null, 0);
-//            decoder.setCallback(new MediaCodec.Callback() {
-//                @Override
-//                public void onInputBufferAvailable(@NonNull MediaCodec codec, int index) {
-//                    LogHelper.d(TAG, "onInputBufferAvailable: index:" + index);
-//                    ByteBuffer buffer = codec.getInputBuffer(index);
-//                    // LogHelper.d(TAG, "onInputBufferAvailable: Buffer:" + buffer);
-//                    int size = extractor.readSampleData(buffer, 0);
-//                    LogHelper.d(TAG, "onInputBufferAvailable: x:" + size + " time :" + extractor.getSampleTime());
-//                    if (size > 0) {
-//                        codec.queueInputBuffer(index, 0, size, extractor.getSampleTime(), 0);
-//                        extractor.advance();
-//                    } else {
-//                        codec.queueInputBuffer(index, 0, 0, 0, MediaCodec.BUFFER_FLAG_END_OF_STREAM);
-//                        LogHelper.d(TAG, "onInputBufferAvailable: End Of Stream");
-//                    }
-//
-//                }
-//
-//                @Override
-//                public void onOutputBufferAvailable(@NonNull MediaCodec codec, int index, @NonNull MediaCodec.BufferInfo info) {
-//                    LogHelper.d(TAG, "------------------------------------------onOutputBufferAvailable: " + index);
-//                    ByteBuffer buffer = codec.getOutputBuffer(index);
-//                    byte[] bytes = new byte[info.size - info.offset];
-//                    int position = buffer.position();
-//                    buffer.get(bytes);
-//                    buffer.position(position);
-//                    try {
-//
-//                        codec.releaseOutputBuffer(index, info.presentationTimeUs);
-//                        outfile.write(bytes, 0, info.size - info.offset);
-//                        LogHelper.d(TAG, "onOutputBufferAvailable: content: " + Arrays.toString(bytes));
-//                    } catch (IOException e) {
-//                        e.printStackTrace();
-//                    }
-//
-//                }
-//
-//                @Override
-//                public void onError(@NonNull MediaCodec codec, @NonNull MediaCodec.CodecException e) {
-//                    LogHelper.d(TAG, "onError: ");
-//                }
-//
-//                @Override
-//                public void onOutputFormatChanged(@NonNull MediaCodec codec, @NonNull MediaFormat format) {
-//                    LogHelper.d(TAG, "onOutputFormatChanged: ");
-//                    LogHelper.d(TAG, "OutputFormat: " + format);
-//                    executor.execute(encodeToMP3);
-//                }
-//            });
-//            decoder.start();
-//
-//            LogHelper.d(TAG, "encodeToMP3:" + decoder.getOutputFormat().toString());
-//        } catch (IOException e) {
-//            e.printStackTrace();
-//        }
-
-        //
-        //executor.execute(encodeToMP3);
-    }
-
-
-    Runnable encodeToMP3 = () -> {
-//        MediaExtractor extractor = new MediaExtractor();
-//        try {
-//            extractor.setDataSource("/storage/emulated/0/Test/soja.mp3");
-//        } catch (IOException e) {
-//            e.printStackTrace();
-//        }
-//        extractor.selectTrack(0);
-//        MediaFormat format = extractor.getTrackFormat(0);
-        LogHelper.d(TAG, "encodeToMP3: starting mp3 encode");
-        String title = "Kanha Soja Zara (2017)";
-        String artist = "Madhushree";
-        String album = "Baahubali 2 - The Conclusion";
-
-
-        LameBuilder builder = new LameBuilder()
-                .setOutBitrate(320)
-                .setOutChannels(2)
-                .setOutSampleRate(48000)
-                .setQuality(1)
-                .setMode(LameBuilder.Mode.STEREO)
-                .setId3tagTitle(title)
-                .setId3tagArtist(artist)
-                .setId3tagAlbum(album)
-                .setId3tagYear("2017")
-                .setId3tagComment(" extra ");
-        AndroidLame androidLame = new AndroidLame(builder);
-
-        byte[] mp3buff = new byte[CHUNK_SIZE * 8];
-        short[] left = new short[CHUNK_SIZE * 8];
-        short[] right = new short[CHUNK_SIZE * 8];
-        try {
-            File inFile = new File("/storage/emulated/0/Test/soja_zara.pcm");
-            LogHelper.d(TAG, "encodeToMP3: File length : " + inFile.length());
-            FileInputStream inputStream = new FileInputStream(inFile);
-            File outfile = new File("/storage/emulated/0/Test/soja_zara.mp3");
-            FileOutputStream outputStream = new FileOutputStream(outfile);
-            while (true) {
-                int byteRead = read(inputStream, left, right, CHUNK_SIZE * 8);
-                LogHelper.d(TAG, "encodeToMP3: byteRead: " + byteRead);
-                if (byteRead > 0) {
-                    int byteEncode = androidLame.encode(left, right, byteRead, mp3buff);
-                    outputStream.write(mp3buff, 0, byteEncode);
-                    LogHelper.d(TAG, "encodeToMP3: byteEncode:" + byteEncode);
-                } else break;
-            }
-            int outputMp3buf = androidLame.flush(mp3buff);
-            if (outputMp3buf > 0) {
-                outputStream.write(mp3buff, 0, outputMp3buf);
-            }
-
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-    };
 
     private static short byteToShortLE(byte b1, byte b2) {
         return (short) (b1 & 0xFF | ((b2 & 0xFF) << 8));

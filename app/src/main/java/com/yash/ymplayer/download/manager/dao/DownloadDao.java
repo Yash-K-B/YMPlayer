@@ -35,4 +35,7 @@ public interface DownloadDao {
 
     @Query("select * from Download")
     List<Download> findAll();
+
+    @Query("select * from Download order by id desc")
+    List<Download> findAllDesc();
 }
