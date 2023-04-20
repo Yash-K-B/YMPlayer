@@ -22,6 +22,7 @@ import com.yash.logging.LogHelper;
 import com.yash.ymplayer.ActivityActionProvider;
 import com.yash.ymplayer.R;
 import com.yash.ymplayer.SearchActivity;
+import com.yash.ymplayer.constant.Constants;
 import com.yash.ymplayer.databinding.FragmentYoutubeLibraryBinding;
 import com.yash.ymplayer.repository.OnlineYoutubeRepository;
 import com.yash.ymplayer.ui.youtube.search.YoutubeSearch;
@@ -35,7 +36,7 @@ import java.util.Map;
 public class YoutubeLibrary extends Fragment {
     private static final String TAG = "YoutubeLibrary";
     FragmentYoutubeLibraryBinding youtubeLibraryBinding;
-    public static final String[] TAB_TITLES = {"TOP TRACKS", "TODAY'S POPULAR", "DISCOVER NEW", "ALL TIME HIT", "90s MAGIC"};
+    public static String[] TAB_TITLES = {};
 
     public YoutubeLibrary() {
         // Required empty public constructor
@@ -49,7 +50,7 @@ public class YoutubeLibrary extends Fragment {
         setHasOptionsMenu(true);
         youtubeLibraryBinding = FragmentYoutubeLibraryBinding.inflate(inflater, container, false);
         youtubeLibraryBinding.btnRetry.setVisibility(View.VISIBLE);
-        youtubeLibraryBinding.btnRetry.setOnClickListener(v -> loadLibrary("UC-9-kyTW8ZkZNDHQJ6FgpwQ"));
+        youtubeLibraryBinding.btnRetry.setOnClickListener(v -> loadLibrary(Constants.DEFAULT_CHANNEL));
         return youtubeLibraryBinding.getRoot();
     }
 
@@ -58,7 +59,7 @@ public class YoutubeLibrary extends Fragment {
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
         ((ActivityActionProvider) getActivity()).setCustomToolbar(youtubeLibraryBinding.youtubeToolbar, "Youtube Library");
-        loadLibrary("UC-9-kyTW8ZkZNDHQJ6FgpwQ");
+        loadLibrary(Constants.DEFAULT_CHANNEL);
 
 
     }
@@ -68,7 +69,7 @@ public class YoutubeLibrary extends Fragment {
         youtubeLibraryBinding.youtubeLibError.setVisibility(View.GONE);
         OnlineYoutubeRepository.getInstance(requireContext()).getChannelPlaylists(channelId, new OnlineYoutubeRepository.PlaylistLoadedCallback() {
             @Override
-            public void onLoaded(List<Pair<String, List<YoutubePlaylist>>> playlistsByCategory) {
+            public void onLoaded(Map<String, List<YoutubePlaylist>> playlistsByCategory) {
                 if (CollectionUtility.isEmpty(playlistsByCategory)) {
                     LogHelper.d(TAG, "Channel playlist empty");
                     showError();
@@ -76,9 +77,10 @@ public class YoutubeLibrary extends Fragment {
                 }
                 youtubeLibraryBinding.progressBar.setVisibility(View.GONE);
                 youtubeLibraryBinding.youtubeLibError.setVisibility(View.GONE);
+                TAB_TITLES = playlistsByCategory.keySet().toArray(new String[0]);
                 YoutubeViewPagerAdapter adapter = new YoutubeViewPagerAdapter(getChildFragmentManager(), getLifecycle(), playlistsByCategory);
                 youtubeLibraryBinding.youtubeViewPager.setAdapter(adapter);
-                new TabLayoutMediator(youtubeLibraryBinding.tabs, youtubeLibraryBinding.youtubeViewPager, (tab, position) -> tab.setText(position == 0 ? TAB_TITLES[0] : playlistsByCategory.get(position - 1).first)).attach();
+                new TabLayoutMediator(youtubeLibraryBinding.tabs, youtubeLibraryBinding.youtubeViewPager, (tab, position) -> tab.setText(TAB_TITLES[position])).attach();
             }
 
             @Override

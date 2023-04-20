@@ -28,7 +28,7 @@ public class YoutubePageKeyedDataSource(var context: Context, private val unique
             LoadResult.Page(tracks.items, tracks.prevToken, tracks.nextToken)
         } else {
             val tracks = withContext(Dispatchers.IO) {
-                OnlineYoutubeRepository.getInstance(context).getMorePlaylistTracks(params.key, "")
+                OnlineYoutubeRepository.getInstance(context).getMorePlaylistTracks(uniqueKey, params.key, "")
             }
             LoadResult.Page(tracks.items, null, tracks.nextToken)
         }

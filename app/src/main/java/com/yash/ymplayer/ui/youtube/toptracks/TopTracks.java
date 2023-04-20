@@ -65,9 +65,10 @@ public class TopTracks extends Fragment {
         return topTracksBinding.getRoot();
     }
 
+
     @Override
-    public void onActivityCreated(@Nullable Bundle savedInstanceState) {
-        super.onActivityCreated(savedInstanceState);
+    public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
+        super.onViewCreated(view, savedInstanceState);
         activity = getActivity();
         context = getContext();
         connectivityManager = (ConnectivityManager) context.getSystemService(Context.CONNECTIVITY_SERVICE);
@@ -76,7 +77,6 @@ public class TopTracks extends Fragment {
         topTracksBinding.topTracksContainer.setHasFixedSize(true);
         mediaBrowser = new MediaBrowserCompat(context, new ComponentName(context, PlayerService.class), connectionCallback, null);
         mediaBrowser.connect();
-
     }
 
     @Override
@@ -165,7 +165,7 @@ public class TopTracks extends Fragment {
             topTracksBinding.noInternetHint.setVisibility(View.INVISIBLE);
             isContentLoaded = true;
             viewModel.getTopTracks().observe(getViewLifecycleOwner(), youtubeSongs -> {
-                LogHelper.d(TAG, "onChanged: TopTracks : " + youtubeSongs);
+                LogHelper.d(TAG, "onChanged: TopTracks : ");
                 adapter.submitData(getLifecycle(), youtubeSongs);
                 topTracksBinding.topTracksLoadingHint.setVisibility(View.GONE);
             });

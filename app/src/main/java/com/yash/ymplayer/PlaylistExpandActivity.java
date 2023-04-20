@@ -59,8 +59,6 @@ public class PlaylistExpandActivity extends BasePlayerActivity {
         getSupportActionBar().setDisplayHomeAsUpEnabled(true);
 
         activityBinding.list.setLayoutManager(new LinearLayoutManager(PlaylistExpandActivity.this));
-        pagedListAdapter = new YoutubePagedListAdapter(PlaylistExpandActivity.this, new TrackContextMenuClickListener(PlaylistExpandActivity.this, mediaController, playlistId + "|"), mediaController);
-        activityBinding.list.setAdapter(pagedListAdapter.withLoadStateFooter(new LoadStateFooterAdapter()));
         activityBinding.tryAgain.setOnClickListener(v -> {
             activityBinding.listProgress.setVisibility(View.VISIBLE);
             activityBinding.dialogTryAgain.setVisibility(View.INVISIBLE);
@@ -91,6 +89,8 @@ public class PlaylistExpandActivity extends BasePlayerActivity {
     void load(MediaControllerCompat mediaController) {
         if (mediaController == null)
             return;
+        pagedListAdapter = new YoutubePagedListAdapter(PlaylistExpandActivity.this, new TrackContextMenuClickListener(PlaylistExpandActivity.this, mediaController, playlistId + "|"), mediaController);
+        activityBinding.list.setAdapter(pagedListAdapter.withLoadStateFooter(new LoadStateFooterAdapter()));
         YoutubeLibraryViewModel viewModel = new ViewModelProvider(this).get(YoutubeLibraryViewModel.class);
         viewModel.getPlaylistTracks(playlistId).observe(this, youtubeSongs -> {
             LogHelper.d(TAG, "load: [%s] -> size: [%s]", playlistId, youtubeSongs);

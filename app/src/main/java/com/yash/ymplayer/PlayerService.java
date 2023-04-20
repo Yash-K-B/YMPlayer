@@ -2,6 +2,8 @@ package com.yash.ymplayer;
 
 import static android.net.ConnectivityManager.NetworkCallback;
 
+import static java.lang.Math.E;
+
 import android.app.DownloadManager;
 import android.app.Notification;
 import android.app.PendingIntent;
@@ -9,6 +11,7 @@ import android.content.ContentUris;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.SharedPreferences;
+import android.content.pm.ServiceInfo;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.drawable.Drawable;
@@ -84,6 +87,7 @@ import com.yash.ymplayer.storage.PlayListObject;
 import com.yash.ymplayer.util.ConverterUtil;
 import com.yash.ymplayer.util.EqualizerUtil;
 import com.yash.ymplayer.util.Keys;
+import com.yash.ymplayer.util.MediaItemHelperUtility;
 import com.yash.ymplayer.util.QueueHelperUtility;
 import com.yash.ymplayer.util.Song;
 import com.yash.ymplayer.util.YoutubeSong;
@@ -91,6 +95,7 @@ import com.yash.youtube_extractor.Extractor;
 import com.yash.youtube_extractor.exceptions.ExtractionException;
 import com.yash.youtube_extractor.models.StreamingData;
 import com.yash.youtube_extractor.models.VideoDetails;
+import com.yash.youtube_extractor.models.YoutubePlaylist;
 
 import java.io.IOException;
 import java.security.Key;
@@ -221,7 +226,6 @@ public class PlayerService extends MediaBrowserServiceCompat implements PlayerHe
         //MediaSession
         mSession = new MediaSessionCompat(this, this.getClass().getSimpleName());
         mSession.setCallback(mediaSessionCallbacks);
-        mSession.setFlags(MediaSessionCompat.FLAG_HANDLES_MEDIA_BUTTONS | MediaSessionCompat.FLAG_HANDLES_TRANSPORT_CONTROLS);
         setSessionToken(mSession.getSessionToken());
         initPlaybackState();
         mSession.setRepeatMode(repeatMode);
@@ -276,14 +280,8 @@ public class PlayerService extends MediaBrowserServiceCompat implements PlayerHe
         result.detach();
         resultSender = result;
         List<MediaBrowserCompat.MediaItem> mediaItems = null;
-        if (parentId.equals("TOP_TRACKS")) {
-            isResultSent = false;
-            OnlineYoutubeRepository.getInstance(this).topTracks("", (tracks, prevToken, nextToken) -> {
-                if (!isResultSent) {
-                    isResultSent = true;
-                    result.sendResult(mapToMediaItems(tracks));
-                }
-            });
+        if (parentId.contains("YOUTUBE")) {
+            loadChannelYoutube(parentId, result);
         } else {
             if (parentId.equals("ALL_SONGS")) {
                 mediaItems = Repository.getInstance(this).getAllSongs();
@@ -311,19 +309,54 @@ public class PlayerService extends MediaBrowserServiceCompat implements PlayerHe
         }
     }
 
-    List<MediaBrowserCompat.MediaItem> mapToMediaItems(List<YoutubeSong> list) {
-        List<MediaBrowserCompat.MediaItem> mediaItems = new ArrayList<>();
-        for (YoutubeSong song : list) {
-            MediaBrowserCompat.MediaItem item = new MediaBrowserCompat.MediaItem(new MediaDescriptionCompat.Builder()
-                    .setMediaId("TOP_TRACKS|" + song.getVideoId())
-                    .setMediaUri(Uri.parse(song.getVideoId()))
-                    .setTitle(song.getTitle())
-                    .setSubtitle(song.getChannelTitle())
-                    .setIconUri(Uri.parse(song.getArt_url_medium()))
-                    .build(), MediaBrowserCompat.MediaItem.FLAG_PLAYABLE);
-            mediaItems.add(item);
+    private void loadChannelYoutube(@NonNull String parentId, @NonNull Result<List<MediaBrowserCompat.MediaItem>> result) {
+        if (parentId.equals("YOUTUBE")) {
+            OnlineYoutubeRepository.getInstance(this).getChannelPlaylists(Constants.DEFAULT_CHANNEL, new OnlineYoutubeRepository.PlaylistLoadedCallback() {
+                @Override
+                public void onLoaded(Map<String, List<YoutubePlaylist>> playlistsByCategory) {
+                    List<MediaBrowserCompat.MediaItem> mediaItems = new ArrayList<>();
+                    for (String channel: playlistsByCategory.keySet()) {
+                        mediaItems.add(MediaItemHelperUtility.toMediaItems(channel, parentId));
+                    }
+                    result.sendResult(mediaItems);
+                }
+
+                @Override
+                public <E extends Exception> void onError(E e) {
+                    result.sendResult(new ArrayList<>());
+                }
+            });
+        } else {
+            String[] splits = parentId.split("[/|]");
+            if(splits.length == 2) {
+                OnlineYoutubeRepository.getInstance(this).getChannelPlaylists(Constants.DEFAULT_CHANNEL, new OnlineYoutubeRepository.PlaylistLoadedCallback() {
+                    @Override
+                    public void onLoaded(Map<String, List<YoutubePlaylist>> playlistsByCategory) {
+                        List<YoutubePlaylist> youtubePlaylists = playlistsByCategory.get(splits[1]);
+                        youtubePlaylists = youtubePlaylists != null? youtubePlaylists: new ArrayList<>();
+                        result.sendResult(MediaItemHelperUtility.toMediaItems(youtubePlaylists, parentId));
+                    }
+
+                    @Override
+                    public <E extends Exception> void onError(E e) {
+                        result.sendResult(new ArrayList<>());
+                    }
+                });
+            } else if (splits.length > 2) {
+                OnlineYoutubeRepository.getInstance(this).getPlaylistTracks(splits[2], "", new OnlineYoutubeRepository.TracksLoadedCallback() {
+                    @Override
+                    public void onLoaded(List<YoutubeSong> songs) {
+                        String[] parents = parentId.split("[/]");
+                        result.sendResult(MediaItemHelperUtility.mapToMediaItems(songs, parents[parents.length - 1]));
+                    }
+
+                    @Override
+                    public <E extends Exception> void onError(E e) {
+                        result.sendResult(new ArrayList<>());
+                    }
+                });
+            }
         }
-        return mediaItems;
     }
 
 
@@ -352,8 +385,8 @@ public class PlayerService extends MediaBrowserServiceCompat implements PlayerHe
         extras.putInt(CONTENT_STYLE_BROWSABLE_HINT, CONTENT_STYLE_LIST_ITEM_HINT_VALUE);
         extras.putInt(CONTENT_STYLE_PLAYABLE_HINT, CONTENT_STYLE_GRID_ITEM_HINT_VALUE);
         items.add(new MediaBrowserCompat.MediaItem(new MediaDescriptionCompat.Builder()
-                .setTitle("Top Online Tracks")
-                .setMediaId("TOP_TRACKS")
+                .setTitle("Youtube Songs")
+                .setMediaId("YOUTUBE")
                 .setExtras(extras)
                 .build(), MediaBrowserCompat.MediaItem.FLAG_BROWSABLE));
         return items;
@@ -1200,7 +1233,11 @@ public class PlayerService extends MediaBrowserServiceCompat implements PlayerHe
                 .addAction(state == PlaybackStateCompat.STATE_PLAYING ? R.drawable.icon_pause : R.drawable.icon_play, PlayerService.this.getString(R.string.play_pause), MediaButtonReceiver.buildMediaButtonPendingIntent(this, PlaybackStateCompat.ACTION_PLAY_PAUSE))
                 .addAction(R.drawable.icon_skip_next, PlayerService.this.getString(R.string.next), MediaButtonReceiver.buildMediaButtonPendingIntent(this, PlaybackStateCompat.ACTION_SKIP_TO_NEXT))
                 .build();
-        startForeground(10, notification);
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            startForeground(10, notification, ServiceInfo.FOREGROUND_SERVICE_TYPE_MEDIA_PLAYBACK);
+        } else {
+            startForeground(10, notification);
+        }
 
         if (state != PlaybackStateCompat.STATE_PLAYING) {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
@@ -1466,17 +1503,17 @@ public class PlayerService extends MediaBrowserServiceCompat implements PlayerHe
 
                                 default:
                                     Map<Integer, List<StreamingData.AdaptiveAudioFormat>> streamMap = new LinkedHashMap<>();
-                                    for (var stream: audioStreams) {
+                                    for (var stream : audioStreams) {
                                         Integer itag = stream.getItag();
                                         List<StreamingData.AdaptiveAudioFormat> adaptiveAudioFormats = streamMap.get(itag);
-                                        if(adaptiveAudioFormats == null) {
+                                        if (adaptiveAudioFormats == null) {
                                             adaptiveAudioFormats = new ArrayList<>();
                                             streamMap.put(itag, adaptiveAudioFormats);
                                         }
                                         adaptiveAudioFormats.add(stream);
                                     }
                                     int itag = getFromQuality(quality);
-                                    List<StreamingData.AdaptiveAudioFormat> audioFormats = streamMap.get(itag) == null? new ArrayList<>(): streamMap.get(itag);
+                                    List<StreamingData.AdaptiveAudioFormat> audioFormats = streamMap.get(itag) == null ? new ArrayList<>() : streamMap.get(itag);
                                     audioUri = Uri.parse(audioFormats.get(audioFormats.size() - 1).getUrl());
                                     uriCache.put(dataSpec.uri.toString(), new YoutubeSongUriDetail(dataSpec.uri.toString(), audioStreams.get(1).getUrl(), audioStreams.get(2).getUrl(), audioStreams.get(3).getUrl(), songLength));
                                     LogHelper.d(TAG, "resolveDataSpec: quality:" + quality + " selected bitrate:" + audioStreams.get(quality).getBitrate());
@@ -1657,7 +1694,7 @@ public class PlayerService extends MediaBrowserServiceCompat implements PlayerHe
     }
 
     /**
-     *  Stop player or play next song
+     * Stop player or play next song
      */
     Runnable playNextOnMediaError = new Runnable() {
         @Override
@@ -1700,7 +1737,7 @@ public class PlayerService extends MediaBrowserServiceCompat implements PlayerHe
     };
 
     enum PlaybackEndedStatus {
-       INVALID, FINISHED, INTERRUPTED
+        INVALID, FINISHED, INTERRUPTED
     }
 
     void loadEqualizer(int audioSessionId) {

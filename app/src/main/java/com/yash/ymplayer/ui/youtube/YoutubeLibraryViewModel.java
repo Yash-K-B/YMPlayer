@@ -34,7 +34,7 @@ public class YoutubeLibraryViewModel extends AndroidViewModel {
 
     public LiveData<PagingData<YoutubeSong>> getTopTracks() {
         PagingConfig pagingConfig = new PagingConfig(30, 3, true);
-        Pager<String, YoutubeSong> pager = new Pager<>(pagingConfig, () -> new YoutubePageKeyedDataSource(application.getApplicationContext(), "PL4fGSI1pDJn40WjZ6utkIuj2rNg-7iGsq"));
+        Pager<String, YoutubeSong> pager = new Pager<>(pagingConfig, () -> new YoutubePageKeyedDataSource(application.getApplicationContext(), com.yash.ymplayer.constant.Constants.DEFAULT_PLAYLIST));
         return KotlinConverterUtil.Companion.toFlowable(pager.getFlow());
     }
 
@@ -45,122 +45,34 @@ public class YoutubeLibraryViewModel extends AndroidViewModel {
     }
 
     public LiveData<List<PopularPlaylist>> getPopularPlaylist() {
-        OnlineYoutubeRepository.getInstance(application.getApplicationContext()).getPopularPlaylist(new OnlineYoutubeRepository.PlaylistsLoadedCallback() {
-            @Override
-            public void onLoaded(List<PopularPlaylist> playlists) {
-                popularPlaylists.setValue(playlists);
-            }
-
-            @Override
-            public void onError() {
-                popularPlaylists.setValue(null);
-            }
-        });
         return popularPlaylists;
     }
 
 
     public void refreshPopularHit() {
-        OnlineYoutubeRepository.getInstance(application.getApplicationContext()).getPopularPlaylist(new OnlineYoutubeRepository.PlaylistsLoadedCallback() {
-            @Override
-            public void onLoaded(List<PopularPlaylist> playlists) {
-                popularPlaylists.setValue(playlists);
-            }
-
-            @Override
-            public void onError() {
-                popularPlaylists.setValue(null);
-            }
-        });
     }
 
 
     public LiveData<List<PopularPlaylist>> getAllTimeHitPlaylist() {
-        OnlineYoutubeRepository.getInstance(application.getApplicationContext()).getAllTimeHitPlaylist(new OnlineYoutubeRepository.PlaylistsLoadedCallback() {
-            @Override
-            public void onLoaded(List<PopularPlaylist> playlists) {
-                allTimeHitPlaylists.setValue(playlists);
-            }
-
-            @Override
-            public void onError() {
-                allTimeHitPlaylists.setValue(null);
-            }
-        });
         return allTimeHitPlaylists;
     }
 
     public void refreshAllTimeHit() {
-        OnlineYoutubeRepository.getInstance(application.getApplicationContext()).getAllTimeHitPlaylist(new OnlineYoutubeRepository.PlaylistsLoadedCallback() {
-            @Override
-            public void onLoaded(List<PopularPlaylist> playlists) {
-                allTimeHitPlaylists.setValue(playlists);
-            }
-
-            @Override
-            public void onError() {
-                allTimeHitPlaylists.setValue(null);
-            }
-        });
     }
 
 
     public LiveData<List<PopularPlaylist>> get90sMagic() {
-        OnlineYoutubeRepository.getInstance(application.getApplicationContext()).getPlaylistsDetails(Constants.magic90sPlaylists, new OnlineYoutubeRepository.PlaylistsLoadedCallback() {
-            @Override
-            public void onLoaded(List<PopularPlaylist> playlists) {
-                magic90s.setValue(playlists);
-            }
-
-            @Override
-            public void onError() {
-                magic90s.setValue(null);
-            }
-        });
         return magic90s;
     }
 
     public void refresh90sMagic() {
-        OnlineYoutubeRepository.getInstance(application.getApplicationContext()).getPlaylistsDetails(Constants.magic90sPlaylists, new OnlineYoutubeRepository.PlaylistsLoadedCallback() {
-            @Override
-            public void onLoaded(List<PopularPlaylist> playlists) {
-                magic90s.setValue(playlists);
-            }
-
-            @Override
-            public void onError() {
-                magic90s.setValue(null);
-            }
-        });
     }
 
     public LiveData<List<PopularPlaylist>> getDiscoverNewMusic() {
-        OnlineYoutubeRepository.getInstance(application.getApplicationContext()).getPlaylistsDetails(Constants.discoverNewPlaylists, new OnlineYoutubeRepository.PlaylistsLoadedCallback() {
-            @Override
-            public void onLoaded(List<PopularPlaylist> playlists) {
-                discoverNewMusic.setValue(playlists);
-            }
-
-            @Override
-            public void onError() {
-                discoverNewMusic.setValue(null);
-            }
-        });
         return discoverNewMusic;
     }
 
     public void refreshDiscoverNewMusic() {
-        OnlineYoutubeRepository.getInstance(application.getApplicationContext()).getPlaylistsDetails(Constants.discoverNewPlaylists, new OnlineYoutubeRepository.PlaylistsLoadedCallback() {
-            @Override
-            public void onLoaded(List<PopularPlaylist> playlists) {
-                discoverNewMusic.setValue(playlists);
-            }
-
-            @Override
-            public void onError() {
-                discoverNewMusic.setValue(null);
-            }
-        });
     }
 
 
