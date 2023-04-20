@@ -1,4 +1,4 @@
-package com.yash.ymplayer;
+package com.yash.ymplayer.interfaces;
 
 import android.net.Uri;
 import android.os.Bundle;

@@ -1,4 +1,4 @@
-package com.yash.ymplayer.storage;
+package com.yash.ymplayer.interfaces;
 
 import android.support.v4.media.MediaBrowserCompat;
 import android.support.v4.media.session.MediaSessionCompat;

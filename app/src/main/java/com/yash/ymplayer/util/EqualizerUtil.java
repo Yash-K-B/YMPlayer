@@ -8,7 +8,6 @@ import android.media.audiofx.LoudnessEnhancer;
 import android.media.audiofx.PresetReverb;
 import android.util.Log;
 
-import androidx.lifecycle.LiveData;
 import androidx.lifecycle.MutableLiveData;
 import androidx.preference.PreferenceManager;
 
@@ -17,9 +16,9 @@ import com.yash.logging.LogHelper;
 import com.yash.ymplayer.equaliser.EqualizerModel;
 import com.yash.ymplayer.equaliser.EqualizerSettings;
 import com.yash.ymplayer.equaliser.Settings;
+import com.yash.ymplayer.interfaces.Keys;
 
 import java.util.Objects;
-import java.util.Observable;
 
 public class EqualizerUtil {
     private static final String TAG = "EqualizerUtil";

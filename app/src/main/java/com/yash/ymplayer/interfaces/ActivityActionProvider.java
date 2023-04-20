@@ -1,4 +1,4 @@
-package com.yash.ymplayer;
+package com.yash.ymplayer.interfaces;
 
 import android.os.Bundle;
 import android.support.v4.media.session.MediaControllerCompat;

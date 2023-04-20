@@ -15,12 +15,12 @@ import androidx.sqlite.db.SupportSQLiteDatabase;
 import com.yash.ymplayer.storage.DeviceAudioProvider;
 import com.yash.ymplayer.storage.FileAudioProvider;
 import com.yash.ymplayer.storage.MediaItem;
-import com.yash.ymplayer.storage.MediaItemDao;
+import com.yash.ymplayer.storage.dao.MediaItemDao;
 import com.yash.ymplayer.storage.OfflineMediaProvider;
 import com.yash.ymplayer.storage.PlayList;
 import com.yash.ymplayer.storage.PlayListObject;
 import com.yash.ymplayer.storage.PlaylistMediaProvider;
-import com.yash.ymplayer.util.Keys;
+import com.yash.ymplayer.interfaces.Keys;
 
 import java.util.ArrayList;
 import java.util.Arrays;

@@ -16,8 +16,6 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.palette.graphics.Palette;
 import androidx.recyclerview.widget.DiffUtil;
-import androidx.recyclerview.widget.GridLayoutManager;
-import androidx.recyclerview.widget.ListUpdateCallback;
 import androidx.recyclerview.widget.RecyclerView;
 import androidx.recyclerview.widget.StaggeredGridLayoutManager;
 
@@ -30,6 +28,7 @@ import com.yash.ymplayer.databinding.ItemAlbumBinding;
 import com.yash.ymplayer.databinding.ItemPlayingQueueBinding;
 import com.yash.ymplayer.databinding.ItemSearchHeaderBinding;
 import com.yash.ymplayer.databinding.ItemSearchSongBinding;
+import com.yash.ymplayer.interfaces.Keys;
 
 import java.util.ArrayList;
 import java.util.List;

@@ -7,7 +7,6 @@ import android.os.Bundle;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
-import androidx.appcompat.widget.SearchView;
 import androidx.fragment.app.Fragment;
 import androidx.fragment.app.FragmentActivity;
 import androidx.lifecycle.Observer;
@@ -16,29 +15,22 @@ import androidx.recyclerview.widget.DividerItemDecoration;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.swiperefreshlayout.widget.SwipeRefreshLayout;
 
-import android.os.Handler;
-import android.os.RemoteException;
 import android.support.v4.media.MediaBrowserCompat;
 import android.support.v4.media.MediaMetadataCompat;
 import android.support.v4.media.session.MediaControllerCompat;
 import android.support.v4.media.session.PlaybackStateCompat;
 import android.view.LayoutInflater;
-import android.view.Menu;
-import android.view.MenuInflater;
-import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
 
 import com.yash.ymplayer.BaseActivity;
 import com.yash.ymplayer.ListExpandActivity;
-import com.yash.ymplayer.MainActivity;
 import com.yash.ymplayer.PlayerService;
 import com.yash.ymplayer.R;
 import com.yash.ymplayer.databinding.FragmentArtistsBinding;
 import com.yash.ymplayer.util.AlbumOrArtistContextMenuClickListener;
-import com.yash.ymplayer.util.Keys;
+import com.yash.ymplayer.interfaces.Keys;
 import com.yash.ymplayer.util.SongListAdapter;
-import com.yash.ymplayer.util.SongsContextMenuClickListener;
 
 import java.util.ArrayList;
 import java.util.List;

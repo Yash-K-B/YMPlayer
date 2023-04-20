@@ -8,8 +8,6 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
 import androidx.fragment.app.FragmentActivity;
-import androidx.lifecycle.Observer;
-import androidx.lifecycle.ViewModelProvider;
 import androidx.recyclerview.widget.DividerItemDecoration;
 import androidx.recyclerview.widget.LinearLayoutManager;
 
@@ -17,13 +15,11 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 
-import com.yash.logging.LogHelper;
 import com.yash.ymplayer.PlaylistExpandActivity;
 import com.yash.ymplayer.databinding.FragmentMagic90sBinding;
 import com.yash.ymplayer.ui.youtube.YoutubeLibraryViewModel;
 import com.yash.ymplayer.ui.youtube.adapters.PlaylistAdapter;
-import com.yash.ymplayer.ui.youtube.adapters.PopularHitAdapter;
-import com.yash.ymplayer.util.Keys;
+import com.yash.ymplayer.interfaces.Keys;
 
 import java.util.List;
 

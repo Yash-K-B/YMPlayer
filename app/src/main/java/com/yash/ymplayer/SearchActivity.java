@@ -1,11 +1,9 @@
 package com.yash.ymplayer;
 
-import android.content.ComponentName;
 import android.content.Intent;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
-import android.os.RemoteException;
 import android.support.v4.media.MediaBrowserCompat;
 import android.support.v4.media.MediaDescriptionCompat;
 import android.support.v4.media.session.MediaControllerCompat;
@@ -19,8 +17,6 @@ import androidx.annotation.Nullable;
 import androidx.appcompat.widget.SearchView;
 import androidx.lifecycle.Observer;
 import androidx.lifecycle.ViewModelProvider;
-import androidx.recyclerview.widget.GridLayoutManager;
-import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.StaggeredGridLayoutManager;
 
 import com.yash.logging.LogHelper;
@@ -28,7 +24,7 @@ import com.yash.ymplayer.databinding.ActivitySearchBinding;
 import com.yash.ymplayer.databinding.BasePlayerActivityBinding;
 import com.yash.ymplayer.ui.main.SearchViewModel;
 import com.yash.ymplayer.ui.youtube.search.YoutubeSearch;
-import com.yash.ymplayer.util.Keys;
+import com.yash.ymplayer.interfaces.Keys;
 import com.yash.ymplayer.util.SearchListAdapter;
 import com.yash.ymplayer.util.StringUtil;
 

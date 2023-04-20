@@ -1,6 +1,5 @@
 package com.yash.ymplayer.util;
 
-import android.annotation.SuppressLint;
 import android.content.ContentResolver;
 import android.content.ContentUris;
 import android.content.ContentValues;
@@ -8,7 +7,6 @@ import android.content.Context;
 import android.content.Intent;
 import android.database.Cursor;
 import android.net.Uri;
-import android.os.Build;
 import android.os.Bundle;
 import android.provider.MediaStore;
 import android.support.v4.media.MediaBrowserCompat;
@@ -20,10 +18,9 @@ import androidx.activity.result.IntentSenderRequest;
 
 import com.yash.logging.LogHelper;
 import com.yash.ymplayer.ListExpandActivity;
-import com.yash.ymplayer.storage.AudioProvider;
+import com.yash.ymplayer.interfaces.Keys;
+import com.yash.ymplayer.interfaces.AudioProvider;
 import com.yash.ymplayer.interfaces.SongContextMenuListener;
-
-import java.io.File;
 
 public class SongsContextMenuClickListener implements SongContextMenuListener {
     private static final String TAG = "SongsContextMenuClickLi";

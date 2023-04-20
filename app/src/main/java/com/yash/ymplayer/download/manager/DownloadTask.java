@@ -1,6 +1,5 @@
 package com.yash.ymplayer.download.manager;
 
-import static android.content.Context.MODE_PRIVATE;
 import static android.content.Context.NOTIFICATION_SERVICE;
 
 import android.annotation.SuppressLint;
@@ -22,20 +21,15 @@ import android.os.Environment;
 import android.os.Handler;
 import android.os.Looper;
 import android.provider.MediaStore;
-import android.util.Log;
 import android.webkit.MimeTypeMap;
-import android.webkit.URLUtil;
 import android.widget.Toast;
 
-import androidx.annotation.NonNull;
 import androidx.annotation.RequiresApi;
 import androidx.core.app.NotificationCompat;
-import androidx.lifecycle.LiveData;
 import androidx.lifecycle.MutableLiveData;
 import androidx.preference.PreferenceManager;
 
 import com.arthenica.ffmpegkit.FFmpegSession;
-import com.google.common.net.HttpHeaders;
 import com.yash.logging.LogHelper;
 import com.yash.ymplayer.R;
 import com.yash.ymplayer.download.manager.constants.DownloadStatus;
@@ -45,54 +39,32 @@ import com.yash.ymplayer.ffmpeg.AudioFile;
 import com.yash.ymplayer.ffmpeg.AudioMetadata;
 import com.yash.ymplayer.ffmpeg.FFMpegUtil;
 import com.yash.ymplayer.util.DownloadUtil;
-import com.yash.ymplayer.util.Keys;
+import com.yash.ymplayer.interfaces.Keys;
 import com.yash.youtube_extractor.Extractor;
-import com.yash.youtube_extractor.exceptions.ExtractionException;
 import com.yash.youtube_extractor.models.StreamingData;
 import com.yash.youtube_extractor.models.VideoData;
 import com.yash.youtube_extractor.models.VideoDetails;
 
 import java.io.BufferedInputStream;
-import java.io.DataInputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
-import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.io.InterruptedIOException;
 import java.io.OutputStream;
-import java.net.HttpURLConnection;
 import java.net.URL;
-import java.net.URLEncoder;
-import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Locale;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicLong;
-import java.util.stream.Stream;
-import java.util.zip.DeflaterInputStream;
-import java.util.zip.GZIPInputStream;
 
 import javax.net.ssl.HttpsURLConnection;
 
 import io.reactivex.rxjava3.android.schedulers.AndroidSchedulers;
-import io.reactivex.rxjava3.core.Completable;
-import io.reactivex.rxjava3.core.Scheduler;
 import io.reactivex.rxjava3.core.Single;
-import io.reactivex.rxjava3.disposables.Disposable;
 import io.reactivex.rxjava3.schedulers.Schedulers;
-import okhttp3.Call;
-import okhttp3.Callback;
-import okhttp3.OkHttpClient;
-import okhttp3.Request;
-import okhttp3.Response;
 
 public class DownloadTask extends Thread {
 

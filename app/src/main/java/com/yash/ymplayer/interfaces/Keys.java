@@ -1,4 +1,4 @@
-package com.yash.ymplayer.util;
+package com.yash.ymplayer.interfaces;
 
 public interface Keys {
     String MEDIA_ID = "mediaId";

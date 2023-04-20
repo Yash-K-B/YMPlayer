@@ -11,9 +11,7 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 
-import com.afollestad.materialdialogs.MaterialDialog;
-import com.yash.ymplayer.ActivityActionProvider;
-import com.yash.ymplayer.R;
+import com.yash.ymplayer.interfaces.ActivityActionProvider;
 import com.yash.ymplayer.databinding.FragmentAboutBinding;
 
 public class AboutFragment extends Fragment {

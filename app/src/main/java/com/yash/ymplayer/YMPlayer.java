@@ -8,7 +8,7 @@ import androidx.preference.PreferenceManager;
 import com.yash.logging.LogHelper;
 import com.yash.logging.settings.LogHelperSettings;
 import com.yash.ymplayer.util.ConverterUtil;
-import com.yash.ymplayer.util.Keys;
+import com.yash.ymplayer.interfaces.Keys;
 import com.yash.youtube_extractor.utility.HttpUtility;
 
 import java.lang.Thread.UncaughtExceptionHandler;

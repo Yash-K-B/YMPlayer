@@ -6,10 +6,8 @@ import android.os.Bundle;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
-import androidx.lifecycle.Lifecycle;
 
 import android.util.Log;
-import android.util.Pair;
 import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuInflater;
@@ -17,17 +15,14 @@ import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
 
-import com.google.android.material.tabs.TabLayout;
 import com.google.android.material.tabs.TabLayoutMediator;
 import com.yash.logging.LogHelper;
-import com.yash.ymplayer.ActivityActionProvider;
+import com.yash.ymplayer.interfaces.ActivityActionProvider;
 import com.yash.ymplayer.R;
-import com.yash.ymplayer.SearchActivity;
 import com.yash.ymplayer.constant.Constants;
 import com.yash.ymplayer.databinding.FragmentYoutubeLibraryBinding;
 import com.yash.ymplayer.repository.OnlineYoutubeRepository;
 import com.yash.ymplayer.ui.youtube.search.YoutubeSearch;
-import com.yash.youtube_extractor.ExtractorHelper;
 import com.yash.youtube_extractor.models.YoutubePlaylist;
 import com.yash.youtube_extractor.utility.CollectionUtility;
 

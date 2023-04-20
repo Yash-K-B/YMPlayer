@@ -15,7 +15,6 @@ import androidx.swiperefreshlayout.widget.SwipeRefreshLayout;
 
 import android.os.Handler;
 import android.os.Looper;
-import android.os.RemoteException;
 import android.support.v4.media.MediaBrowserCompat;
 import android.support.v4.media.MediaDescriptionCompat;
 import android.support.v4.media.MediaMetadataCompat;
@@ -28,17 +27,14 @@ import android.view.ViewGroup;
 
 import com.yash.ymplayer.BaseActivity;
 import com.yash.ymplayer.ListExpandActivity;
-import com.yash.ymplayer.MainActivity;
 import com.yash.ymplayer.PlayerService;
 import com.yash.ymplayer.R;
 import com.yash.ymplayer.databinding.FragmentPlaylistsBinding;
-import com.yash.ymplayer.repository.OnlineYoutubeRepository;
+import com.yash.ymplayer.interfaces.PlaylistUpdateListener;
 import com.yash.ymplayer.util.AlbumOrArtistContextMenuClickListener;
-import com.yash.ymplayer.util.Keys;
+import com.yash.ymplayer.interfaces.Keys;
 import com.yash.ymplayer.util.SongListAdapter;
-import com.yash.ymplayer.util.SongsContextMenuClickListener;
 
-import java.security.Key;
 import java.util.ArrayList;
 import java.util.List;
 

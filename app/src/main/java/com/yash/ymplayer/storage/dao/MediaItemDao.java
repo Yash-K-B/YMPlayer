@@ -1,4 +1,4 @@
-package com.yash.ymplayer.storage;
+package com.yash.ymplayer.storage.dao;
 
 import android.database.Cursor;
 import android.util.Pair;
@@ -10,6 +10,10 @@ import androidx.room.Insert;
 import androidx.room.OnConflictStrategy;
 import androidx.room.Query;
 import androidx.room.Update;
+
+import com.yash.ymplayer.storage.MediaItem;
+import com.yash.ymplayer.storage.PlayList;
+import com.yash.ymplayer.storage.PlayListObject;
 
 import java.util.HashMap;
 import java.util.List;

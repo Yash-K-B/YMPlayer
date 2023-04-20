@@ -1,20 +1,11 @@
 package com.yash.ymplayer.util;
 
-import android.app.AlertDialog;
-import android.content.ContentUris;
 import android.content.Context;
-import android.graphics.Rect;
 import android.graphics.drawable.BitmapDrawable;
 import android.graphics.drawable.Drawable;
-import android.net.Uri;
 import android.support.v4.media.MediaBrowserCompat;
-import android.util.Log;
 import android.view.LayoutInflater;
-import android.view.MenuItem;
-import android.view.View;
 import android.view.ViewGroup;
-import android.widget.Filter;
-import android.widget.Filterable;
 import android.widget.LinearLayout;
 
 import androidx.annotation.NonNull;
@@ -28,12 +19,9 @@ import com.bumptech.glide.request.target.CustomTarget;
 import com.bumptech.glide.request.transition.Transition;
 import com.yash.ymplayer.R;
 import com.yash.ymplayer.databinding.ItemAlbumBinding;
-import com.yash.ymplayer.repository.Repository;
-import com.yash.ymplayer.storage.OfflineMediaProvider;
-import com.yash.ymplayer.ui.main.AlbumOrArtistContextMenuListener;
+import com.yash.ymplayer.interfaces.AlbumOrArtistContextMenuListener;
 
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.List;
 
 public class AlbumListAdapter extends RecyclerView.Adapter<AlbumListAdapter.AlbumViewHolder> {

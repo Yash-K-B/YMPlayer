@@ -6,40 +6,23 @@ import android.support.v4.media.MediaBrowserCompat;
 import android.support.v4.media.session.MediaControllerCompat;
 import android.view.MenuItem;
 import android.view.View;
-import android.widget.LinearLayout;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.lifecycle.ViewModelProvider;
-import androidx.paging.CombinedLoadStates;
 import androidx.paging.LoadState;
 import androidx.recyclerview.widget.LinearLayoutManager;
-import androidx.recyclerview.widget.RecyclerView;
 
 import com.bumptech.glide.Glide;
 import com.yash.logging.LogHelper;
 import com.yash.ymplayer.databinding.BasePlayerActivityBinding;
 import com.yash.ymplayer.databinding.PlaylistExpandActivityBinding;
-import com.yash.ymplayer.interfaces.TrackClickListener;
-import com.yash.ymplayer.repository.OnlineYoutubeRepository;
-import com.yash.ymplayer.storage.AudioProvider;
 import com.yash.ymplayer.ui.youtube.YoutubeLibraryViewModel;
-import com.yash.ymplayer.ui.youtube.YoutubeTracksAdapter;
 import com.yash.ymplayer.ui.youtube.adapters.LoadStateFooterAdapter;
 import com.yash.ymplayer.ui.youtube.livepage.YoutubePagedListAdapter;
-import com.yash.ymplayer.ui.youtube.toptracks.TopTracks;
-import com.yash.ymplayer.util.Keys;
+import com.yash.ymplayer.interfaces.Keys;
 import com.yash.ymplayer.util.KotlinConverterUtil;
 import com.yash.ymplayer.util.TrackContextMenuClickListener;
-import com.yash.ymplayer.util.YoutubeSong;
-
-import java.util.List;
-
-import io.reactivex.rxjava3.android.schedulers.AndroidSchedulers;
-import kotlin.Unit;
-import kotlin.coroutines.Continuation;
-import kotlinx.coroutines.flow.FlowCollector;
-import lombok.val;
 
 public class PlaylistExpandActivity extends BasePlayerActivity {
     private static final String TAG = "PlaylistExpandActivity";

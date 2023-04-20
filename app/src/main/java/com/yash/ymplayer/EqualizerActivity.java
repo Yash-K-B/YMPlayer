@@ -1,12 +1,8 @@
 package com.yash.ymplayer;
 
-import android.content.ComponentName;
-import android.graphics.Color;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
-import android.os.RemoteException;
-import android.os.ResultReceiver;
 import android.support.v4.media.MediaBrowserCompat;
 import android.support.v4.media.session.MediaControllerCompat;
 
@@ -14,7 +10,6 @@ import androidx.annotation.Nullable;
 
 import com.yash.ymplayer.databinding.FragmentMainBinding;
 import com.yash.ymplayer.equaliser.EqualizerFragment;
-import com.yash.ymplayer.util.Keys;
 
 public class EqualizerActivity extends BaseActivity {
     private static final String TAG = "EqualiserActivity";

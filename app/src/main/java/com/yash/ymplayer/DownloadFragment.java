@@ -14,7 +14,6 @@ import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
 import androidx.lifecycle.LifecycleOwner;
 import androidx.lifecycle.Observer;
-import androidx.recyclerview.widget.DiffUtil;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
@@ -22,7 +21,6 @@ import android.os.Handler;
 import android.os.Looper;
 import android.view.Gravity;
 import android.view.LayoutInflater;
-import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.PopupMenu;
@@ -38,9 +36,9 @@ import com.yash.ymplayer.download.manager.DownloadTask;
 import com.yash.ymplayer.download.manager.Downloader;
 import com.yash.ymplayer.download.manager.constants.DownloadStatus;
 import com.yash.ymplayer.download.manager.models.Download;
-import com.yash.ymplayer.repository.Repository;
+import com.yash.ymplayer.interfaces.ActivityActionProvider;
 import com.yash.ymplayer.util.ConverterUtil;
-import com.yash.ymplayer.util.Keys;
+import com.yash.ymplayer.interfaces.Keys;
 import com.yash.ymplayer.util.StorageXI;
 
 import org.jetbrains.annotations.NotNull;

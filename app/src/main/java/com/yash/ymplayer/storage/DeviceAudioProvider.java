@@ -10,25 +10,18 @@ import android.os.Bundle;
 import android.provider.MediaStore;
 import android.support.v4.media.MediaBrowserCompat;
 import android.support.v4.media.MediaDescriptionCompat;
-import android.support.v4.media.MediaMetadataCompat;
 import android.support.v4.media.session.MediaSessionCompat;
-import android.widget.Button;
 
 import androidx.annotation.NonNull;
-import androidx.media.MediaBrowserServiceCompat;
 
-import com.yash.logging.LogHelper;
 import com.yash.ymplayer.BuildConfig;
-import com.yash.ymplayer.util.Keys;
+import com.yash.ymplayer.interfaces.AudioProvider;
+import com.yash.ymplayer.interfaces.Keys;
 
-import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.NotNull;
 
-import java.security.Key;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.Collections;
-import java.util.Comparator;
 import java.util.List;
 
 public class DeviceAudioProvider implements AudioProvider {

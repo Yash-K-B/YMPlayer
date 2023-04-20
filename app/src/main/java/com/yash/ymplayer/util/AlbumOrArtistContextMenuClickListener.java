@@ -12,15 +12,12 @@ import android.support.v4.media.MediaBrowserCompat;
 import android.support.v4.media.session.MediaControllerCompat;
 import android.widget.Toast;
 import com.yash.logging.LogHelper;
+import com.yash.ymplayer.interfaces.Keys;
 import com.yash.ymplayer.repository.Repository;
-import com.yash.ymplayer.storage.AudioProvider;
-import com.yash.ymplayer.storage.OfflineMediaProvider;
-import com.yash.ymplayer.ui.main.AlbumOrArtistContextMenuListener;
+import com.yash.ymplayer.interfaces.AudioProvider;
+import com.yash.ymplayer.interfaces.AlbumOrArtistContextMenuListener;
 
-import java.security.Key;
 import java.util.List;
-
-import static com.yash.ymplayer.storage.OfflineMediaProvider.*;
 
 public class AlbumOrArtistContextMenuClickListener implements AlbumOrArtistContextMenuListener {
     private static final String TAG = "AlbumOrArtistContextMen";

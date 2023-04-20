@@ -6,7 +6,6 @@ import android.content.ContentUris;
 import android.content.ContentValues;
 import android.content.Context;
 import android.graphics.drawable.Drawable;
-import android.media.MediaMetadataRetriever;
 import android.net.Uri;
 import android.os.Handler;
 import android.os.Looper;
@@ -15,7 +14,6 @@ import android.support.v4.media.MediaBrowserCompat;
 import android.support.v4.media.MediaDescriptionCompat;
 import android.util.Log;
 import android.view.LayoutInflater;
-import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.PopupMenu;
@@ -34,15 +32,16 @@ import com.yash.ymplayer.databinding.CreatePlaylistBinding;
 import com.yash.ymplayer.databinding.ItemMusicBinding;
 import com.yash.ymplayer.databinding.ItemPlayingQueueBinding;
 import com.yash.ymplayer.databinding.ItemPlaylistBinding;
+import com.yash.ymplayer.interfaces.Keys;
 import com.yash.ymplayer.repository.Repository;
-import com.yash.ymplayer.ui.main.AlbumOrArtistContextMenuListener;
+import com.yash.ymplayer.interfaces.AlbumOrArtistContextMenuListener;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadPoolExecutor;
 
-import static com.yash.ymplayer.ui.main.AlbumOrArtistContextMenuListener.*;
+import static com.yash.ymplayer.interfaces.AlbumOrArtistContextMenuListener.*;
 
 public class SongListAdapter extends RecyclerView.Adapter<SongListAdapter.SongViewHolder> {
     private static final String TAG = "debug";

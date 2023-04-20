@@ -7,7 +7,7 @@ import android.os.IBinder;
 import androidx.annotation.Nullable;
 
 import com.yash.logging.LogHelper;
-import com.yash.ymplayer.util.Keys;
+import com.yash.ymplayer.interfaces.Keys;
 import com.yash.ymplayer.util.StringUtil;
 
 public class DownloadService extends Service {

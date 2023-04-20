@@ -1,4 +1,4 @@
-package com.yash.ymplayer.ui.main;
+package com.yash.ymplayer.interfaces;
 
 import android.support.v4.media.MediaBrowserCompat;
 

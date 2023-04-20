@@ -26,7 +26,7 @@ import com.bumptech.glide.Glide;
 import com.yash.ymplayer.databinding.BasePlayerActivityBinding;
 import com.yash.ymplayer.databinding.ListExpandActivityBinding;
 import com.yash.ymplayer.ui.main.LocalViewModel;
-import com.yash.ymplayer.util.Keys;
+import com.yash.ymplayer.interfaces.Keys;
 import com.yash.ymplayer.util.SongListAdapter;
 import com.yash.ymplayer.util.SongsContextMenuClickListener;
 import com.yash.ymplayer.util.SongsListAdapter;
