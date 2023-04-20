@@ -455,7 +455,17 @@ public class DeviceAudioProvider implements AudioProvider {
     @Override
     public List<MediaSessionCompat.QueueItem> getRandomQueue() {
         List<MediaSessionCompat.QueueItem> items = new ArrayList<>();
-        songsCursor = resolver.query(getSongsUri(), getSongsProjection(), getSongsSelection(), null, " RANDOM() LIMIT 15");
+        int limit = 20;
+        Bundle bundle;
+        if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            bundle = new Bundle();
+            bundle.putInt(ContentResolver.QUERY_ARG_LIMIT, limit);
+            bundle.putString(ContentResolver.QUERY_ARG_SQL_SORT_ORDER, "RANDOM()");
+            bundle.putString(ContentResolver.QUERY_ARG_SQL_SELECTION, getSongsSelection());
+            songsCursor = resolver.query(getSongsUri(), getSongsProjection(), bundle, null);
+        } else {
+            songsCursor = resolver.query(getSongsUri(), getSongsProjection(), getSongsSelection(), null, " RANDOM() LIMIT " + limit);
+        }
         if (songsCursor == null) return items;
         long queueId = 0;
         while (songsCursor.moveToNext()) {

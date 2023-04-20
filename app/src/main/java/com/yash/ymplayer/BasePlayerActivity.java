@@ -206,7 +206,6 @@ public abstract class BasePlayerActivity extends BaseActivity implements Activit
     abstract protected void onConnected(MediaControllerCompat mediaController);
 
     private void expandOrCompressMainLayout(int newState) {
-        LogHelper.d(TAG, "expandOrCompressMainLayout: " + newState);
         CoordinatorLayout.LayoutParams layoutParams = (CoordinatorLayout.LayoutParams) basePlayerActivityBinding.contentViewer.getLayoutParams();
         if (newState == BottomSheetBehavior.STATE_COLLAPSED) {
             if (layoutParams.bottomMargin != 0)
@@ -870,9 +869,7 @@ public abstract class BasePlayerActivity extends BaseActivity implements Activit
         @Override
         protected void onReceiveResult(int resultCode, Bundle resultData) {
             super.onReceiveResult(resultCode, resultData);
-            LogHelper.d(TAG, "onReceiveResult: audioSessionId" + resultData.getInt(Keys.AUDIO_SESSION_ID));
-//            basePlayerActivityBinding.visualizer.setColor(Color.GREEN);
-//            basePlayerActivityBinding.visualizer.setPlayer(resultData.getInt(Keys.AUDIO_SESSION_ID));
+            LogHelper.d(TAG, "onReceiveResult: audioSessionId - %s", resultData.getInt(Keys.AUDIO_SESSION_ID));
         }
     };
 

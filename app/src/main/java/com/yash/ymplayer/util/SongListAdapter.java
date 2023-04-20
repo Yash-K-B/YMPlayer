@@ -186,8 +186,8 @@ public class SongListAdapter extends RecyclerView.Adapter<SongListAdapter.SongVi
                             } else {
                                 resolver.delete(MediaStore.Audio.Playlists.EXTERNAL_CONTENT_URI, where, new String[]{CommonUtil.extractId(song.getMediaId())});
                             }
-                            songs.remove(getAdapterPosition());
-                            notifyItemRemoved(getAdapterPosition());
+                            songs.remove(getAbsoluteAdapterPosition());
+                            notifyItemRemoved(getAbsoluteAdapterPosition());
                             Toast.makeText(context, "Playlist " + song.getDescription().getTitle() + " has been deleted successfully", Toast.LENGTH_SHORT).show();
                             return true;
                         default:
@@ -230,15 +230,10 @@ public class SongListAdapter extends RecyclerView.Adapter<SongListAdapter.SongVi
 
         void bindSongs(MediaBrowserCompat.MediaItem song, OnItemClickListener listener) {
 
-//            executor.execute(new Runnable() {
-//                @Override
-//                public void run() {
-            MediaMetadataRetriever retriever = new MediaMetadataRetriever();
             String[] parts = song.getDescription().getMediaId().split("[/|]");
             long id = Long.parseLong(parts[parts.length - 1]);
             Log.d(TAG, "run: id: " + id);
-            retriever.setDataSource(context, ContentUris.withAppendedId(MediaStore.Audio.Media.EXTERNAL_CONTENT_URI, id));
-            Glide.with(context).load(retriever.getEmbeddedPicture()).placeholder(R.drawable.album_art_placeholder).into(new CustomTarget<Drawable>() {
+            Glide.with(context).load(CommonUtil.getEmbeddedPicture(context, ContentUris.withAppendedId(MediaStore.Audio.Media.EXTERNAL_CONTENT_URI, id))).placeholder(R.drawable.album_art_placeholder).into(new CustomTarget<Drawable>() {
                 @Override
                 public void onResourceReady(@NonNull Drawable resource, @Nullable Transition<? super Drawable> transition) {
                     handler.post(() -> binding.art.setImageDrawable(resource));
@@ -249,8 +244,6 @@ public class SongListAdapter extends RecyclerView.Adapter<SongListAdapter.SongVi
                     Log.d(TAG, "onLoadCleared: ");
                 }
             });
-//                }
-//            });
 
             PopupMenu menu = new PopupMenu(context, binding.more);
             menu.getMenuInflater().inflate(R.menu.song_context_menu, menu.getMenu());

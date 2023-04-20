@@ -14,6 +14,7 @@ import com.android.volley.toolbox.Volley;
 import com.yash.logging.LogHelper;
 import com.yash.ymplayer.cache.impl.LoadedTracksCache;
 import com.yash.ymplayer.constant.Constants;
+import com.yash.ymplayer.exceptions.YoutubeException;
 import com.yash.ymplayer.storage.AudioProvider;
 import com.yash.ymplayer.ui.youtube.livepage.PagedResponse;
 import com.yash.ymplayer.util.YoutubeSong;
@@ -123,8 +124,6 @@ public class OnlineYoutubeRepository {
         String id = uri.split("[|]")[0];
         if ("TOP_TRACKS".equals(id)) {
             id = Constants.DEFAULT_PLAYLIST;
-        } else if (uri.startsWith(Constants.PREFIX_SEARCH)) {
-            id = uri;
         }
 
         List<MediaSessionCompat.QueueItem> mediaItems = new ArrayList<>();
@@ -160,8 +159,6 @@ public class OnlineYoutubeRepository {
         String videoId = uri.split("[|]")[1];
         if ("TOP_TRACKS".equals(id)) {
             id = Constants.DEFAULT_PLAYLIST;
-        } else if (uri.startsWith(Constants.PREFIX_SEARCH)) {
-            id = uri;
         }
 
         List<MediaSessionCompat.QueueItem> mediaItems = new ArrayList<>();

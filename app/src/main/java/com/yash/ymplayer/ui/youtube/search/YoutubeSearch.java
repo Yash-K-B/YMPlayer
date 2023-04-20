@@ -28,6 +28,7 @@ import androidx.recyclerview.widget.LinearLayoutManager;
 import com.yash.logging.LogHelper;
 import com.yash.ymplayer.BasePlayerActivity;
 import com.yash.ymplayer.R;
+import com.yash.ymplayer.constant.Constants;
 import com.yash.ymplayer.databinding.ActivityUtubeSearchBinding;
 import com.yash.ymplayer.databinding.BasePlayerActivityBinding;
 import com.yash.ymplayer.repository.OnlineYoutubeRepository;
@@ -107,7 +108,7 @@ public class YoutubeSearch extends BasePlayerActivity {
                     Toast.makeText(YoutubeSearch.this, "Please enter text to search", Toast.LENGTH_SHORT).show();
                 }
                 query = query.trim();
-                String mediaIdPrefix = "Search/" + query + "|";
+                String mediaIdPrefix = Constants.PREFIX_SEARCH + query + "|";
                 utubeSearchBinding.progressBar.setVisibility(View.VISIBLE);
                 LogHelper.d(TAG, "onQueryTextSubmit: " + query);
                 OnlineYoutubeRepository.getInstance(YoutubeSearch.this).searchTracks(query, new OnlineYoutubeRepository.TracksLoadedCallback() {

@@ -45,11 +45,11 @@ public interface Keys {
     }
 
     interface Fragments {
+        String YOUTUBE_SONGS = "youtubeSongs";
         String LOCAL_SONGS = "localSongs";
+        String DOWNLOADS = "downloads";
         String SETTINGS = "settings";
         String ABOUT = "about";
-        String YOUTUBE_SONGS = "youtubeSongs";
-        String DOWNLOADS = "downloads";
     }
 
     interface SHARED_PREFERENCES {

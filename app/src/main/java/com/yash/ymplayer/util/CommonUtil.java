@@ -14,6 +14,7 @@ import com.yash.ymplayer.R;
 import com.yash.ymplayer.constant.Constants;
 import com.yash.ymplayer.interfaces.MediaIDProvider;
 
+import java.io.IOException;
 import java.util.regex.Pattern;
 
 public class CommonUtil {
@@ -114,8 +115,11 @@ public class CommonUtil {
     }
 
     public synchronized static byte[] getEmbeddedPicture(Context context, Uri uri) {
-        MediaMetadataRetriever retriever = new MediaMetadataRetriever();
-        retriever.setDataSource(context, uri);
-        return retriever.getEmbeddedPicture();
+        try (MediaMetadataRetriever retriever = new MediaMetadataRetriever()) {
+            retriever.setDataSource(context, uri);
+            return retriever.getEmbeddedPicture();
+        } catch (IOException e) {
+            throw new RuntimeException("Album art not found");
+        }
     }
 }

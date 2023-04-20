@@ -297,45 +297,20 @@ public class MainActivity extends BaseActivity implements ActivityActionProvider
             }
         });
 
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+        if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            if (checkSelfPermission(Manifest.permission.READ_MEDIA_AUDIO) == PackageManager.PERMISSION_GRANTED && checkSelfPermission(Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED) {
+                transactCurrentFragment();
+            } else {
+                requestPermissions(new String[]{Manifest.permission.READ_MEDIA_AUDIO, Manifest.permission.RECORD_AUDIO}, 100);
+            }
+        } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
             if (checkSelfPermission(Manifest.permission.WRITE_EXTERNAL_STORAGE) == PackageManager.PERMISSION_GRANTED && checkSelfPermission(Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED) {
-                LogHelper.d(TAG, "onCreate: Fragment Transaction:");
-                switch (currentFragment) {
-                    case Keys.Fragments.SETTINGS:
-                        activityMainBinding.navView.setCheckedItem(R.id.settings);
-                        getSupportFragmentManager().beginTransaction().replace(activityMainBinding.container.getId(), new SettingsFragment(), Keys.Fragments.SETTINGS).commit();
-                        break;
-                    case Keys.Fragments.ABOUT:
-                        activityMainBinding.navView.setCheckedItem(R.id.about);
-                        getSupportFragmentManager().beginTransaction().replace(activityMainBinding.container.getId(), new AboutFragment(), Keys.Fragments.ABOUT).commit();
-                        break;
-                    default:
-                        activityMainBinding.navView.setCheckedItem(R.id.localSongs);
-                        getSupportFragmentManager().beginTransaction().replace(activityMainBinding.container.getId(), new LocalSongs(), Keys.Fragments.LOCAL_SONGS).commit();
-                        break;
-                }
-
+                transactCurrentFragment();
             } else {
                 requestPermissions(new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE, Manifest.permission.RECORD_AUDIO}, 100);
             }
         } else {
-
-            switch (currentFragment) {
-                case Keys.Fragments.SETTINGS:
-                    activityMainBinding.navView.setCheckedItem(R.id.settings);
-                    getSupportFragmentManager().beginTransaction().replace(activityMainBinding.container.getId(), new SettingsFragment(), Keys.Fragments.SETTINGS).commit();
-                    break;
-                case Keys.Fragments.ABOUT:
-                    activityMainBinding.navView.setCheckedItem(R.id.about);
-                    getSupportFragmentManager().beginTransaction().replace(activityMainBinding.container.getId(), new AboutFragment(), Keys.Fragments.ABOUT).commit();
-                    break;
-                default:
-                    activityMainBinding.navView.setCheckedItem(R.id.localSongs);
-                    getSupportFragmentManager().beginTransaction().replace(activityMainBinding.container.getId(), new LocalSongs(), Keys.Fragments.LOCAL_SONGS).commit();
-                    break;
-            }
-
-
+            transactCurrentFragment();
         }
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
@@ -345,7 +320,7 @@ public class MainActivity extends BaseActivity implements ActivityActionProvider
             try {
                 manager.createNotificationChannel(defaultChannel);
             } catch (NullPointerException e) {
-                LogHelper.d(TAG, Arrays.toString(e.getStackTrace()));
+                LogHelper.e(TAG, "Error while creating notification channel", e);
             }
 
         }
@@ -378,6 +353,35 @@ public class MainActivity extends BaseActivity implements ActivityActionProvider
 
         mediaBrowser = new MediaBrowserCompat(this, new ComponentName(this, PlayerService.class), connectionCallback, null);
         mediaBrowser.connect();
+    }
+
+    private void transactCurrentFragment() {
+        LogHelper.d(TAG, "onCreate: Fragment Transaction:");
+        switch (currentFragment) {
+            case Keys.Fragments.SETTINGS:
+                activityMainBinding.navView.setCheckedItem(R.id.settings);
+                getSupportFragmentManager().beginTransaction().replace(activityMainBinding.container.getId(), new SettingsFragment(), Keys.Fragments.SETTINGS).commit();
+                break;
+            case Keys.Fragments.ABOUT:
+                activityMainBinding.navView.setCheckedItem(R.id.about);
+                getSupportFragmentManager().beginTransaction().replace(activityMainBinding.container.getId(), new AboutFragment(), Keys.Fragments.ABOUT).commit();
+                break;
+
+            case Keys.Fragments.YOUTUBE_SONGS:
+                activityMainBinding.navView.setCheckedItem(R.id.youtubeLibSongs);
+                getSupportFragmentManager().beginTransaction().replace(activityMainBinding.container.getId(), new YoutubeLibrary(), Keys.Fragments.YOUTUBE_SONGS).commit();
+                break;
+
+            case Keys.Fragments.DOWNLOADS:
+                activityMainBinding.navView.setCheckedItem(R.id.downloads);
+                getSupportFragmentManager().beginTransaction().replace(activityMainBinding.container.getId(), new DownloadFragment(), Keys.Fragments.DOWNLOADS).commit();
+                break;
+
+            default:
+                activityMainBinding.navView.setCheckedItem(R.id.localSongs);
+                getSupportFragmentManager().beginTransaction().replace(activityMainBinding.container.getId(), new LocalSongs(), Keys.Fragments.LOCAL_SONGS).commit();
+                break;
+        }
     }
 
     private void handleDrawerEvent() {
@@ -528,7 +532,8 @@ public class MainActivity extends BaseActivity implements ActivityActionProvider
     protected void onDestroy() {
         super.onDestroy();
         mediaBrowser.disconnect();
-        mediaController.unregisterCallback(mediaControllerCallback);
+        if(mediaController != null)
+            mediaController.unregisterCallback(mediaControllerCallback);
     }
 
     @Override
@@ -1249,9 +1254,7 @@ public class MainActivity extends BaseActivity implements ActivityActionProvider
         @Override
         protected void onReceiveResult(int resultCode, Bundle resultData) {
             super.onReceiveResult(resultCode, resultData);
-            LogHelper.d(TAG, "onReceiveResult: audioSessionId" + resultData.getInt(Keys.AUDIO_SESSION_ID));
-//            activityMainBinding.visualizer.setColor(Color.GREEN);
-//            activityMainBinding.visualizer.setPlayer(resultData.getInt(Keys.AUDIO_SESSION_ID));
+            LogHelper.d(TAG, "onReceiveResult: audioSessionId - %s", resultData.getInt(Keys.AUDIO_SESSION_ID));
         }
     };
 

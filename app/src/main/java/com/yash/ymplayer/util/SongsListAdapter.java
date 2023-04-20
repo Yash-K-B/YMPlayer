@@ -155,8 +155,8 @@ public class SongsListAdapter extends RecyclerView.Adapter<SongsListAdapter.Item
                         return true;
                     case R.id.deleteFromStorage:
                         if (songContextMenuListener.deleteFromStorage(song, launcher)) {
-                            songs.remove(getAdapterPosition());
-                            SongsListAdapter.this.notifyItemRemoved(getAdapterPosition());
+                            songs.remove(getAbsoluteAdapterPosition());
+                            SongsListAdapter.this.notifyItemRemoved(getAbsoluteAdapterPosition());
                         }
                         return true;
                     default:

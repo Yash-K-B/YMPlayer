@@ -48,6 +48,15 @@
             <intent android:targetPackage="com.yash.ymplayer" android:targetClass="com.yash.ymplayer.EqualizerActivity"/>
         </Preference>
 
+        <ListPreference
+            android:dependency="builtin_equalizer"
+            app:defaultValue="1000"
+            app:key="loudness_gain"
+            app:title="Loudness Gain"
+            app:entries="@array/loudness_gain"
+            app:entryValues="@array/loudness_gain_values"
+            app:useSimpleSummaryProvider="true" />
+
         <SwitchPreferenceCompat
             android:summaryOff="Disabled"
             android:summaryOn="Enabled"
@@ -62,14 +71,6 @@
             app:entries="@array/audio_quality"
             app:entryValues="@array/audio_quality_values"
             app:defaultValue="2"/>
-
-        <ListPreference
-            app:defaultValue="1000"
-            app:key="loudness_gain"
-            app:title="Loudness Gain"
-            app:entries="@array/loudness_gain"
-            app:entryValues="@array/loudness_gain_values"
-            app:useSimpleSummaryProvider="true" />
 
         <ListPreference
             app:defaultValue="4"

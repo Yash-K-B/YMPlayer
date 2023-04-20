@@ -7,7 +7,7 @@ import kotlinx.coroutines.flow.Flow
 
 public class KotlinConverterUtil {
     companion object {
-        fun <T : Any> toFlowable(flow: Flow<T>): LiveData<T> {
+        fun <T : Any> toLiveData(flow: Flow<T>): LiveData<T> {
             return flow.asLiveData()
         }
     }

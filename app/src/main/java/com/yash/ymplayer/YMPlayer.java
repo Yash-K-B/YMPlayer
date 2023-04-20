@@ -6,6 +6,7 @@ import android.content.SharedPreferences;
 import androidx.preference.PreferenceManager;
 
 import com.yash.logging.LogHelper;
+import com.yash.logging.settings.LogHelperSettings;
 import com.yash.ymplayer.util.ConverterUtil;
 import com.yash.ymplayer.util.Keys;
 import com.yash.youtube_extractor.utility.HttpUtility;
@@ -30,6 +31,9 @@ public class YMPlayer extends Application {
     public void onCreate() {
         super.onCreate();
         preferences  = PreferenceManager.getDefaultSharedPreferences(this);
+        LogHelperSettings logHelperSettings = new LogHelperSettings();
+        logHelperSettings.setFileLogging(false);
+        LogHelper.setLogHelperSettings(logHelperSettings);
         LogHelper.deploy(this, TAG);
         executor = Executors.newSingleThreadExecutor();
 

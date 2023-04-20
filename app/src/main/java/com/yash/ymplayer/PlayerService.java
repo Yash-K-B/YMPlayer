@@ -2,14 +2,11 @@ package com.yash.ymplayer;
 
 import static android.net.ConnectivityManager.NetworkCallback;
 
-import static java.lang.Math.E;
-
-import android.app.DownloadManager;
 import android.app.Notification;
+import android.app.NotificationManager;
 import android.app.PendingIntent;
 import android.content.ContentUris;
 import android.content.Intent;
-import android.content.IntentFilter;
 import android.content.SharedPreferences;
 import android.content.pm.ServiceInfo;
 import android.graphics.Bitmap;
@@ -18,10 +15,6 @@ import android.graphics.drawable.Drawable;
 import android.media.AudioFocusRequest;
 import android.media.AudioManager;
 import android.media.MediaMetadataRetriever;
-import android.media.audiofx.BassBoost;
-import android.media.audiofx.Equalizer;
-import android.media.audiofx.LoudnessEnhancer;
-import android.media.audiofx.PresetReverb;
 import android.media.session.PlaybackState;
 import android.net.ConnectivityManager;
 import android.net.Network;
@@ -51,7 +44,6 @@ import androidx.media.MediaBrowserServiceCompat;
 import androidx.media.session.MediaButtonReceiver;
 import androidx.preference.PreferenceManager;
 
-import com.android.volley.AsyncNetwork;
 import com.bumptech.glide.Glide;
 import com.bumptech.glide.request.target.CustomTarget;
 import com.bumptech.glide.request.transition.Transition;
@@ -62,7 +54,6 @@ import com.google.android.exoplayer2.Player;
 import com.google.android.exoplayer2.SimpleExoPlayer;
 import com.google.android.exoplayer2.Timeline;
 import com.google.android.exoplayer2.analytics.AnalyticsListener;
-import com.google.android.exoplayer2.audio.AudioListener;
 import com.google.android.exoplayer2.extractor.DefaultExtractorsFactory;
 import com.google.android.exoplayer2.extractor.ExtractorsFactory;
 import com.google.android.exoplayer2.source.ConcatenatingMediaSource;
@@ -83,12 +74,10 @@ import com.yash.ymplayer.repository.Repository;
 import com.yash.ymplayer.storage.AudioProvider;
 import com.yash.ymplayer.storage.MediaItem;
 import com.yash.ymplayer.storage.PlayList;
-import com.yash.ymplayer.storage.PlayListObject;
 import com.yash.ymplayer.util.ConverterUtil;
 import com.yash.ymplayer.util.EqualizerUtil;
 import com.yash.ymplayer.util.Keys;
 import com.yash.ymplayer.util.MediaItemHelperUtility;
-import com.yash.ymplayer.util.QueueHelperUtility;
 import com.yash.ymplayer.util.Song;
 import com.yash.ymplayer.util.YoutubeSong;
 import com.yash.youtube_extractor.Extractor;
@@ -98,9 +87,7 @@ import com.yash.youtube_extractor.models.VideoDetails;
 import com.yash.youtube_extractor.models.YoutubePlaylist;
 
 import java.io.IOException;
-import java.security.Key;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -114,6 +101,7 @@ public class PlayerService extends MediaBrowserServiceCompat implements PlayerHe
     public static final String MEDIA_ID = "mediaId";
     private static final String TAG = "PlayerService";
     public static final String METADATA_KEY_FAVOURITE = "favourite";
+    private static final int NOTIFICATION_ID = 10;
     MediaSessionCompat mSession;
     PlaybackStateCompat.Builder mPlaybackStateBuilder;
     MediaMetadataCompat.Builder mMediaMetadataBuilder;
@@ -142,17 +130,13 @@ public class PlayerService extends MediaBrowserServiceCompat implements PlayerHe
     ExtractorsFactory extractorsFactory;
     boolean isQueueChanged;
     UriCache uriCache;
-    DownloadManager downloadManager;
 
     List<ResultReceiver> resultReceivers;
 
     private int audioSessionId;
 
-    /*   Equalizer */
-    private Equalizer mEqualizer;
-    private BassBoost bassBoost;
-    private PresetReverb presetReverb;
-    private LoudnessEnhancer loudnessEnhancer;
+    private NotificationManager notificationManager;
+    private boolean isForegroundService;
 
     //Youtube Extractor
     Extractor extractor;
@@ -201,8 +185,6 @@ public class PlayerService extends MediaBrowserServiceCompat implements PlayerHe
     public void onCreate() {
         super.onCreate();
         LogHelper.d(TAG, "onCreate: Service");
-        IntentFilter noisyIntentFilter = new IntentFilter(AudioManager.ACTION_AUDIO_BECOMING_NOISY);
-        //registerReceiver(noisyReceiver, noisyIntentFilter);
 
         //Variables
         songs = new ArrayList<>();
@@ -219,7 +201,7 @@ public class PlayerService extends MediaBrowserServiceCompat implements PlayerHe
         connectivityManager = (ConnectivityManager) getSystemService(CONNECTIVITY_SERVICE);
         if (connectivityManager != null)
             connectivityManager.registerNetworkCallback(networkRequest, networkCallback);
-        downloadManager = (DownloadManager) this.getSystemService(DOWNLOAD_SERVICE);
+        notificationManager = (NotificationManager) getSystemService(NOTIFICATION_SERVICE);
         //Youtube Extractor
         extractor = new Extractor();
 
@@ -400,7 +382,7 @@ public class PlayerService extends MediaBrowserServiceCompat implements PlayerHe
         if (player != null)
             player.release();
         mSession.release();
-        stopForeground(true);
+        removeAsForegroundService(true);
         EqualizerUtil.getInstance(this).release();
         LogHelper.d(TAG, "onDestroy: Service Destroyed");
     }
@@ -408,7 +390,7 @@ public class PlayerService extends MediaBrowserServiceCompat implements PlayerHe
     MediaSessionCompat.Callback mediaSessionCallbacks = new MediaSessionCompat.Callback() {
         @Override
         public boolean onMediaButtonEvent(@NonNull Intent mediaButtonIntent) {
-            LogHelper.d(TAG, "onMediaButtonEvent: ");
+            LogHelper.d(TAG, "onMediaButtonEvent: " + mediaButtonIntent);
             return super.onMediaButtonEvent(mediaButtonIntent);
         }
 
@@ -572,14 +554,7 @@ public class PlayerService extends MediaBrowserServiceCompat implements PlayerHe
             player = null;
             setPlaybackState(PlaybackStateCompat.STATE_STOPPED);
             pushNotification(PlaybackStateCompat.STATE_STOPPED);
-            if (mEqualizer != null)
-                mEqualizer.release();
-            if (bassBoost != null)
-                bassBoost.release();
-            if (presetReverb != null)
-                presetReverb.release();
-            if (loudnessEnhancer != null)
-                loudnessEnhancer.release();
+            EqualizerUtil.getInstance(PlayerService.this).release();
             LogHelper.d(TAG, "onStop: " + savedPlayerPosition);
         }
 
@@ -797,7 +772,7 @@ public class PlayerService extends MediaBrowserServiceCompat implements PlayerHe
                             mSession.setQueueTitle("");
                             currentMediaIdOrVideoId = null;
                             setPlaybackState(PlaybackStateCompat.STATE_NONE);
-                            stopForeground(true);
+                            removeAsForegroundService(true);
                             mSession.getController().getTransportControls().stop();
                         }
 
@@ -873,7 +848,7 @@ public class PlayerService extends MediaBrowserServiceCompat implements PlayerHe
                         player = null;
                     }
                     setPlaybackState(PlaybackStateCompat.STATE_NONE);
-                    stopForeground(true);
+                    removeAsForegroundService(true);
                     break;
                 default:
             }
@@ -1232,21 +1207,22 @@ public class PlayerService extends MediaBrowserServiceCompat implements PlayerHe
                 .addAction(R.drawable.icon_skip_prev, PlayerService.this.getString(R.string.prev), MediaButtonReceiver.buildMediaButtonPendingIntent(this, PlaybackStateCompat.ACTION_SKIP_TO_PREVIOUS))
                 .addAction(state == PlaybackStateCompat.STATE_PLAYING ? R.drawable.icon_pause : R.drawable.icon_play, PlayerService.this.getString(R.string.play_pause), MediaButtonReceiver.buildMediaButtonPendingIntent(this, PlaybackStateCompat.ACTION_PLAY_PAUSE))
                 .addAction(R.drawable.icon_skip_next, PlayerService.this.getString(R.string.next), MediaButtonReceiver.buildMediaButtonPendingIntent(this, PlaybackStateCompat.ACTION_SKIP_TO_NEXT))
+                .setOngoing(!(state == PlaybackStateCompat.STATE_STOPPED || state == PlaybackStateCompat.STATE_NONE || state == PlaybackStateCompat.STATE_PAUSED))
                 .build();
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-            startForeground(10, notification, ServiceInfo.FOREGROUND_SERVICE_TYPE_MEDIA_PLAYBACK);
-        } else {
-            startForeground(10, notification);
-        }
 
-        if (state != PlaybackStateCompat.STATE_PLAYING) {
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
-                stopForeground(STOP_FOREGROUND_DETACH);
+        if (state == PlaybackStateCompat.STATE_STOPPED || state == PlaybackStateCompat.STATE_NONE) {
+            notificationManager.notify(NOTIFICATION_ID, notification);
+            removeAsForegroundService(false);
+        } else if(state == PlaybackStateCompat.STATE_PAUSED) {
+            notificationManager.notify(NOTIFICATION_ID, notification);
+        } else {
+            if (isForegroundService) {
+                notificationManager.notify(NOTIFICATION_ID, notification);
             } else {
-                stopForeground(false);
+                markAsForegroundService(notification);
             }
         }
-    }
+}
 
 
     ExoPlayer.EventListener ExoplayerEventListener = new ExoPlayer.EventListener() {
@@ -1436,11 +1412,11 @@ public class PlayerService extends MediaBrowserServiceCompat implements PlayerHe
             public DataSpec resolveDataSpec(DataSpec dataSpec) throws IOException {
                 try {
 
-                    LogHelper.d(TAG, String.format("resolving data spec for : ===================================%s===================================================================================================================", dataSpec.uri));
+                    LogHelper.d(TAG, "Resolving data spec for [===================================%s===================================]", dataSpec.uri);
                     boolean isMediaIdMatch = mediaIdPattern.matcher(dataSpec.uri.toString()).matches();
                     boolean isContentUriMatch = contentUriPattern.matcher(dataSpec.uri.toString()).matches();
                     String uriId = dataSpec.uri.toString();
-                    LogHelper.d(TAG, "resolveDataSpec: " + dataSpec.toString());
+                    LogHelper.d(TAG, "resolveDataSpec: %s", dataSpec);
                     LogHelper.d(TAG, "resolveDataSpec: pattern media id: matches: " + isMediaIdMatch);
                     LogHelper.d(TAG, "resolveDataSpec: pattern content uri: matches: " + isContentUriMatch);
                     if (isMediaIdMatch)
@@ -1458,15 +1434,16 @@ public class PlayerService extends MediaBrowserServiceCompat implements PlayerHe
                         if (playingQueue.get(index).getDescription().getExtras() == null || !playingQueue.get(index).getDescription().getExtras().containsKey(Keys.EXTRA_LENGTH))
                             updatePlayingQueueItemLength(index, uriDetail.getLength());
                         Uri uri = uriDetail.getUri(quality);
-                        LogHelper.d(TAG, "resolveDataSpec: found cached uri: " + uri);
+                        LogHelper.d(TAG, "Found cached uri: " + uri);
                         return dataSpec.withUri(uri);
                     } else {
                         long start = SystemClock.currentThreadTimeMillis(), end;
-                        LogHelper.d(TAG, "resolveDataSpec: call to extractor");
-                        VideoDetails videoDetails = null;
+                        LogHelper.d(TAG, "Fetching metadata using extractor");
+                        VideoDetails videoDetails;
                         try {
                             videoDetails = extractor.extract(uriId);
                         } catch (Exception e) {
+                            LogHelper.e(TAG, "Error while fetching metadata of " + uriId, e);
                             // retrying another time
                             videoDetails = extractor.extract(uriId);
                         }
@@ -1513,7 +1490,7 @@ public class PlayerService extends MediaBrowserServiceCompat implements PlayerHe
                                         adaptiveAudioFormats.add(stream);
                                     }
                                     int itag = getFromQuality(quality);
-                                    List<StreamingData.AdaptiveAudioFormat> audioFormats = streamMap.get(itag) == null ? new ArrayList<>() : streamMap.get(itag);
+                                    List<StreamingData.AdaptiveAudioFormat> audioFormats = streamMap.get(itag) != null ? streamMap.get(itag) : new ArrayList<>();
                                     audioUri = Uri.parse(audioFormats.get(audioFormats.size() - 1).getUrl());
                                     uriCache.put(dataSpec.uri.toString(), new YoutubeSongUriDetail(dataSpec.uri.toString(), audioStreams.get(1).getUrl(), audioStreams.get(2).getUrl(), audioStreams.get(3).getUrl(), songLength));
                                     LogHelper.d(TAG, "resolveDataSpec: quality:" + quality + " selected bitrate:" + audioStreams.get(quality).getBitrate());
@@ -1533,8 +1510,7 @@ public class PlayerService extends MediaBrowserServiceCompat implements PlayerHe
                     prevQuality = quality;
                     return dataSpec.withUri(audioUri);
                 } catch (ExtractionException e) {
-                    LogHelper.d(TAG, "resolveDataSpec: error :" + ConverterUtil.toStringException(e));
-                    e.printStackTrace();
+                    LogHelper.e(TAG, "resolveDataSpec: error :", e);
                     return dataSpec;
                 }
 
@@ -1742,6 +1718,25 @@ public class PlayerService extends MediaBrowserServiceCompat implements PlayerHe
 
     void loadEqualizer(int audioSessionId) {
         EqualizerUtil.getInstance(this).updateAudioSessionId(audioSessionId);
+    }
+
+
+    private void markAsForegroundService(Notification notification) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            startForeground(NOTIFICATION_ID, notification, ServiceInfo.FOREGROUND_SERVICE_TYPE_MEDIA_PLAYBACK);
+        } else {
+            startForeground(NOTIFICATION_ID, notification);
+        }
+        isForegroundService = true;
+    }
+
+    private void removeAsForegroundService(boolean removeNotification) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+            stopForeground(removeNotification ? STOP_FOREGROUND_REMOVE : STOP_FOREGROUND_DETACH);
+        } else {
+            stopForeground(removeNotification);
+        }
+        isForegroundService = false;
     }
 
 }

@@ -6,6 +6,7 @@ import android.os.Bundle;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
+import androidx.lifecycle.Lifecycle;
 
 import android.util.Log;
 import android.util.Pair;
@@ -70,6 +71,10 @@ public class YoutubeLibrary extends Fragment {
         OnlineYoutubeRepository.getInstance(requireContext()).getChannelPlaylists(channelId, new OnlineYoutubeRepository.PlaylistLoadedCallback() {
             @Override
             public void onLoaded(Map<String, List<YoutubePlaylist>> playlistsByCategory) {
+                if(getActivity() == null) {
+                    LogHelper.d(TAG, "onLoaded: No Activity attached!!!");
+                    return;
+                }
                 if (CollectionUtility.isEmpty(playlistsByCategory)) {
                     LogHelper.d(TAG, "Channel playlist empty");
                     showError();

@@ -11,6 +11,8 @@ import android.widget.LinearLayout;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.lifecycle.ViewModelProvider;
+import androidx.paging.CombinedLoadStates;
+import androidx.paging.LoadState;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
@@ -27,12 +29,16 @@ import com.yash.ymplayer.ui.youtube.adapters.LoadStateFooterAdapter;
 import com.yash.ymplayer.ui.youtube.livepage.YoutubePagedListAdapter;
 import com.yash.ymplayer.ui.youtube.toptracks.TopTracks;
 import com.yash.ymplayer.util.Keys;
+import com.yash.ymplayer.util.KotlinConverterUtil;
 import com.yash.ymplayer.util.TrackContextMenuClickListener;
 import com.yash.ymplayer.util.YoutubeSong;
 
 import java.util.List;
 
 import io.reactivex.rxjava3.android.schedulers.AndroidSchedulers;
+import kotlin.Unit;
+import kotlin.coroutines.Continuation;
+import kotlinx.coroutines.flow.FlowCollector;
 import lombok.val;
 
 public class PlaylistExpandActivity extends BasePlayerActivity {
@@ -95,7 +101,11 @@ public class PlaylistExpandActivity extends BasePlayerActivity {
         viewModel.getPlaylistTracks(playlistId).observe(this, youtubeSongs -> {
             LogHelper.d(TAG, "load: [%s] -> size: [%s]", playlistId, youtubeSongs);
             pagedListAdapter.submitData(getLifecycle(), youtubeSongs);
-            activityBinding.listProgress.setVisibility(View.GONE);
+        });
+        KotlinConverterUtil.Companion.toLiveData(pagedListAdapter.getLoadStateFlow()).observe(this, combinedLoadStates -> {
+            if (combinedLoadStates.getPrepend() instanceof LoadState.NotLoading && combinedLoadStates.getPrepend().getEndOfPaginationReached()) {
+                activityBinding.listProgress.setVisibility(View.GONE);
+            }
         });
     }
 }
