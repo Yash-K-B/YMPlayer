@@ -20,7 +20,8 @@
         android:layout_height="match_parent">
 
         <androidx.recyclerview.widget.RecyclerView
-            android:id="@+id/downloads"
+            android:id="@+id/listRv"
+            android:clipToPadding="false"
             android:layout_width="match_parent"
             android:layout_height="match_parent"
             tools:itemCount="2"

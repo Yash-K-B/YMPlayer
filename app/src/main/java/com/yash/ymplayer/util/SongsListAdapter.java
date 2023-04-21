@@ -20,11 +20,15 @@ import androidx.annotation.Nullable;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.bumptech.glide.Glide;
+import com.bumptech.glide.load.resource.drawable.DrawableTransitionOptions;
+import com.bumptech.glide.request.target.BitmapImageViewTarget;
 import com.bumptech.glide.request.target.CustomTarget;
 import com.bumptech.glide.request.transition.Transition;
+import com.yash.logging.LogHelper;
 import com.yash.ymplayer.R;
 import com.yash.ymplayer.databinding.ItemMusicBinding;
 import com.yash.ymplayer.interfaces.Keys;
+import com.yash.ymplayer.pool.ThreadPool;
 import com.yash.ymplayer.repository.Repository;
 import com.yash.ymplayer.ui.main.LocalViewModel;
 import com.yash.ymplayer.interfaces.SongContextMenuListener;
@@ -44,7 +48,6 @@ public class SongsListAdapter extends RecyclerView.Adapter<SongsListAdapter.Item
     private SongsContextMenuClickListener songContextMenuListener;
     private int mode;
     Context context;
-    ExecutorService executor = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors() > 2 ? Runtime.getRuntime().availableProcessors() - 1 : 1);
     Handler handler = new Handler(Looper.getMainLooper());
     int size;
     Drawable failedDrawable;
@@ -171,7 +174,7 @@ public class SongsListAdapter extends RecyclerView.Adapter<SongsListAdapter.Item
             binding.subTitle.setText(song.getDescription().getSubtitle());
             itemView.setOnClickListener(v -> listener.onClick(v, song));
 
-            executor.execute(() -> {
+            ThreadPool.getInstance().getExecutor().submit(() -> {
                 if (viewModel.songImages.get(song.getDescription().getMediaId()) == null) {
                     String[] parts = Objects.requireNonNull(song.getDescription().getMediaId()).split("[/|]");
                     try {
@@ -179,11 +182,15 @@ public class SongsListAdapter extends RecyclerView.Adapter<SongsListAdapter.Item
                         Uri artUrl = song.getDescription().getIconUri();
                         if (isEmbeddedArt)
                             artUrl = ContentUris.withAppendedId(MediaStore.Audio.Media.EXTERNAL_CONTENT_URI, Long.parseLong(parts[parts.length - 1]));
-                        Glide.with(context).load(isEmbeddedArt ? CommonUtil.getEmbeddedPicture(context, artUrl) : artUrl).into(new CustomTarget<Drawable>(size, size) {
+                        Glide.with(binding.art).load(isEmbeddedArt ? CommonUtil.getEmbeddedPicture(context, artUrl) : artUrl).transition(DrawableTransitionOptions.withCrossFade()).into(new CustomTarget<Drawable>(size, size) {
                             @Override
                             public void onResourceReady(@NonNull Drawable resource, @Nullable Transition<? super Drawable> transition) {
-                                handler.post(() -> binding.art.setImageDrawable(resource));
                                 viewModel.songImages.put(song.getDescription().getMediaId(), resource);
+                                handler.post(() -> {
+                                    if(!Objects.requireNonNull(transition).transition(resource, new BitmapImageViewTarget(binding.art))) {
+                                        binding.art.setImageDrawable(resource);
+                                    }
+                                });
                             }
 
                             @Override

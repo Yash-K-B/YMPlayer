@@ -62,16 +62,9 @@ public class AllSongs extends Fragment {
     FragmentAllSongsBinding allSongsBinding;
     List<MediaBrowserCompat.MediaItem> songs = new ArrayList<>();
     SongsListAdapter songsAdapter;
-    private static AllSongs instance;
 
     public AllSongs() {
         // Required empty public constructor
-    }
-
-    public static AllSongs getInstance() {
-        if (instance == null)
-            instance = new AllSongs();
-        return instance;
     }
 
     @Override
@@ -90,10 +83,10 @@ public class AllSongs extends Fragment {
         mMediaBrowser = new MediaBrowserCompat(context, new ComponentName(context, PlayerService.class), mConnectionCallbacks, null);
         mMediaBrowser.connect();
         viewModel = new ViewModelProvider(activity).get(LocalViewModel.class);
-        allSongsBinding.allSongsView.setHasFixedSize(true);
-        allSongsBinding.allSongsView.setItemViewCacheSize(20);
-        allSongsBinding.allSongsView.setLayoutManager(new LinearLayoutManager(context));
-        allSongsBinding.allSongsView.addItemDecoration(new DividerItemDecoration(context, DividerItemDecoration.VERTICAL));
+        allSongsBinding.listRv.setHasFixedSize(true);
+        allSongsBinding.listRv.setItemViewCacheSize(20);
+        allSongsBinding.listRv.setLayoutManager(new LinearLayoutManager(context));
+        allSongsBinding.listRv.addItemDecoration(new DividerItemDecoration(context, DividerItemDecoration.VERTICAL));
 
 
     }
@@ -136,7 +129,7 @@ public class AllSongs extends Fragment {
                 }
             }, new SongsContextMenuClickListener(context, mMediaController), SongsListAdapter.MODE.ALL);
             songsAdapter.setViewModel(viewModel);
-            allSongsBinding.allSongsView.setAdapter(songsAdapter);
+            allSongsBinding.listRv.setAdapter(songsAdapter);
             allSongsBinding.allSongsRefresh.setColorSchemeColors(BaseActivity.getAttributeColor(context, R.attr.colorPrimary));
             allSongsBinding.allSongsRefresh.setOnRefreshListener(new SwipeRefreshLayout.OnRefreshListener() {
                 @Override

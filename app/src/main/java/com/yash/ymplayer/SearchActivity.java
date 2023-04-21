@@ -75,9 +75,9 @@ public class SearchActivity extends BasePlayerActivity {
                 }
             }
         });
-        searchBinding.searchListContainer.setLayoutManager(new StaggeredGridLayoutManager(3, StaggeredGridLayoutManager.VERTICAL));
-        searchBinding.searchListContainer.setItemViewCacheSize(20);
-        searchBinding.searchListContainer.setAdapter(searchResultAdapter);
+        searchBinding.listRv.setLayoutManager(new StaggeredGridLayoutManager(3, StaggeredGridLayoutManager.VERTICAL));
+        searchBinding.listRv.setItemViewCacheSize(20);
+        searchBinding.listRv.setAdapter(searchResultAdapter);
 
         searchBinding.noResult.setVisibility(View.VISIBLE);
 

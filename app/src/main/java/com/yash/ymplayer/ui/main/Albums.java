@@ -72,10 +72,10 @@ public class Albums extends Fragment {
         context = getContext();
         activity = getActivity();
 
-        albumsBinding.allAlbums.setHasFixedSize(true);
-        albumsBinding.allAlbums.setItemViewCacheSize(20);
-        albumsBinding.allAlbums.addItemDecoration(new MarginItemDecoration(10));
-        albumsBinding.allAlbums.setLayoutManager(new GridLayoutManager(context,3));
+        albumsBinding.listRv.setHasFixedSize(true);
+        albumsBinding.listRv.setItemViewCacheSize(20);
+        albumsBinding.listRv.addItemDecoration(new MarginItemDecoration(10));
+        albumsBinding.listRv.setLayoutManager(new GridLayoutManager(context,3));
 
         mMediaBrowser = new MediaBrowserCompat(context, new ComponentName(context, PlayerService.class), mConnectionCallbacks, null);
         mMediaBrowser.connect();
@@ -108,7 +108,7 @@ public class Albums extends Fragment {
                     startActivity(intent);
                 }
             },new AlbumOrArtistContextMenuClickListener(context,mMediaController));
-            albumsBinding.allAlbums.setAdapter(albumsAdapter);
+            albumsBinding.listRv.setAdapter(albumsAdapter);
             albumsBinding.albumRefresh.setColorSchemeColors(BaseActivity.getAttributeColor(context,R.attr.colorPrimary));
             albumsBinding.albumRefresh.setOnRefreshListener(new SwipeRefreshLayout.OnRefreshListener() {
                 @Override

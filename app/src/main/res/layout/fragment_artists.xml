@@ -11,7 +11,8 @@
         android:layout_height="match_parent">
 
         <androidx.recyclerview.widget.RecyclerView
-            android:id="@+id/allArtists"
+            android:id="@+id/listRv"
+            android:clipToPadding="false"
             android:layout_width="match_parent"
             android:layout_height="match_parent"
             tools:listitem="@layout/item_music" />

@@ -1,57 +1,15 @@
-<?xml version="1.0" encoding="utf-8"?>
-<androidx.coordinatorlayout.widget.CoordinatorLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
-    android:id="@+id/sliding_layout"
+    android:id="@+id/player"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
+    android:background="#000000"
     android:gravity="bottom"
-    android:orientation="vertical"
-    app:umanoDragView="@+id/player_top"
-    app:umanoPanelHeight="58dp"
-    app:umanoShadowHeight="4dp">
-
-    <androidx.coordinatorlayout.widget.CoordinatorLayout
-        android:id="@+id/contentViewer"
-        android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        tools:context=".MainActivity">
-
-        <com.google.android.material.appbar.AppBarLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:theme="@style/ThemeOverlay.AppCompat.Dark">
-
-            <androidx.appcompat.widget.Toolbar
-                android:id="@+id/main_toolbar"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:minHeight="?actionBarSize"
-                android:text="@string/app_name"
-                android:textAppearance="@style/TextAppearance.Widget.AppCompat.Toolbar.Title"
-                app:popupTheme="@style/ThemeOverlay.AppCompat.Light"
-                app:titleTextColor="@android:color/white" />
-        </com.google.android.material.appbar.AppBarLayout>
-
-        <FrameLayout
-            android:id="@+id/container"
-            android:layout_width="match_parent"
-            android:layout_height="match_parent"
-            app:layout_behavior="@string/appbar_scrolling_view_behavior" />
-
-
-    </androidx.coordinatorlayout.widget.CoordinatorLayout>
-
-    <RelativeLayout
-        android:id="@+id/player"
-        android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:background="#000000"
-        android:gravity="bottom"
-        android:theme="@style/ThemeOverlay.AppCompat.Dark"
-        app:behavior_hideable="true"
-        app:behavior_peekHeight="58dp"
-        app:layout_behavior="com.google.android.material.bottomsheet.BottomSheetBehavior">
+    android:theme="@style/ThemeOverlay.AppCompat.Dark"
+    app:behavior_hideable="true"
+    app:behavior_peekHeight="58dp"
+    app:layout_behavior="com.google.android.material.bottomsheet.BottomSheetBehavior">
 
         <androidx.coordinatorlayout.widget.CoordinatorLayout
             android:layout_width="match_parent"
@@ -98,17 +56,16 @@
 
                 <ImageView
                     android:id="@+id/songArt2"
-                    android:layout_width="0dp"
-                    android:layout_height="0dp"
                     android:layout_marginStart="40dp"
                     android:layout_marginEnd="40dp"
-                    android:background="@drawable/circular_album_art_bg"
+                    android:layout_width="0dp"
+                    android:layout_height="0dp"
                     android:scaleType="fitCenter"
                     android:adjustViewBounds="true"
                     android:src="@drawable/album_art_placeholder"
                     app:layout_constraintBottom_toBottomOf="@+id/songArt"
                     app:layout_constraintEnd_toEndOf="@+id/songArt"
-                    app:layout_constraintHorizontal_bias="0.0"
+                    app:layout_constraintHorizontal_bias="0.5"
                     app:layout_constraintStart_toStartOf="@+id/songArt"
                     app:layout_constraintTop_toTopOf="@+id/songArt" />
 
@@ -391,15 +348,14 @@
                     android:textColor="@android:color/white"
                     android:textSize="20sp"
                     android:textStyle="bold" />
-
                 <ImageButton
                     android:id="@+id/equalizer"
                     android:layout_width="40dp"
                     android:layout_height="40dp"
                     android:layout_centerVertical="true"
                     android:layout_marginStart="10dp"
-                    android:layout_toStartOf="@+id/shareThis"
                     android:background="?attr/selectableItemBackgroundBorderless"
+                    android:layout_toStartOf="@+id/shareThis"
                     android:src="@drawable/ic_equalizer"
                     app:tint="@android:color/white" />
 
@@ -485,7 +441,4 @@
             </RelativeLayout>
         </RelativeLayout>
 
-    </RelativeLayout>
-
-
-</androidx.coordinatorlayout.widget.CoordinatorLayout>
+</RelativeLayout>

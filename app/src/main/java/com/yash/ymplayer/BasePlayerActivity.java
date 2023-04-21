@@ -197,23 +197,19 @@ public abstract class BasePlayerActivity extends BaseActivity implements Activit
     abstract protected void onConnected(MediaControllerCompat mediaController);
 
     private void expandOrCompressMainLayout(int newState) {
-        CoordinatorLayout.LayoutParams layoutParams = (CoordinatorLayout.LayoutParams) basePlayerActivityBinding.contentViewer.getLayoutParams();
+        RecyclerView view = basePlayerActivityBinding.contentViewer.findViewById(R.id.listRv);
+        if(view == null)
+            return;
         if (newState == BottomSheetBehavior.STATE_COLLAPSED) {
-            if (layoutParams.bottomMargin != 0)
-                return;
             ValueAnimator valueAnimator = ValueAnimator.ofInt(0, (int) ConverterUtil.getPx(this, 58));
             valueAnimator.addUpdateListener(valueAnimator1 -> {
-                layoutParams.bottomMargin = (int) valueAnimator1.getAnimatedValue();
-                basePlayerActivityBinding.contentViewer.setLayoutParams(layoutParams);
+                view.setPadding(0, 0, 0, (int) valueAnimator1.getAnimatedValue());
             });
             valueAnimator.start();
         } else if (newState == BottomSheetBehavior.STATE_HIDDEN) {
-            if (layoutParams.bottomMargin == 0)
-                return;
             ValueAnimator valueAnimator = ValueAnimator.ofInt((int) ConverterUtil.getPx(this, 58), 0);
             valueAnimator.addUpdateListener(valueAnimator1 -> {
-                layoutParams.bottomMargin = (int) valueAnimator1.getAnimatedValue();
-                basePlayerActivityBinding.contentViewer.setLayoutParams(layoutParams);
+                view.setPadding(0, 0, 0, (int) valueAnimator1.getAnimatedValue());
             });
             valueAnimator.start();
         }

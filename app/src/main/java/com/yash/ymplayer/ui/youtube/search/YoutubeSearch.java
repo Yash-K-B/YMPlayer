@@ -119,8 +119,8 @@ public class YoutubeSearch extends BasePlayerActivity {
                             YoutubeTracksAdapter adapter = new YoutubeTracksAdapter(YoutubeSearch.this, songs, new TrackContextMenuClickListener(YoutubeSearch.this, mediaController, mediaIdPrefix));
                             utubeSearchBinding.noResult.setVisibility(songs.isEmpty() ? View.VISIBLE : View.INVISIBLE);
                             utubeSearchBinding.progressBar.setVisibility(View.INVISIBLE);
-                            utubeSearchBinding.searchResultContainer.setLayoutManager(new LinearLayoutManager(YoutubeSearch.this));
-                            utubeSearchBinding.searchResultContainer.setAdapter(adapter);
+                            utubeSearchBinding.listRv.setLayoutManager(new LinearLayoutManager(YoutubeSearch.this));
+                            utubeSearchBinding.listRv.setAdapter(adapter);
                         });
                     }
 

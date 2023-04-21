@@ -7,8 +7,10 @@
     tools:context=".ui.main.AboutFragment">
 
     <ScrollView
+        android:id="@+id/listRv"
         android:layout_width="match_parent"
-        android:layout_height="match_parent">
+        android:layout_height="match_parent"
+        android:clipToPadding="false">
 
         <androidx.constraintlayout.widget.ConstraintLayout
             android:layout_width="match_parent"

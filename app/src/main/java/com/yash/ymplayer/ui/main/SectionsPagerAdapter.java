@@ -15,38 +15,38 @@ public class SectionsPagerAdapter extends FragmentStateAdapter {
 
     public static SectionsPagerAdapter instance;
 
-    public static SectionsPagerAdapter getInstance(@NonNull FragmentManager fm,Lifecycle lifecycle){
-        if(instance == null)
+    public static SectionsPagerAdapter getInstance(@NonNull FragmentManager fm, Lifecycle lifecycle) {
+        if (instance == null)
             instance = new SectionsPagerAdapter(fm, lifecycle);
         return instance;
     }
 
-    public SectionsPagerAdapter(@NonNull FragmentManager fm,Lifecycle lifecycle) {
-        super(fm,lifecycle);
+    public SectionsPagerAdapter(@NonNull FragmentManager fm, Lifecycle lifecycle) {
+        super(fm, lifecycle);
     }
-
 
     @NonNull
     @Override
     public Fragment createFragment(int position) {
 
-        switch (position){
+        Fragment fragment;
+        switch (position) {
             case 0:
-                return new AllSongs();
-                //break;
+                fragment = new AllSongs();
+                break;
             case 1:
-                return new Albums();
-               // break;
+                fragment = new Albums();
+                break;
             case 2:
-                return new Artists();
-               // break;
+                fragment = new Artists();
+                break;
             case 3:
-                return new Playlists();
-               // break;
+                fragment = new Playlists();
+                break;
             default:
-                return new AllSongs();
+                fragment = new AllSongs();
         }
-       // return fragment;
+        return fragment;
     }
 
     @Override

@@ -13,6 +13,7 @@ import androidx.recyclerview.widget.DiffUtil;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.bumptech.glide.Glide;
+import com.bumptech.glide.load.resource.drawable.DrawableTransitionOptions;
 import com.yash.logging.LogHelper;
 import com.yash.ymplayer.R;
 import com.yash.ymplayer.databinding.ItemMusicBinding;
@@ -90,7 +91,7 @@ public class YoutubePagedListAdapter extends PagingDataAdapter<YoutubeSong, Yout
             binding.title.setText(song.getTitle());
             binding.subTitle.setText(song.getChannelTitle());
             binding.more.setOnClickListener(v -> menu.show());
-            Glide.with(context).load(song.getArt_url_small()).into(binding.art);
+            Glide.with(context).load(song.getArt_url_small()).transition(DrawableTransitionOptions.withCrossFade()).into(binding.art);
             itemView.setOnClickListener(v -> listener.onClick(song));
         }
     }

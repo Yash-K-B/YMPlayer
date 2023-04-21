@@ -1,5 +1,6 @@
 package com.yash.ymplayer.ui.main;
 
+import android.app.Activity;
 import android.app.AlertDialog;
 import android.content.ContentValues;
 import android.content.Context;
@@ -27,6 +28,7 @@ import com.yash.ymplayer.R;
 import com.yash.ymplayer.SearchActivity;
 import com.yash.ymplayer.databinding.CreatePlaylistBinding;
 import com.yash.ymplayer.databinding.FragmentLocalSongsBinding;
+import com.yash.ymplayer.interfaces.EmbeddedListener;
 import com.yash.ymplayer.repository.Repository;
 
 /**
@@ -37,16 +39,10 @@ public class LocalSongs extends Fragment {
     private static final String TAG = "debug";
     FragmentLocalSongsBinding binding;
     Context context;
-    public static LocalSongs instance;
+    Activity activity;
 
     public LocalSongs() {
         // Required empty public constructor
-    }
-
-    public static LocalSongs getInstance() {
-        if (instance == null)
-            instance = new LocalSongs();
-        return instance;
     }
 
     @NonNull
@@ -62,8 +58,9 @@ public class LocalSongs extends Fragment {
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
         Log.d(TAG, "onActivityCreated: LocalSongs");
-        context = getContext();
-        ((ActivityActionProvider) getActivity()).setCustomToolbar(binding.toolbar, "Local Library");
+        context = requireContext();
+        activity = requireActivity();
+        ((ActivityActionProvider) activity).setCustomToolbar(binding.toolbar, "Local Library");
         SectionsPagerAdapter sectionsPagerAdapter = new SectionsPagerAdapter(getChildFragmentManager(), getActivity().getLifecycle());
         binding.floatingActionButton.hide();
         binding.viewPager.setAdapter(sectionsPagerAdapter);
@@ -83,9 +80,10 @@ public class LocalSongs extends Fragment {
         binding.viewPager.unregisterOnPageChangeCallback(viewPagerPageChangeCallback);
     }
 
-    private ViewPager2.OnPageChangeCallback viewPagerPageChangeCallback = new ViewPager2.OnPageChangeCallback() {
+    private final ViewPager2.OnPageChangeCallback viewPagerPageChangeCallback = new ViewPager2.OnPageChangeCallback() {
         @Override
         public void onPageSelected(int position) {
+            ((EmbeddedListener)activity).onPageChange();
             if (position == 3) {
                 binding.floatingActionButton.show();
             } else {

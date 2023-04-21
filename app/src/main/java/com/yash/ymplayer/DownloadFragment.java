@@ -92,8 +92,8 @@ public class DownloadFragment extends Fragment {
             downloadBinding.downloadsRefresh.setRefreshing(false);
         });
         adapter = new DownloadFileAdapter(context, getViewLifecycleOwner(), files, onClickListener, launcher);
-        downloadBinding.downloads.setLayoutManager(new LinearLayoutManager(context));
-        downloadBinding.downloads.setAdapter(adapter);
+        downloadBinding.listRv.setLayoutManager(new LinearLayoutManager(context));
+        downloadBinding.listRv.setAdapter(adapter);
     }
 
     public void refresh() {

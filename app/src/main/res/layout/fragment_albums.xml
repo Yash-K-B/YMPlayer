@@ -11,10 +11,11 @@
         android:layout_height="match_parent">
 
         <androidx.recyclerview.widget.RecyclerView
-            android:id="@+id/allAlbums"
+            android:id="@+id/listRv"
             android:layout_width="match_parent"
             android:layout_height="match_parent"
             android:clipChildren="true"
+            android:clipToPadding="false"
             tools:itemCount="10"
             tools:listitem="@layout/item_album" />
     </androidx.swiperefreshlayout.widget.SwipeRefreshLayout>

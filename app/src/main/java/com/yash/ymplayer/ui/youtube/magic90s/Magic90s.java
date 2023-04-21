@@ -18,7 +18,7 @@ import android.view.ViewGroup;
 
 import com.yash.logging.LogHelper;
 import com.yash.ymplayer.PlaylistExpandActivity;
-import com.yash.ymplayer.databinding.FragmentMagic90sBinding;
+import com.yash.ymplayer.databinding.FragmentPlaylistViewerBinding;
 import com.yash.ymplayer.models.PopularPlaylist;
 import com.yash.ymplayer.ui.youtube.YoutubeLibraryViewModel;
 import com.yash.ymplayer.ui.youtube.adapters.PopularHitAdapter;
@@ -37,7 +37,7 @@ public class Magic90s extends Fragment {
     PopularHitAdapter adapter;
     List<PopularPlaylist> playlists = new ArrayList<>();
     YoutubeLibraryViewModel viewModel;
-    FragmentMagic90sBinding magic90sBinding;
+    FragmentPlaylistViewerBinding magic90sBinding;
 
     public Magic90s() {
         // Required empty public constructor
@@ -47,7 +47,7 @@ public class Magic90s extends Fragment {
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
-        magic90sBinding = FragmentMagic90sBinding.inflate(inflater,container, false);
+        magic90sBinding = FragmentPlaylistViewerBinding.inflate(inflater,container, false);
         return magic90sBinding.getRoot();
     }
 
@@ -64,9 +64,9 @@ public class Magic90s extends Fragment {
             //ActivityOptions options = ActivityOptions.makeSceneTransitionAnimation(activity,v.getRoot(),"list_name");
             context.startActivity(intent);
         });
-        magic90sBinding.magic90sContainer.setAdapter(adapter);
-        magic90sBinding.magic90sContainer.setLayoutManager(new LinearLayoutManager(context));
-        magic90sBinding.magic90sContainer.addItemDecoration(new DividerItemDecoration(context, DividerItemDecoration.VERTICAL));
+        magic90sBinding.listRv.setAdapter(adapter);
+        magic90sBinding.listRv.setLayoutManager(new LinearLayoutManager(context));
+        magic90sBinding.listRv.addItemDecoration(new DividerItemDecoration(context, DividerItemDecoration.VERTICAL));
         viewModel = new ViewModelProvider(activity).get(YoutubeLibraryViewModel.class);
         viewModel.get90sMagic().observe(getViewLifecycleOwner(), new Observer<List<PopularPlaylist>>() {
             @Override

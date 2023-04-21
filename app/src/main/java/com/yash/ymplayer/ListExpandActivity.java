@@ -105,8 +105,8 @@ public class ListExpandActivity extends BasePlayerActivity {
                     }
                 }, new SongsContextMenuClickListener(context, mMediaController), SongsListAdapter.MODE.ARTIST);
                 adapter.setViewModel(viewModel);
-                binding.list.setLayoutManager(new LinearLayoutManager(ListExpandActivity.this));
-                binding.list.setAdapter(adapter);
+                binding.listRv.setLayoutManager(new LinearLayoutManager(ListExpandActivity.this));
+                binding.listRv.setAdapter(adapter);
             }
         });
     }
@@ -137,9 +137,9 @@ public class ListExpandActivity extends BasePlayerActivity {
                     }
                 }, new SongsContextMenuClickListener(context, mMediaController), SongsListAdapter.MODE.ALBUM);
                 adapter.setViewModel(viewModel);
-                binding.list.setLayoutManager(new LinearLayoutManager(ListExpandActivity.this));
-                binding.list.setAdapter(adapter);
-                binding.list.addItemDecoration(new DividerItemDecoration(ListExpandActivity.this, DividerItemDecoration.VERTICAL));
+                binding.listRv.setLayoutManager(new LinearLayoutManager(ListExpandActivity.this));
+                binding.listRv.setAdapter(adapter);
+                binding.listRv.addItemDecoration(new DividerItemDecoration(ListExpandActivity.this, DividerItemDecoration.VERTICAL));
             }
         });
     }
@@ -161,8 +161,8 @@ public class ListExpandActivity extends BasePlayerActivity {
                     }
                 }, new SongsContextMenuClickListener(context, mMediaController), SongsListAdapter.MODE.PLAYLIST);
                 adapter.setViewModel(viewModel);
-                binding.list.setLayoutManager(new LinearLayoutManager(ListExpandActivity.this));
-                binding.list.setAdapter(adapter);
+                binding.listRv.setLayoutManager(new LinearLayoutManager(ListExpandActivity.this));
+                binding.listRv.setAdapter(adapter);
             }
         });
     }

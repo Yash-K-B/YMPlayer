@@ -8,6 +8,7 @@ import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.bumptech.glide.Glide;
+import com.bumptech.glide.load.resource.drawable.DrawableTransitionOptions;
 import com.yash.ymplayer.databinding.ItemPlaylistBannerBinding;
 import com.yash.youtube_extractor.models.YoutubePlaylist;
 
@@ -54,7 +55,7 @@ public class PlaylistAdapter extends RecyclerView.Adapter<PlaylistAdapter.Playli
             binding.playlistTitle.setText(playlist.getTitle());
             binding.playlistSubTitle.setText(playlist.getDescription());
             binding.itemCount.setText(playlist.getVideoCount());
-            Glide.with(context).load(playlist.getArtUrlMedium()).into(binding.playlistArt);
+            Glide.with(context).load(playlist.getArtUrlMedium()).transition(DrawableTransitionOptions.withCrossFade()).into(binding.playlistArt);
             itemView.setOnClickListener(v -> listener.onClick(binding, playlist));
         }
     }

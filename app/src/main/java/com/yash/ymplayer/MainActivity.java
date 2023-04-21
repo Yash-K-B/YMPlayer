@@ -44,16 +44,18 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.ActionBarDrawerToggle;
 import androidx.appcompat.widget.Toolbar;
-import androidx.coordinatorlayout.widget.CoordinatorLayout;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.FileProvider;
 import androidx.core.view.GravityCompat;
 import androidx.drawerlayout.widget.DrawerLayout;
+import androidx.fragment.app.Fragment;
+import androidx.fragment.app.FragmentManager;
 import androidx.preference.PreferenceManager;
 import androidx.recyclerview.widget.DividerItemDecoration;
 import androidx.recyclerview.widget.ItemTouchHelper;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
+import androidx.viewpager2.widget.ViewPager2;
 
 import com.bumptech.glide.Glide;
 import com.bumptech.glide.load.DataSource;
@@ -70,6 +72,7 @@ import com.yash.ymplayer.databinding.ActivityMainBinding;
 import com.yash.ymplayer.equaliser.DialogEqualizerFragment;
 import com.yash.logging.LogHelper;
 import com.yash.ymplayer.interfaces.ActivityActionProvider;
+import com.yash.ymplayer.interfaces.EmbeddedListener;
 import com.yash.ymplayer.ui.main.AboutFragment;
 import com.yash.ymplayer.ui.main.LocalSongs;
 import com.yash.ymplayer.ui.main.SettingsFragment;
@@ -110,7 +113,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 
-public class MainActivity extends BaseActivity implements ActivityActionProvider {
+public class MainActivity extends BaseActivity implements ActivityActionProvider, EmbeddedListener {
     public static final String STATE_PREF = "PlayerState";
     private static final String TAG = "MainActivity";
     public static final String EXTRA_CURRENT_FRAGMENT = "fragment";
@@ -352,6 +355,13 @@ public class MainActivity extends BaseActivity implements ActivityActionProvider
 
         mediaBrowser = new MediaBrowserCompat(this, new ComponentName(this, PlayerService.class), connectionCallback, null);
         mediaBrowser.connect();
+
+        getSupportFragmentManager().registerFragmentLifecycleCallbacks(new FragmentManager.FragmentLifecycleCallbacks() {
+            @Override
+            public void onFragmentResumed(@NonNull FragmentManager fm, @NonNull Fragment f) {
+                onPageChange();
+            }
+        }, false);
     }
 
     private void transactCurrentFragment() {
@@ -359,26 +369,26 @@ public class MainActivity extends BaseActivity implements ActivityActionProvider
         switch (currentFragment) {
             case Keys.Fragments.SETTINGS:
                 activityMainBinding.navView.setCheckedItem(R.id.settings);
-                getSupportFragmentManager().beginTransaction().replace(activityMainBinding.container.getId(), new SettingsFragment(), Keys.Fragments.SETTINGS).commit();
+                changeFragment(activityMainBinding.container.getId(), new SettingsFragment(), Keys.Fragments.SETTINGS);
                 break;
             case Keys.Fragments.ABOUT:
                 activityMainBinding.navView.setCheckedItem(R.id.about);
-                getSupportFragmentManager().beginTransaction().replace(activityMainBinding.container.getId(), new AboutFragment(), Keys.Fragments.ABOUT).commit();
+                changeFragment(activityMainBinding.container.getId(), new AboutFragment(), Keys.Fragments.ABOUT);
                 break;
 
             case Keys.Fragments.YOUTUBE_SONGS:
                 activityMainBinding.navView.setCheckedItem(R.id.youtubeLibSongs);
-                getSupportFragmentManager().beginTransaction().replace(activityMainBinding.container.getId(), new YoutubeLibrary(), Keys.Fragments.YOUTUBE_SONGS).commit();
+                changeFragment(activityMainBinding.container.getId(), new YoutubeLibrary(), Keys.Fragments.YOUTUBE_SONGS);
                 break;
 
             case Keys.Fragments.DOWNLOADS:
                 activityMainBinding.navView.setCheckedItem(R.id.downloads);
-                getSupportFragmentManager().beginTransaction().replace(activityMainBinding.container.getId(), new DownloadFragment(), Keys.Fragments.DOWNLOADS).commit();
+                changeFragment(activityMainBinding.container.getId(), new DownloadFragment(), Keys.Fragments.DOWNLOADS);
                 break;
 
             default:
                 activityMainBinding.navView.setCheckedItem(R.id.localSongs);
-                getSupportFragmentManager().beginTransaction().replace(activityMainBinding.container.getId(), new LocalSongs(), Keys.Fragments.LOCAL_SONGS).commit();
+                changeFragment(activityMainBinding.container.getId(), new LocalSongs(), Keys.Fragments.LOCAL_SONGS);
                 break;
         }
     }
@@ -388,22 +398,22 @@ public class MainActivity extends BaseActivity implements ActivityActionProvider
             case R.id.youtubeLibSongs:
                 if (currentFragment.equals(Keys.Fragments.YOUTUBE_SONGS)) return;
                 currentFragment = Keys.Fragments.YOUTUBE_SONGS;
-                getSupportFragmentManager().beginTransaction().replace(activityMainBinding.container.getId(), new YoutubeLibrary(), Keys.Fragments.YOUTUBE_SONGS).commit();
+                changeFragment(activityMainBinding.container.getId(), new YoutubeLibrary(), Keys.Fragments.YOUTUBE_SONGS);
                 return;
             case R.id.localSongs:
                 if (currentFragment.equals(Keys.Fragments.LOCAL_SONGS)) return;
                 currentFragment = Keys.Fragments.LOCAL_SONGS;
-                getSupportFragmentManager().beginTransaction().replace(activityMainBinding.container.getId(), new LocalSongs(), Keys.Fragments.LOCAL_SONGS).commit();
+                changeFragment(activityMainBinding.container.getId(), new LocalSongs(), Keys.Fragments.LOCAL_SONGS);
                 return;
             case R.id.downloads:
                 if (currentFragment.equals(Keys.Fragments.DOWNLOADS)) return;
                 currentFragment = Keys.Fragments.DOWNLOADS;
-                getSupportFragmentManager().beginTransaction().replace(activityMainBinding.container.getId(), new DownloadFragment(), Keys.Fragments.DOWNLOADS).commit();
+                changeFragment(activityMainBinding.container.getId(), new DownloadFragment(), Keys.Fragments.DOWNLOADS);
                 return;
             case R.id.settings:
                 if (currentFragment.equals(Keys.Fragments.SETTINGS)) return;
                 currentFragment = Keys.Fragments.SETTINGS;
-                getSupportFragmentManager().beginTransaction().replace(activityMainBinding.container.getId(), new SettingsFragment(), Keys.Fragments.SETTINGS).commit();
+                changeFragment(activityMainBinding.container.getId(), new SettingsFragment(), Keys.Fragments.SETTINGS);
                 return;
             case R.id.share:
                 shareMyApp();
@@ -411,7 +421,7 @@ public class MainActivity extends BaseActivity implements ActivityActionProvider
             case R.id.about:
                 if (currentFragment.equals(Keys.Fragments.ABOUT)) return;
                 currentFragment = Keys.Fragments.ABOUT;
-                getSupportFragmentManager().beginTransaction().replace(activityMainBinding.container.getId(), new AboutFragment(), Keys.Fragments.ABOUT).commit();
+                changeFragment(activityMainBinding.container.getId(), new AboutFragment(), Keys.Fragments.ABOUT);
                 return;
             default:
         }
@@ -451,29 +461,53 @@ public class MainActivity extends BaseActivity implements ActivityActionProvider
     }
 
     private void expandOrCompressMainLayout(int newState) {
-        LogHelper.d(TAG, "expandOrCompressMainLayout: " + newState);
-        CoordinatorLayout.LayoutParams layoutParams = (CoordinatorLayout.LayoutParams) activityMainBinding.contentViewer.getLayoutParams();
+        View view = getEmbeddedRecyclerView();
+        if(view == null) {
+            LogHelper.d(TAG, "expandOrCompressMainLayout: Skipped as no view found");
+            return;
+        }
         if (newState == BottomSheetBehavior.STATE_COLLAPSED) {
-            if (layoutParams.bottomMargin != 0)
-                return;
             ValueAnimator valueAnimator = ValueAnimator.ofInt(0, (int) ConverterUtil.getPx(this, 58));
             valueAnimator.addUpdateListener(valueAnimator1 -> {
-                layoutParams.bottomMargin = (int) valueAnimator1.getAnimatedValue();
-                activityMainBinding.contentViewer.setLayoutParams(layoutParams);
+                view.setPadding(0, 0, 0 , (Integer) valueAnimator1.getAnimatedValue());
             });
             valueAnimator.setInterpolator(new DecelerateInterpolator());
             valueAnimator.start();
         } else if (newState == BottomSheetBehavior.STATE_HIDDEN) {
-            if (layoutParams.bottomMargin == 0)
-                return;
             ValueAnimator valueAnimator = ValueAnimator.ofInt((int) ConverterUtil.getPx(this, 58), 0);
             valueAnimator.addUpdateListener(valueAnimator1 -> {
-                layoutParams.bottomMargin = (int) valueAnimator1.getAnimatedValue();
-                activityMainBinding.contentViewer.setLayoutParams(layoutParams);
+                view.setPadding(0, 0, 0, (int) valueAnimator1.getAnimatedValue());
             });
             valueAnimator.setInterpolator(new LinearInterpolator());
             valueAnimator.start();
         }
+    }
+
+    private View getEmbeddedRecyclerView() {
+        try {
+            ViewPager2 viewPager;
+            Fragment fragment = getSupportFragmentManager().findFragmentByTag(currentFragment);
+            FragmentManager childFragmentManager = Objects.requireNonNull(fragment).getChildFragmentManager();
+            if (Objects.equals(currentFragment, Keys.Fragments.LOCAL_SONGS) && (viewPager = activityMainBinding.container.findViewById(R.id.view_pager)) != null) {
+                LogHelper.d(TAG, "getEmbeddedRecyclerView: %s, %s", viewPager.getCurrentItem(), viewPager.getChildCount());
+                return Objects.requireNonNull(childFragmentManager.findFragmentByTag("f" + viewPager.getCurrentItem())).requireView().findViewById(R.id.listRv);
+            } else if (Objects.equals(currentFragment, Keys.Fragments.YOUTUBE_SONGS) && (viewPager = activityMainBinding.container.findViewById(R.id.youtubeViewPager)) != null) {
+                return Objects.requireNonNull(childFragmentManager.findFragmentByTag("f" + viewPager.getCurrentItem())).requireView().findViewById(R.id.listRv);
+            } else {
+                return (fragment.getView() != null) ? fragment.getView().findViewById(currentFragment.equals(Keys.Fragments.SETTINGS) ? R.id.recycler_view : R.id.listRv) : null;
+            }
+        } catch (Exception e) {
+            return null;
+        }
+    }
+
+    @Override
+    public void onPageChange() {
+        expandOrCompressMainLayout(playerView.getState());
+    }
+
+    private void changeFragment(int containerId, Fragment fragment, String tag) {
+        getSupportFragmentManager().beginTransaction().replace(containerId, fragment, tag).commit();
     }
 
     @Override
@@ -815,7 +849,7 @@ public class MainActivity extends BaseActivity implements ActivityActionProvider
         else if (playerView.getState() == BottomSheetBehavior.STATE_EXPANDED)
             playerView.setState(BottomSheetBehavior.STATE_COLLAPSED);
         else if (!getSupportFragmentManager().getFragments().contains(getSupportFragmentManager().findFragmentByTag(Keys.Fragments.LOCAL_SONGS))) {
-            getSupportFragmentManager().beginTransaction().replace(activityMainBinding.container.getId(), new LocalSongs(), Keys.Fragments.LOCAL_SONGS).commit();
+            changeFragment(activityMainBinding.container.getId(), new LocalSongs(), Keys.Fragments.LOCAL_SONGS);
             activityMainBinding.navView.setCheckedItem(R.id.localSongs);
             navigationItemId = Objects.requireNonNull(activityMainBinding.navView.getCheckedItem()).getItemId();
             currentFragment = Keys.Fragments.LOCAL_SONGS;

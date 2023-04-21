@@ -9,6 +9,8 @@ import android.provider.MediaStore;
 import android.view.View;
 import android.widget.PopupMenu;
 
+import com.google.common.hash.HashCode;
+import com.yash.logging.LogHelper;
 import com.yash.ymplayer.download.manager.DownloadService;
 import com.yash.ymplayer.R;
 import com.yash.ymplayer.constant.Constants;
@@ -19,6 +21,7 @@ import java.io.IOException;
 import java.util.regex.Pattern;
 
 public class CommonUtil {
+    private static final String TAG = "CommonUtil";
 
     public static Pattern deviceUriPattern = Pattern.compile(Constants.DEVICE_URI_PREFIX_REGEX);
     public static Pattern offlineAudioPattern = Pattern.compile("[0-9]+");
@@ -115,7 +118,7 @@ public class CommonUtil {
         return getEmbeddedPicture(context, Uri.parse(uri));
     }
 
-    public synchronized static byte[] getEmbeddedPicture(Context context, Uri uri) {
+    public static synchronized byte[] getEmbeddedPicture(Context context, Uri uri) {
         try (MediaMetadataRetriever retriever = new MediaMetadataRetriever()) {
             retriever.setDataSource(context, uri);
             return retriever.getEmbeddedPicture();

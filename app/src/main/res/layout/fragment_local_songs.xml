@@ -9,7 +9,9 @@
 
     <androidx.coordinatorlayout.widget.CoordinatorLayout
         android:layout_width="match_parent"
-        android:layout_height="match_parent">
+        android:layout_height="match_parent"
+        android:clipToPadding="false"
+        android:clipChildren="false">
 
         <com.google.android.material.appbar.AppBarLayout
             android:layout_width="match_parent"
@@ -38,6 +40,8 @@
             android:id="@+id/view_pager"
             android:layout_width="match_parent"
             android:layout_height="match_parent"
+            android:clipChildren="false"
+            android:clipToPadding="false"
             app:layout_behavior="@string/appbar_scrolling_view_behavior" />
 
         <com.google.android.material.floatingactionbutton.FloatingActionButton
@@ -48,7 +52,8 @@
             android:focusable="true"
             android:layout_gravity="end|bottom"
             android:layout_margin="16dp"
-            app:srcCompat="@drawable/ic_plus_24" />
+            app:srcCompat="@drawable/ic_plus_24"
+            android:contentDescription="fab" />
 
     </androidx.coordinatorlayout.widget.CoordinatorLayout>
 

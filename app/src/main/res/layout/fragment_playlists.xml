@@ -22,8 +22,9 @@
         android:layout_height="match_parent">
 
         <androidx.recyclerview.widget.RecyclerView
-            android:id="@+id/playlists"
+            android:id="@+id/listRv"
             android:layout_margin="5dp"
+            android:clipToPadding="false"
             android:layout_width="match_parent"
             android:layout_height="match_parent" />
     </androidx.swiperefreshlayout.widget.SwipeRefreshLayout>

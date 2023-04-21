@@ -5,7 +5,8 @@
     android:layout_height="match_parent"
     tools:context=".ui.youtube.magic90s.Magic90s">
     <androidx.recyclerview.widget.RecyclerView
-        android:id="@+id/magic90s_container"
+        android:id="@+id/listRv"
+        android:clipToPadding="false"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         tools:listitem="@layout/item_playlist_banner" />

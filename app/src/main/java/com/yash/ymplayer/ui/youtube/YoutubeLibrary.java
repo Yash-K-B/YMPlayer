@@ -1,11 +1,13 @@
 package com.yash.ymplayer.ui.youtube;
 
+import android.app.Activity;
 import android.content.Intent;
 import android.os.Bundle;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
+import androidx.viewpager2.widget.ViewPager2;
 
 import android.util.Log;
 import android.view.LayoutInflater;
@@ -21,6 +23,7 @@ import com.yash.ymplayer.interfaces.ActivityActionProvider;
 import com.yash.ymplayer.R;
 import com.yash.ymplayer.constant.Constants;
 import com.yash.ymplayer.databinding.FragmentYoutubeLibraryBinding;
+import com.yash.ymplayer.interfaces.EmbeddedListener;
 import com.yash.ymplayer.repository.OnlineYoutubeRepository;
 import com.yash.ymplayer.ui.youtube.search.YoutubeSearch;
 import com.yash.youtube_extractor.models.YoutubePlaylist;
@@ -32,6 +35,7 @@ import java.util.Map;
 public class YoutubeLibrary extends Fragment {
     private static final String TAG = "YoutubeLibrary";
     FragmentYoutubeLibraryBinding youtubeLibraryBinding;
+    private Activity activity;
     public static String[] TAB_TITLES = {};
 
     public YoutubeLibrary() {
@@ -54,7 +58,8 @@ public class YoutubeLibrary extends Fragment {
     @Override
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
-        ((ActivityActionProvider) getActivity()).setCustomToolbar(youtubeLibraryBinding.youtubeToolbar, "Youtube Library");
+        activity = requireActivity();
+        ((ActivityActionProvider) activity).setCustomToolbar(youtubeLibraryBinding.youtubeToolbar, "Youtube Library");
         loadLibrary(Constants.DEFAULT_CHANNEL);
 
 
@@ -80,6 +85,7 @@ public class YoutubeLibrary extends Fragment {
                 TAB_TITLES = playlistsByCategory.keySet().toArray(new String[0]);
                 YoutubeViewPagerAdapter adapter = new YoutubeViewPagerAdapter(getChildFragmentManager(), getLifecycle(), playlistsByCategory);
                 youtubeLibraryBinding.youtubeViewPager.setAdapter(adapter);
+                youtubeLibraryBinding.youtubeViewPager.registerOnPageChangeCallback(viewPagerPageChangeCallback);
                 new TabLayoutMediator(youtubeLibraryBinding.tabs, youtubeLibraryBinding.youtubeViewPager, (tab, position) -> tab.setText(TAB_TITLES[position])).attach();
             }
 
@@ -111,4 +117,17 @@ public class YoutubeLibrary extends Fragment {
         }
         return super.onOptionsItemSelected(item);
     }
+
+    @Override
+    public void onDestroy() {
+        super.onDestroy();
+        youtubeLibraryBinding.youtubeViewPager.unregisterOnPageChangeCallback(viewPagerPageChangeCallback);
+    }
+
+    private final ViewPager2.OnPageChangeCallback viewPagerPageChangeCallback = new ViewPager2.OnPageChangeCallback() {
+        @Override
+        public void onPageSelected(int position) {
+            ((EmbeddedListener)activity).onPageChange();
+        }
+    };
 }

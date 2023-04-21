@@ -43,7 +43,7 @@ public class Playlists extends Fragment implements PlaylistUpdateListener {
     private static Playlists instance;
     private MediaBrowserCompat mMediaBrowser;
     private SongListAdapter adapter;
-    private List<MediaBrowserCompat.MediaItem> songs = new ArrayList<>();
+    private final List<MediaBrowserCompat.MediaItem> songs = new ArrayList<>();
     FragmentPlaylistsBinding playlistsBinding;
     private LocalViewModel viewModel;
     private MediaControllerCompat mMediaController;
@@ -52,12 +52,6 @@ public class Playlists extends Fragment implements PlaylistUpdateListener {
 
     public Playlists() {
         // Required empty public constructor
-    }
-
-    public static Playlists getInstance() {
-
-        instance = new Playlists();
-        return instance;
     }
 
     @Override
@@ -82,10 +76,9 @@ public class Playlists extends Fragment implements PlaylistUpdateListener {
                 startActivity(intent);
             }
         }, new AlbumOrArtistContextMenuClickListener(getContext(), mMediaController), SongListAdapter.Mode.PLAYLIST);
-        playlistsBinding.playlists.setAdapter(adapter);
-        playlistsBinding.playlists.setLayoutManager(new LinearLayoutManager(getContext()));
-        playlistsBinding.playlists.addItemDecoration(new DividerItemDecoration(getContext(), DividerItemDecoration.VERTICAL));
-        //OnlineYoutubeRepository.getInstance(getContext()).topTracks();
+        playlistsBinding.listRv.setAdapter(adapter);
+        playlistsBinding.listRv.setLayoutManager(new LinearLayoutManager(getContext()));
+        playlistsBinding.listRv.addItemDecoration(new DividerItemDecoration(requireContext(), DividerItemDecoration.VERTICAL));
     }
 
     @Override

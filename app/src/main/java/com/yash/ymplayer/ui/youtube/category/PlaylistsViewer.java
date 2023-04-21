@@ -16,7 +16,7 @@ import android.view.View;
 import android.view.ViewGroup;
 
 import com.yash.ymplayer.PlaylistExpandActivity;
-import com.yash.ymplayer.databinding.FragmentMagic90sBinding;
+import com.yash.ymplayer.databinding.FragmentPlaylistViewerBinding;
 import com.yash.ymplayer.ui.youtube.YoutubeLibraryViewModel;
 import com.yash.ymplayer.ui.youtube.adapters.PlaylistAdapter;
 import com.yash.ymplayer.interfaces.Keys;
@@ -33,7 +33,10 @@ public class PlaylistsViewer extends Fragment {
     PlaylistAdapter adapter;
     List<com.yash.youtube_extractor.models.YoutubePlaylist> playlists;
     YoutubeLibraryViewModel viewModel;
-    FragmentMagic90sBinding magic90sBinding;
+    FragmentPlaylistViewerBinding playlistViewerBinding;
+
+    public PlaylistsViewer() {
+    }
 
     public PlaylistsViewer(List<com.yash.youtube_extractor.models.YoutubePlaylist> playlists) {
         this.playlists = playlists;
@@ -43,8 +46,8 @@ public class PlaylistsViewer extends Fragment {
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
-        magic90sBinding = FragmentMagic90sBinding.inflate(inflater, container, false);
-        return magic90sBinding.getRoot();
+        playlistViewerBinding = FragmentPlaylistViewerBinding.inflate(inflater, container, false);
+        return playlistViewerBinding.getRoot();
     }
 
     @Override
@@ -59,14 +62,14 @@ public class PlaylistsViewer extends Fragment {
             intent.putExtra(Keys.EXTRA_ART_URL, playlist.getArtUrlMedium());
             context.startActivity(intent);
         });
-        magic90sBinding.magic90sContainer.setAdapter(adapter);
-        magic90sBinding.magic90sContainer.setLayoutManager(new LinearLayoutManager(context));
-        magic90sBinding.magic90sContainer.addItemDecoration(new DividerItemDecoration(context, DividerItemDecoration.VERTICAL));
-        magic90sBinding.magic90sProgress.setVisibility(View.GONE);
-        magic90sBinding.magic90sError.setVisibility(View.GONE);
-        magic90sBinding.btnRetry.setOnClickListener(v -> {
-            magic90sBinding.magic90sProgress.setVisibility(View.VISIBLE);
-            magic90sBinding.magic90sError.setVisibility(View.GONE);
+        playlistViewerBinding.listRv.setAdapter(adapter);
+        playlistViewerBinding.listRv.setLayoutManager(new LinearLayoutManager(context));
+        playlistViewerBinding.listRv.addItemDecoration(new DividerItemDecoration(context, DividerItemDecoration.VERTICAL));
+        playlistViewerBinding.magic90sProgress.setVisibility(View.GONE);
+        playlistViewerBinding.magic90sError.setVisibility(View.GONE);
+        playlistViewerBinding.btnRetry.setOnClickListener(v -> {
+            playlistViewerBinding.magic90sProgress.setVisibility(View.VISIBLE);
+            playlistViewerBinding.magic90sError.setVisibility(View.GONE);
             viewModel.refresh90sMagic();
         });
     }

@@ -74,8 +74,8 @@ public class Artists extends Fragment {
         activity = getActivity();
         mMediaBrowser = new MediaBrowserCompat(getContext(), new ComponentName(context, PlayerService.class), mConnectionCallbacks, null);
         mMediaBrowser.connect();
-        artistsBinding.allArtists.setLayoutManager(new LinearLayoutManager(getContext()));
-        artistsBinding.allArtists.addItemDecoration(new DividerItemDecoration(context, DividerItemDecoration.VERTICAL));
+        artistsBinding.listRv.setLayoutManager(new LinearLayoutManager(getContext()));
+        artistsBinding.listRv.addItemDecoration(new DividerItemDecoration(context, DividerItemDecoration.VERTICAL));
     }
 
     @Override
@@ -107,7 +107,7 @@ public class Artists extends Fragment {
                     }
                 }
             }, new AlbumOrArtistContextMenuClickListener(context, mMediaController), SongListAdapter.Mode.ARTIST);
-            artistsBinding.allArtists.setAdapter(artistsAdapter);
+            artistsBinding.listRv.setAdapter(artistsAdapter);
             mMediaController.registerCallback(mMediaControllerCallbacks);
             artistsBinding.artistsRefresh.setColorSchemeColors(BaseActivity.getAttributeColor(context, R.attr.colorPrimary));
             artistsBinding.artistsRefresh.setOnRefreshListener(new SwipeRefreshLayout.OnRefreshListener() {

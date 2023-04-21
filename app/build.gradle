@@ -39,8 +39,8 @@ android {
 dependencies {
     implementation fileTree(dir: 'libs', include: ['*.jar'])
 
-    implementation "androidx.lifecycle:lifecycle-viewmodel:2.5.1"
-    implementation "androidx.lifecycle:lifecycle-viewmodel-ktx:2.5.1"
+    implementation "androidx.lifecycle:lifecycle-viewmodel:2.6.1"
+    implementation "androidx.lifecycle:lifecycle-viewmodel-ktx:2.6.1"
     implementation "androidx.media:media:1.6.0"
 
     implementation 'androidx.appcompat:appcompat:1.6.1'
@@ -103,6 +103,8 @@ dependencies {
     implementation 'org.apache.commons:commons-text:1.10.0'
 
     implementation 'com.squareup.okhttp3:okhttp:5.0.0-alpha.11'
+
+    implementation 'androidx.viewpager2:viewpager2:1.1.0-beta01'
 
 
 
