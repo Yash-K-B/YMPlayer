@@ -11,7 +11,7 @@ import androidx.viewpager2.adapter.FragmentStateAdapter;
  * one of the sections/tabs/pages.
  */
 public class SectionsPagerAdapter extends FragmentStateAdapter {
-    private static final String TAG = "debug";
+    private static final String TAG = "SectionsPagerAdapter";
 
     public static SectionsPagerAdapter instance;
 
@@ -31,9 +31,6 @@ public class SectionsPagerAdapter extends FragmentStateAdapter {
 
         Fragment fragment;
         switch (position) {
-            case 0:
-                fragment = new AllSongs();
-                break;
             case 1:
                 fragment = new Albums();
                 break;

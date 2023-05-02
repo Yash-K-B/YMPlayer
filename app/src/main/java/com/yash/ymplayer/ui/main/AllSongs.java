@@ -6,39 +6,29 @@ import android.content.Context;
 import android.content.Intent;
 import android.media.browse.MediaBrowser;
 import android.os.Bundle;
-import android.os.Handler;
-import android.os.RemoteException;
 import android.support.v4.media.MediaBrowserCompat;
 import android.support.v4.media.MediaMetadataCompat;
 import android.support.v4.media.session.MediaControllerCompat;
 import android.support.v4.media.session.PlaybackStateCompat;
 import android.util.Log;
 import android.view.LayoutInflater;
-import android.view.Menu;
-import android.view.MenuInflater;
-import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Toast;
 
-import androidx.activity.result.ActivityResult;
-import androidx.activity.result.ActivityResultCallback;
 import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.IntentSenderRequest;
 import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
-import androidx.appcompat.widget.SearchView;
 import androidx.fragment.app.Fragment;
 import androidx.fragment.app.FragmentActivity;
 import androidx.lifecycle.Observer;
 import androidx.lifecycle.ViewModelProvider;
 import androidx.recyclerview.widget.DividerItemDecoration;
 import androidx.recyclerview.widget.LinearLayoutManager;
-import androidx.swiperefreshlayout.widget.SwipeRefreshLayout;
 
 import com.yash.ymplayer.BaseActivity;
-import com.yash.ymplayer.MainActivity;
 import com.yash.ymplayer.PlayerService;
 import com.yash.ymplayer.R;
 import com.yash.ymplayer.databinding.FragmentAllSongsBinding;
@@ -83,7 +73,6 @@ public class AllSongs extends Fragment {
         mMediaBrowser = new MediaBrowserCompat(context, new ComponentName(context, PlayerService.class), mConnectionCallbacks, null);
         mMediaBrowser.connect();
         viewModel = new ViewModelProvider(activity).get(LocalViewModel.class);
-        allSongsBinding.listRv.setHasFixedSize(true);
         allSongsBinding.listRv.setItemViewCacheSize(20);
         allSongsBinding.listRv.setLayoutManager(new LinearLayoutManager(context));
         allSongsBinding.listRv.addItemDecoration(new DividerItemDecoration(context, DividerItemDecoration.VERTICAL));
@@ -131,26 +120,19 @@ public class AllSongs extends Fragment {
             songsAdapter.setViewModel(viewModel);
             allSongsBinding.listRv.setAdapter(songsAdapter);
             allSongsBinding.allSongsRefresh.setColorSchemeColors(BaseActivity.getAttributeColor(context, R.attr.colorPrimary));
-            allSongsBinding.allSongsRefresh.setOnRefreshListener(new SwipeRefreshLayout.OnRefreshListener() {
-                @Override
-                public void onRefresh() {
-                    allSongsBinding.allSongsRefresh.setRefreshing(true);
-                    viewModel.refresh(getContext(), mMediaBrowser);
-                    //viewModel.querySongs();
-                }
+            allSongsBinding.allSongsRefresh.setOnRefreshListener(() -> {
+                allSongsBinding.allSongsRefresh.setRefreshing(true);
+                viewModel.refresh(getContext(), mMediaBrowser);
             });
             if (viewModel.songs.getValue() == null || viewModel.songs.getValue().isEmpty())
-                viewModel.querySongs(mMediaBrowser);
+                viewModel.loadSongs(mMediaBrowser);
             viewModel.songs.observe(AllSongs.this, new Observer<List<MediaBrowserCompat.MediaItem>>() {
                 @Override
                 public void onChanged(List<MediaBrowserCompat.MediaItem> songs) {
-                    AllSongs.this.songs.clear();
-                    AllSongs.this.songs.addAll(songs);
                     Log.d(TAG, "onChanged: Song Refreshed");
                     allSongsBinding.allSongsRefresh.setRefreshing(false);
                     allSongsBinding.progressBar.setVisibility(View.INVISIBLE);
-                    songsAdapter.refreshList();
-                    songsAdapter.notifyDataSetChanged();
+                    songsAdapter.refreshList(songs);
                 }
             });
 

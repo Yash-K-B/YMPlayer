@@ -90,7 +90,7 @@ public class ListExpandActivity extends BasePlayerActivity {
 
 
     void artistTracks() {
-        viewModel.getAllArtists(mMediaBrowser, parentId);
+        viewModel.loadArtists(mMediaBrowser, parentId);
         viewModel.allArtists.observe(ListExpandActivity.this, new Observer<List<MediaBrowserCompat.MediaItem>>() {
             @Override
             public void onChanged(List<MediaBrowserCompat.MediaItem> songs) {
@@ -99,7 +99,7 @@ public class ListExpandActivity extends BasePlayerActivity {
                     @Override
                     public void onClick(View v, MediaBrowserCompat.MediaItem song) {
                         if (song.isBrowsable())
-                            viewModel.getAllArtists(mMediaBrowser, song.getMediaId());
+                            viewModel.loadArtists(mMediaBrowser, song.getMediaId());
                         else if (song.isPlayable())
                             mMediaController.getTransportControls().playFromMediaId(song.getMediaId(), null);
                     }
@@ -122,7 +122,7 @@ public class ListExpandActivity extends BasePlayerActivity {
     void albumTracks() {
         String[] parts = parentId.split("[/]");
         Glide.with(context).load(ContentUris.withAppendedId(Uri.parse("content://media/external/audio/albumart"), Long.parseLong(parts[parts.length - 1]))).placeholder(R.drawable.album_art_placeholder).into(binding.appBarImage);
-        viewModel.getAllAlbums(mMediaBrowser, parentId);
+        viewModel.loadAlbums(mMediaBrowser, parentId);
         viewModel.allAlbums.observe(ListExpandActivity.this, new Observer<List<MediaBrowserCompat.MediaItem>>() {
             @Override
             public void onChanged(List<MediaBrowserCompat.MediaItem> songs) {
@@ -131,7 +131,7 @@ public class ListExpandActivity extends BasePlayerActivity {
                     @Override
                     public void onClick(View v, MediaBrowserCompat.MediaItem song) {
                         if (song.isBrowsable())
-                            viewModel.getAllAlbums(mMediaBrowser, song.getMediaId());
+                            viewModel.loadAlbums(mMediaBrowser, song.getMediaId());
                         else if (song.isPlayable())
                             mMediaController.getTransportControls().playFromMediaId(song.getMediaId(), null);
                     }
@@ -146,7 +146,7 @@ public class ListExpandActivity extends BasePlayerActivity {
 
 
     void playListTracks() {
-        viewModel.getAllPlaylists(mMediaBrowser, parentId);
+        viewModel.loadPlaylists(mMediaBrowser, parentId);
         viewModel.allPlaylists.observe(ListExpandActivity.this, new Observer<List<MediaBrowserCompat.MediaItem>>() {
             @Override
             public void onChanged(List<MediaBrowserCompat.MediaItem> songs) {
@@ -155,7 +155,7 @@ public class ListExpandActivity extends BasePlayerActivity {
                     @Override
                     public void onClick(View v, MediaBrowserCompat.MediaItem song) {
                         if (song.isBrowsable())
-                            viewModel.getAllPlaylists(mMediaBrowser, song.getMediaId());
+                            viewModel.loadPlaylists(mMediaBrowser, song.getMediaId());
                         else if (song.isPlayable())
                             mMediaController.getTransportControls().playFromMediaId(song.getMediaId(), null);
                     }

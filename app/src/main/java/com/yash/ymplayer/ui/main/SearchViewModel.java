@@ -35,7 +35,6 @@ public class SearchViewModel extends ViewModel {
     public Map<String, Drawable> songImages = new HashMap<>();
 
     public void refresh(Context context, MediaBrowserCompat mediaBrowser) {
-        Repository.getRefreshedInstance(context);
         querySongs(mediaBrowser);
         getAllAlbums(mediaBrowser, null);
         getAllArtists(mediaBrowser, null);

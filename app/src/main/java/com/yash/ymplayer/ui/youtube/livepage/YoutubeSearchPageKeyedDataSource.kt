@@ -1,4 +1,4 @@
-@file:JvmName("YoutubePageKeyedDataSource")
+@file:JvmName("YoutubeSearchPageKeyedDataSource")
 package com.yash.ymplayer.ui.youtube.livepage
 
 import android.content.Context
@@ -9,11 +9,11 @@ import com.yash.ymplayer.util.YoutubeSong
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
-public class YoutubePageKeyedDataSource(var context: Context, private val uniqueKey: String) :
+public class YoutubeSearchPageKeyedDataSource(var context: Context, private val query: String) :
     PagingSource<String, YoutubeSong>() {
 
     companion object {
-        private const val TAG = "YoutubePageKeyedDataSou"
+        private const val TAG = "YoutubeSearchPageKeyedDS"
     }
 
     override fun getRefreshKey(state: PagingState<String, YoutubeSong>): String? {
@@ -23,12 +23,12 @@ public class YoutubePageKeyedDataSource(var context: Context, private val unique
     override suspend fun load(params: LoadParams<String>): LoadResult<String, YoutubeSong> {
         return if (params.key == null) {
             val tracks = withContext(Dispatchers.IO) {
-                OnlineYoutubeRepository.getInstance(context).getPlaylistTracks(uniqueKey, "")
+                OnlineYoutubeRepository.getInstance(context).searchTracks(query)
             }
             LoadResult.Page(tracks.items, tracks.prevToken, tracks.nextToken)
         } else {
             val tracks = withContext(Dispatchers.IO) {
-                OnlineYoutubeRepository.getInstance(context).getMorePlaylistTracks(uniqueKey, params.key, "")
+                OnlineYoutubeRepository.getInstance(context).searchMoreTracks(query, params.key)
             }
             LoadResult.Page(tracks.items, null, tracks.nextToken)
         }

@@ -22,12 +22,26 @@
         android:layout_margin="5dp"
         android:src="@drawable/icon_drag"
         android:background="?attr/selectableItemBackgroundBorderless"
-        android:tint="?attr/listTitleTextColor"
         app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintEnd_toStartOf="@+id/track_name"
+        app:layout_constraintEnd_toStartOf="@+id/track_position"
         app:layout_constraintHorizontal_bias="0.5"
         app:layout_constraintHorizontal_chainStyle="packed"
         app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent"
+        app:tint="?attr/listTitleTextColor" />
+
+    <TextView
+        android:id="@+id/track_position"
+        android:layout_width="wrap_content"
+        android:layout_height="50dp"
+        android:padding="5dp"
+        android:text="1."
+        android:gravity="center_vertical"
+        android:singleLine="true"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toStartOf="@+id/track_name"
+        app:layout_constraintHorizontal_bias="0.5"
+        app:layout_constraintStart_toEndOf="@+id/dragToArrange"
         app:layout_constraintTop_toTopOf="parent" />
 
     <TextView
@@ -41,7 +55,7 @@
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toStartOf="@+id/removeFromQueue"
         app:layout_constraintHorizontal_bias="0.5"
-        app:layout_constraintStart_toEndOf="@+id/dragToArrange"
+        app:layout_constraintStart_toEndOf="@+id/track_position"
         app:layout_constraintTop_toTopOf="parent" />
 
     <ImageButton

@@ -23,17 +23,24 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.appcompat.widget.SearchView;
 import androidx.cursoradapter.widget.CursorAdapter;
+import androidx.lifecycle.ViewModelProvider;
+import androidx.paging.LoadState;
 import androidx.recyclerview.widget.LinearLayoutManager;
 
 import com.yash.logging.LogHelper;
 import com.yash.ymplayer.BasePlayerActivity;
+import com.yash.ymplayer.PlaylistExpandActivity;
 import com.yash.ymplayer.R;
 import com.yash.ymplayer.constant.Constants;
 import com.yash.ymplayer.databinding.ActivityUtubeSearchBinding;
 import com.yash.ymplayer.databinding.BasePlayerActivityBinding;
 import com.yash.ymplayer.repository.OnlineYoutubeRepository;
+import com.yash.ymplayer.ui.youtube.YoutubeLibraryViewModel;
 import com.yash.ymplayer.ui.youtube.YoutubeTracksAdapter;
+import com.yash.ymplayer.ui.youtube.adapters.LoadStateFooterAdapter;
+import com.yash.ymplayer.ui.youtube.livepage.YoutubePagedListAdapter;
 import com.yash.ymplayer.util.DownloadUtil;
+import com.yash.ymplayer.util.KotlinConverterUtil;
 import com.yash.ymplayer.util.StringUtil;
 import com.yash.ymplayer.util.TrackContextMenuClickListener;
 import com.yash.ymplayer.util.YoutubeSong;
@@ -58,8 +65,11 @@ public class YoutubeSearch extends BasePlayerActivity {
     private static final String TAG = "YoutubeSearch";
     ActivityUtubeSearchBinding utubeSearchBinding;
     SearchView searchView;
+    SuggestionAdapter suggestionAdapter;
     MediaControllerCompat mediaController;
     Handler handler = new Handler();
+
+    YoutubeLibraryViewModel viewModel;
 
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState, MediaBrowserCompat mediaBrowser, BasePlayerActivityBinding playerActivityBinding) {
@@ -67,13 +77,56 @@ public class YoutubeSearch extends BasePlayerActivity {
         playerActivityBinding.container.addView(utubeSearchBinding.getRoot());
         setCustomToolbar(null, "Search");
         utubeSearchBinding.progressBar.setVisibility(View.INVISIBLE);
-        utubeSearchBinding.noResult.setVisibility(View.VISIBLE);
+        utubeSearchBinding.noResult.setVisibility(View.INVISIBLE);
+        viewModel = new ViewModelProvider(this).get(YoutubeLibraryViewModel.class);
+        utubeSearchBinding.listRv.setLayoutManager(new LinearLayoutManager(YoutubeSearch.this));
     }
 
     @Override
     protected void onConnected(MediaControllerCompat mediaController) {
         this.mediaController = mediaController;
+        searchView.setOnQueryTextListener(queryTextChangeListener);
+        String query = getIntent().getStringExtra("query");
+        if (StringUtil.hasText(query)) {
+            searchView.setQuery(query, true);
+        }
     }
+
+    private final SearchView.OnQueryTextListener queryTextChangeListener = new SearchView.OnQueryTextListener() {
+        @Override
+        public boolean onQueryTextSubmit(String query) {
+            if (!StringUtil.hasLength(query)) {
+                Toast.makeText(YoutubeSearch.this, "Please enter text to search", Toast.LENGTH_SHORT).show();
+            }
+            query = query.trim();
+            String mediaIdPrefix = Constants.PREFIX_SEARCH + query + "|";
+            utubeSearchBinding.progressBar.setVisibility(View.VISIBLE);
+            LogHelper.d(TAG, "onQueryTextSubmit: " + query);
+
+            YoutubePagedListAdapter pagedListAdapter = new YoutubePagedListAdapter(YoutubeSearch.this, new TrackContextMenuClickListener(YoutubeSearch.this, mediaController, mediaIdPrefix), mediaController);
+            utubeSearchBinding.listRv.setAdapter(pagedListAdapter.withLoadStateFooter(new LoadStateFooterAdapter()));
+            viewModel.getSearchTracks(query).observe(YoutubeSearch.this, youtubeSongPagingData -> {
+                pagedListAdapter.submitData(getLifecycle(), youtubeSongPagingData);
+            });
+            KotlinConverterUtil.toLiveData(pagedListAdapter.getLoadStateFlow()).observe(YoutubeSearch.this, combinedLoadStates -> {
+                if (combinedLoadStates.getPrepend() instanceof LoadState.NotLoading && combinedLoadStates.getPrepend().getEndOfPaginationReached()) {
+                    utubeSearchBinding.progressBar.setVisibility(View.GONE);
+                }
+            });
+
+            return false;
+        }
+
+        private Runnable queryTask = null;
+        @Override
+        public boolean onQueryTextChange(String newText) {
+            if(queryTask != null)
+                handler.removeCallbacks(queryTask);
+            queryTask = () -> getSuggestions(newText, suggestionAdapter::updateCursor);
+            handler.postDelayed(queryTask, 100);
+            return true;
+        }
+    };
 
     @Override
     public void refresh() {
@@ -100,53 +153,7 @@ public class YoutubeSearch extends BasePlayerActivity {
         searchView.setImeOptions(EditorInfo.IME_ACTION_SEARCH);
         MatrixCursor matrixCursor = new MatrixCursor(new String[]{SearchManager.SUGGEST_COLUMN_TEXT_1, "_id"});
         matrixCursor.addRow(Arrays.asList("", 1));
-        SuggestionAdapter suggestionAdapter = new SuggestionAdapter(this, matrixCursor);
-        searchView.setOnQueryTextListener(new SearchView.OnQueryTextListener() {
-            @Override
-            public boolean onQueryTextSubmit(String query) {
-                if (!StringUtil.hasLength(query)) {
-                    Toast.makeText(YoutubeSearch.this, "Please enter text to search", Toast.LENGTH_SHORT).show();
-                }
-                query = query.trim();
-                String mediaIdPrefix = Constants.PREFIX_SEARCH + query + "|";
-                utubeSearchBinding.progressBar.setVisibility(View.VISIBLE);
-                LogHelper.d(TAG, "onQueryTextSubmit: " + query);
-                OnlineYoutubeRepository.getInstance(YoutubeSearch.this).searchTracks(query, new OnlineYoutubeRepository.TracksLoadedCallback() {
-                    @Override
-                    public void onLoaded(List<YoutubeSong> songs) {
-                        LogHelper.d(TAG, "onLoaded: Youtube search songs" + songs);
-                        runOnUiThread(() -> {
-                            YoutubeTracksAdapter adapter = new YoutubeTracksAdapter(YoutubeSearch.this, songs, new TrackContextMenuClickListener(YoutubeSearch.this, mediaController, mediaIdPrefix));
-                            utubeSearchBinding.noResult.setVisibility(songs.isEmpty() ? View.VISIBLE : View.INVISIBLE);
-                            utubeSearchBinding.progressBar.setVisibility(View.INVISIBLE);
-                            utubeSearchBinding.listRv.setLayoutManager(new LinearLayoutManager(YoutubeSearch.this));
-                            utubeSearchBinding.listRv.setAdapter(adapter);
-                        });
-                    }
-
-                    @Override
-                    public <E extends Exception> void onError(E e) {
-                        LogHelper.e(TAG, "onError: ", e);
-                    }
-                });
-                return false;
-            }
-
-             private Runnable queryTask = null;
-            @Override
-            public boolean onQueryTextChange(String newText) {
-                if(queryTask != null)
-                    handler.removeCallbacks(queryTask);
-                queryTask = () -> getSuggestions(newText, suggestionAdapter::updateCursor);
-                handler.postDelayed(queryTask, 100);
-                return true;
-            }
-        });
-        String query = getIntent().getStringExtra("query");
-        if (StringUtil.hasText(query)) {
-            searchView.setQuery(query, true);
-        }
-
+        suggestionAdapter = new SuggestionAdapter(this, matrixCursor);
         // Set up the suggestions adapter
         SearchManager searchManager = (SearchManager) getSystemService(SEARCH_SERVICE);
         searchView.setSearchableInfo(searchManager.getSearchableInfo(getComponentName()));

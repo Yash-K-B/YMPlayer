@@ -17,6 +17,7 @@ import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.IntentSenderRequest;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.recyclerview.widget.DiffUtil;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.bumptech.glide.Glide;
@@ -30,6 +31,7 @@ import com.yash.ymplayer.databinding.ItemMusicBinding;
 import com.yash.ymplayer.interfaces.Keys;
 import com.yash.ymplayer.pool.ThreadPool;
 import com.yash.ymplayer.repository.Repository;
+import com.yash.ymplayer.storage.MediaItem;
 import com.yash.ymplayer.ui.main.LocalViewModel;
 import com.yash.ymplayer.interfaces.SongContextMenuListener;
 
@@ -41,12 +43,11 @@ import java.util.concurrent.Executors;
 import java.util.regex.Pattern;
 
 public class SongsListAdapter extends RecyclerView.Adapter<SongsListAdapter.ItemViewHolder> {
-    private static final String TAG = "debug";
+    private static final String TAG = "SongsListAdapter";
     List<MediaBrowserCompat.MediaItem> songs;
-    List<MediaBrowserCompat.MediaItem> allSongs = new ArrayList<>();
-    private SongListAdapter.OnItemClickListener listener;
-    private SongsContextMenuClickListener songContextMenuListener;
-    private int mode;
+    private final SongListAdapter.OnItemClickListener listener;
+    private final SongsContextMenuClickListener songContextMenuListener;
+    private final int mode;
     Context context;
     Handler handler = new Handler(Looper.getMainLooper());
     int size;
@@ -59,7 +60,6 @@ public class SongsListAdapter extends RecyclerView.Adapter<SongsListAdapter.Item
     public SongsListAdapter(Context context, ActivityResultLauncher<IntentSenderRequest> launcher, List<MediaBrowserCompat.MediaItem> songs, SongListAdapter.OnItemClickListener listener, SongsContextMenuClickListener songContextMenuListener, int mode) {
         this.songs = songs;
         this.launcher = launcher;
-        allSongs.addAll(songs);
         this.listener = listener;
         this.songContextMenuListener = songContextMenuListener;
         this.context = context;
@@ -87,9 +87,11 @@ public class SongsListAdapter extends RecyclerView.Adapter<SongsListAdapter.Item
         //Log.d(TAG, "No of Processors: " + Runtime.getRuntime().availableProcessors());
     }
 
-    public void refreshList() {
-        allSongs.clear();
-        allSongs.addAll(songs);
+    public void refreshList(List<MediaBrowserCompat.MediaItem> newList) {
+        DiffUtil.DiffResult diffResult = DiffUtil.calculateDiff(new DiffCallback(this.songs, newList));
+        songs.clear();
+        songs.addAll(newList);
+        diffResult.dispatchUpdatesTo(this);
     }
 
     @Override

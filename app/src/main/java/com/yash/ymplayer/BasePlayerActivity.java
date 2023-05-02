@@ -20,6 +20,7 @@ import android.support.v4.media.session.MediaControllerCompat;
 import android.support.v4.media.session.MediaSessionCompat;
 import android.support.v4.media.session.PlaybackStateCompat;
 import android.view.View;
+import android.view.animation.LinearInterpolator;
 import android.view.inputmethod.InputMethodManager;
 import android.widget.ImageView;
 import android.widget.PopupMenu;
@@ -168,12 +169,10 @@ public abstract class BasePlayerActivity extends BaseActivity implements Activit
 
             @Override
             public void onDelete(Song song) {
-                int pos = songs.indexOf(song);
-                songs.remove(pos);
+                songs.remove(song);
                 Bundle extra = new Bundle();
                 extra.putString(Keys.MEDIA_ID, song.getId());
                 mediaController.getTransportControls().sendCustomAction(Keys.Action.REMOVE_FROM_QUEUE, extra);
-                adapter.notifyItemDeleted(pos);
             }
 
             @Override
@@ -201,16 +200,13 @@ public abstract class BasePlayerActivity extends BaseActivity implements Activit
         if(view == null)
             return;
         if (newState == BottomSheetBehavior.STATE_COLLAPSED) {
-            ValueAnimator valueAnimator = ValueAnimator.ofInt(0, (int) ConverterUtil.getPx(this, 58));
-            valueAnimator.addUpdateListener(valueAnimator1 -> {
-                view.setPadding(0, 0, 0, (int) valueAnimator1.getAnimatedValue());
-            });
-            valueAnimator.start();
+            view.setPadding(0, 0, 0 , (int) ConverterUtil.getPx(this, 58));
         } else if (newState == BottomSheetBehavior.STATE_HIDDEN) {
             ValueAnimator valueAnimator = ValueAnimator.ofInt((int) ConverterUtil.getPx(this, 58), 0);
             valueAnimator.addUpdateListener(valueAnimator1 -> {
                 view.setPadding(0, 0, 0, (int) valueAnimator1.getAnimatedValue());
             });
+            valueAnimator.setInterpolator(new LinearInterpolator());
             valueAnimator.start();
         }
     }

@@ -94,6 +94,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.regex.Pattern;
 
 public class PlayerService extends MediaBrowserServiceCompat implements PlayerHelper {
@@ -298,7 +299,7 @@ public class PlayerService extends MediaBrowserServiceCompat implements PlayerHe
                 @Override
                 public void onLoaded(Map<String, List<YoutubePlaylist>> playlistsByCategory) {
                     List<MediaBrowserCompat.MediaItem> mediaItems = new ArrayList<>();
-                    for (String channel: playlistsByCategory.keySet()) {
+                    for (String channel : playlistsByCategory.keySet()) {
                         mediaItems.add(MediaItemHelperUtility.toMediaItems(channel, parentId));
                     }
                     result.sendResult(mediaItems);
@@ -311,12 +312,12 @@ public class PlayerService extends MediaBrowserServiceCompat implements PlayerHe
             });
         } else {
             String[] splits = parentId.split("[/|]");
-            if(splits.length == 2) {
+            if (splits.length == 2) {
                 OnlineYoutubeRepository.getInstance(this).getChannelPlaylists(Constants.DEFAULT_CHANNEL, new OnlineYoutubeRepository.PlaylistLoadedCallback() {
                     @Override
                     public void onLoaded(Map<String, List<YoutubePlaylist>> playlistsByCategory) {
                         List<YoutubePlaylist> youtubePlaylists = playlistsByCategory.get(splits[1]);
-                        youtubePlaylists = youtubePlaylists != null? youtubePlaylists: new ArrayList<>();
+                        youtubePlaylists = youtubePlaylists != null ? youtubePlaylists : new ArrayList<>();
                         result.sendResult(MediaItemHelperUtility.toMediaItems(youtubePlaylists, parentId));
                     }
 
@@ -419,7 +420,7 @@ public class PlayerService extends MediaBrowserServiceCompat implements PlayerHe
         public void onPlayFromYoutube(String videoId, Bundle extras) {
             playingMode = Keys.PLAYING_MODE.ONLINE;
             currentMediaIdOrVideoId = videoId;
-            if (videoId.startsWith(Constants.SHARED)) {
+            if (videoId.startsWith(Constants.PREFIX_SHARED)) {
                 prepareForSharedPlayingQueue(videoId, () -> {
                     resolveQueuePosition(extractId(currentMediaIdOrVideoId));
                     dispatchPlayRequest();
@@ -643,7 +644,7 @@ public class PlayerService extends MediaBrowserServiceCompat implements PlayerHe
             LogHelper.d(TAG, "onCustomAction: ");
             Bundle extra = new Bundle();
             switch (action) {
-                case "like":
+                case Keys.Action.LIKE:
                     likeState = extras.getLong("like_enabled", 0);
                     LogHelper.d(TAG, "onCustomAction: likeState: " + likeState);
                     setMediaMetadata(playingQueue.get(queuePos));
@@ -922,6 +923,13 @@ public class PlayerService extends MediaBrowserServiceCompat implements PlayerHe
                 playingQueue = queueItems;
                 prepareMediaSource();
                 runnable.run();
+                appendWatchNextQueue(uri, null);
+            }
+
+            @Override
+            public void additionalDetail(VideoDetails videoDetails) {
+                LogHelper.d(TAG, "additionalDetail: ");
+                updateUriInCacheAndGet(extractId(uri), 0, videoDetails);
             }
 
             @Override
@@ -930,6 +938,34 @@ public class PlayerService extends MediaBrowserServiceCompat implements PlayerHe
             }
         });
     }
+
+
+    private String watchNextQueueTitle;
+
+    private void appendWatchNextQueue(String uri, String continuationToken) {
+        watchNextQueueTitle = mSession.getController().getQueueTitle().toString();
+        OnlineYoutubeRepository.getInstance(PlayerService.this).extractSharedWatchNextQueue(uri, continuationToken, watchNextQueueTitle, (queueItems, nextToken, tag) -> {
+            if (!Objects.equals(tag, watchNextQueueTitle)) {
+                LogHelper.d(TAG, "appendWatchNextQueue: Skipping as queue title not matched");
+                return;
+            }
+            buildAndAppendQueue(uri, queueItems);
+            if (nextToken != null && playingQueue.size() < 50)
+                appendWatchNextQueue(uri, nextToken);
+        });
+    }
+
+    private void buildAndAppendQueue(String uri, List<MediaSessionCompat.QueueItem> queueItems) {
+        playingQueue.addAll(queueItems);
+        mSession.setQueue(playingQueue);
+        for (MediaSessionCompat.QueueItem item : queueItems) {
+            String id = item.getDescription().getMediaId();
+            mediaIdLists.add(id);
+            addHttpSourceToMediaSources(id, -1);
+        }
+        setQueueTitle(uri, false);
+    }
+
 
     @Override
     public void setOnlinePlayingQueue(String uri, Bundle extras) {
@@ -940,10 +976,15 @@ public class PlayerService extends MediaBrowserServiceCompat implements PlayerHe
 
         clearMediaSourceAndQueue();
 
-        if (!playSingle) {
-            playingQueue = uri.startsWith("PLAYLISTS/") || uri.startsWith(Keys.PlaylistType.HYBRID_PLAYLIST.name()) ? Repository.getInstance(this).getCurrentPlayingQueue(uri) : OnlineYoutubeRepository.getInstance(this).getPlayingQueue(uri);
+        if (uri.startsWith(Constants.PREFIX_SEARCH)) {
+            playingQueue = MediaItemHelperUtility.getQueueFrom(extras);
+            handler.postDelayed(() -> appendWatchNextQueue(uri, null), 100);
         } else {
-            playingQueue = uri.startsWith("PLAYLISTS/") || uri.startsWith(Keys.PlaylistType.HYBRID_PLAYLIST.name()) ? Repository.getInstance(this).getCurrentPlayingQueue(uri) : OnlineYoutubeRepository.getInstance(this).getPlayingQueueSingle(uri);
+            if (!playSingle) {
+                playingQueue = uri.startsWith(Constants.PREFIX_PLAYLISTS) || uri.startsWith(Keys.PlaylistType.HYBRID_PLAYLIST.name()) ? Repository.getInstance(this).getCurrentPlayingQueue(uri) : OnlineYoutubeRepository.getInstance(this).getPlayingQueue(uri);
+            } else {
+                playingQueue = uri.startsWith(Constants.PREFIX_PLAYLISTS) || uri.startsWith(Keys.PlaylistType.HYBRID_PLAYLIST.name()) ? Repository.getInstance(this).getCurrentPlayingQueue(uri) : OnlineYoutubeRepository.getInstance(this).getPlayingQueueSingle(uri);
+            }
         }
 
         prepareMediaSource();
@@ -1163,7 +1204,7 @@ public class PlayerService extends MediaBrowserServiceCompat implements PlayerHe
                 mMediaMetadataBuilder.putBitmap(MediaMetadataCompat.METADATA_KEY_ALBUM_ART, currentBitmapUriPair.first);
             mSession.setMetadata(mMediaMetadataBuilder.build());
         } catch (Exception e) {
-            e.printStackTrace();
+            LogHelper.e(TAG, "Error on setMediaMetadata: ", e);
             mMediaMetadataBuilder = new MediaMetadataCompat.Builder()
                     .putText(MediaMetadataCompat.METADATA_KEY_TITLE, "Media Playback Error")
                     .putText(MediaMetadataCompat.METADATA_KEY_ARTIST, "Corrupted media file")
@@ -1202,19 +1243,19 @@ public class PlayerService extends MediaBrowserServiceCompat implements PlayerHe
                 .setContentTitle(metadata.getText(MediaMetadataCompat.METADATA_KEY_TITLE))
                 .setContentText(metadata.getText(MediaMetadataCompat.METADATA_KEY_ARTIST))
                 .setSubText(metadata.getString(MediaMetadataCompat.METADATA_KEY_ALBUM))
-                .setContentInfo("YM Player")
+                .setContentInfo(getString(R.string.app_name))
                 .setLargeIcon(Bitmap.createBitmap(bitmap, (bitmap.getWidth() - minLength) / 2, (bitmap.getHeight() - minLength) / 2, minLength, minLength))
                 .setContentIntent(notificationPendingIntent)
-                .addAction(R.drawable.icon_skip_prev, PlayerService.this.getString(R.string.prev), MediaButtonReceiver.buildMediaButtonPendingIntent(this, PlaybackStateCompat.ACTION_SKIP_TO_PREVIOUS))
-                .addAction(state == PlaybackStateCompat.STATE_PLAYING ? R.drawable.icon_pause : R.drawable.icon_play, PlayerService.this.getString(R.string.play_pause), MediaButtonReceiver.buildMediaButtonPendingIntent(this, PlaybackStateCompat.ACTION_PLAY_PAUSE))
-                .addAction(R.drawable.icon_skip_next, PlayerService.this.getString(R.string.next), MediaButtonReceiver.buildMediaButtonPendingIntent(this, PlaybackStateCompat.ACTION_SKIP_TO_NEXT))
+                .addAction(R.drawable.icon_skip_prev, getString(R.string.prev), MediaButtonReceiver.buildMediaButtonPendingIntent(this, PlaybackStateCompat.ACTION_SKIP_TO_PREVIOUS))
+                .addAction(state == PlaybackStateCompat.STATE_PLAYING ? R.drawable.icon_pause : R.drawable.icon_play, getString(R.string.play_pause), MediaButtonReceiver.buildMediaButtonPendingIntent(this, PlaybackStateCompat.ACTION_PLAY_PAUSE))
+                .addAction(R.drawable.icon_skip_next, getString(R.string.next), MediaButtonReceiver.buildMediaButtonPendingIntent(this, PlaybackStateCompat.ACTION_SKIP_TO_NEXT))
                 .setOngoing(!(state == PlaybackStateCompat.STATE_STOPPED || state == PlaybackStateCompat.STATE_NONE || state == PlaybackStateCompat.STATE_PAUSED))
                 .build();
 
         if (state == PlaybackStateCompat.STATE_STOPPED || state == PlaybackStateCompat.STATE_NONE) {
             notificationManager.notify(NOTIFICATION_ID, notification);
             removeAsForegroundService(false);
-        } else if(state == PlaybackStateCompat.STATE_PAUSED) {
+        } else if (state == PlaybackStateCompat.STATE_PAUSED) {
             notificationManager.notify(NOTIFICATION_ID, notification);
         } else {
             if (isForegroundService) {
@@ -1223,7 +1264,7 @@ public class PlayerService extends MediaBrowserServiceCompat implements PlayerHe
                 markAsForegroundService(notification);
             }
         }
-}
+    }
 
 
     ExoPlayer.EventListener ExoplayerEventListener = new ExoPlayer.EventListener() {
@@ -1451,61 +1492,9 @@ public class PlayerService extends MediaBrowserServiceCompat implements PlayerHe
 
                         end = SystemClock.currentThreadTimeMillis();
                         LogHelper.d(TAG, "resolveDataSpec: Exec time :" + (end - start) / 1000.0 + "s");
-
-                        if (!videoDetails.getStreamingData().getAdaptiveAudioFormats().isEmpty()) {
-                            List<StreamingData.AdaptiveAudioFormat> audioStreams = videoDetails.getStreamingData().getAdaptiveAudioFormats();
-                            long songLength = ConverterUtil.convertStringLengthToLong(videoDetails.getVideoData().getLengthSeconds());
-                            switch (audioStreams.size()) {
-                                case 1:
-                                    audioUri = Uri.parse(audioStreams.get(0).getUrl());
-                                    uriCache.put(dataSpec.uri.toString(), new YoutubeSongUriDetail(dataSpec.uri.toString(), audioStreams.get(0).getUrl(), audioStreams.get(0).getUrl(), audioStreams.get(0).getUrl(), songLength));
-                                    break;
-                                case 2:
-                                    audioUri = Uri.parse(audioStreams.get(quality / 2).getUrl());
-                                    uriCache.put(dataSpec.uri.toString(), new YoutubeSongUriDetail(dataSpec.uri.toString(), audioStreams.get(0).getUrl(), audioStreams.get(1).getUrl(), audioStreams.get(1).getUrl(), songLength));
-                                    break;
-                                case 3:
-                                    audioUri = Uri.parse(audioStreams.get(quality - 1).getUrl());
-                                    uriCache.put(dataSpec.uri.toString(), new YoutubeSongUriDetail(dataSpec.uri.toString(), audioStreams.get(0).getUrl(), audioStreams.get(1).getUrl(), audioStreams.get(2).getUrl(), songLength));
-                                    break;
-                                case 4:
-                                    audioUri = Uri.parse(audioStreams.get(quality).getUrl());
-                                    uriCache.put(dataSpec.uri.toString(), new YoutubeSongUriDetail(dataSpec.uri.toString(), audioStreams.get(1).getUrl(), audioStreams.get(2).getUrl(), audioStreams.get(3).getUrl(), songLength));
-                                    LogHelper.d(TAG, "resolveDataSpec: quality:" + quality + " selected bitrate:" + audioStreams.get(quality).getBitrate());
-                                    for (int i = 0; i < 4; i++)
-                                        LogHelper.d(TAG, "resolveDataSpec: bitrate : " + audioStreams.get(i).getBitrate());
-                                    break;
-
-                                case 0:
-                                    break;
-
-                                default:
-                                    Map<Integer, List<StreamingData.AdaptiveAudioFormat>> streamMap = new LinkedHashMap<>();
-                                    for (var stream : audioStreams) {
-                                        Integer itag = stream.getItag();
-                                        List<StreamingData.AdaptiveAudioFormat> adaptiveAudioFormats = streamMap.get(itag);
-                                        if (adaptiveAudioFormats == null) {
-                                            adaptiveAudioFormats = new ArrayList<>();
-                                            streamMap.put(itag, adaptiveAudioFormats);
-                                        }
-                                        adaptiveAudioFormats.add(stream);
-                                    }
-                                    int itag = getFromQuality(quality);
-                                    List<StreamingData.AdaptiveAudioFormat> audioFormats = streamMap.get(itag) != null ? streamMap.get(itag) : new ArrayList<>();
-                                    audioUri = Uri.parse(audioFormats.get(audioFormats.size() - 1).getUrl());
-                                    uriCache.put(dataSpec.uri.toString(), new YoutubeSongUriDetail(dataSpec.uri.toString(), audioStreams.get(1).getUrl(), audioStreams.get(2).getUrl(), audioStreams.get(3).getUrl(), songLength));
-                                    LogHelper.d(TAG, "resolveDataSpec: quality:" + quality + " selected bitrate:" + audioStreams.get(quality).getBitrate());
-                                    for (int i = 0; i < 4; i++)
-                                        LogHelper.d(TAG, "resolveDataSpec: bitrate : " + audioStreams.get(i).getBitrate());
-                                    break;
-                            }
-                            LogHelper.d(TAG, "resolveDataSpec: new uri:" + audioUri);
-
-                            updatePlayingQueueItemLength(index, songLength);
-
-
-                        } else LogHelper.d(TAG, "resolveDataSpec: No Audio Streams found");
-
+                        long songLength = ConverterUtil.convertStringLengthToLong(videoDetails.getVideoData().getLengthSeconds());
+                        audioUri = updateUriInCacheAndGet(uriId, quality, videoDetails);
+                        updatePlayingQueueItemLength(index, songLength);
 
                     }
                     prevQuality = quality;
@@ -1519,6 +1508,61 @@ public class PlayerService extends MediaBrowserServiceCompat implements PlayerHe
             }
 
         });
+    }
+
+    private Uri updateUriInCacheAndGet(String videoId, int quality, VideoDetails videoDetails) {
+        Uri audioUri = null;
+        if (videoDetails.getStreamingData() != null && !videoDetails.getStreamingData().getAdaptiveAudioFormats().isEmpty()) {
+            List<StreamingData.AdaptiveAudioFormat> audioStreams = videoDetails.getStreamingData().getAdaptiveAudioFormats();
+            long songLength = ConverterUtil.convertStringLengthToLong(videoDetails.getVideoData().getLengthSeconds());
+            switch (audioStreams.size()) {
+                case 1:
+                    audioUri = Uri.parse(audioStreams.get(0).getUrl());
+                    uriCache.put(videoId, new YoutubeSongUriDetail(videoId, audioStreams.get(0).getUrl(), audioStreams.get(0).getUrl(), audioStreams.get(0).getUrl(), songLength));
+                    break;
+                case 2:
+                    audioUri = Uri.parse(audioStreams.get(quality / 2).getUrl());
+                    uriCache.put(videoId, new YoutubeSongUriDetail(videoId, audioStreams.get(0).getUrl(), audioStreams.get(1).getUrl(), audioStreams.get(1).getUrl(), songLength));
+                    break;
+                case 3:
+                    audioUri = Uri.parse(audioStreams.get(quality - 1).getUrl());
+                    uriCache.put(videoId, new YoutubeSongUriDetail(videoId, audioStreams.get(0).getUrl(), audioStreams.get(1).getUrl(), audioStreams.get(2).getUrl(), songLength));
+                    break;
+                case 4:
+                    audioUri = Uri.parse(audioStreams.get(quality).getUrl());
+                    uriCache.put(videoId, new YoutubeSongUriDetail(videoId, audioStreams.get(1).getUrl(), audioStreams.get(2).getUrl(), audioStreams.get(3).getUrl(), songLength));
+                    LogHelper.d(TAG, "resolveDataSpec: quality:" + quality + " selected bitrate:" + audioStreams.get(quality).getBitrate());
+                    for (int i = 0; i < 4; i++)
+                        LogHelper.d(TAG, "resolveDataSpec: bitrate : " + audioStreams.get(i).getBitrate());
+                    break;
+
+                case 0:
+                    break;
+
+                default:
+                    Map<Integer, List<StreamingData.AdaptiveAudioFormat>> streamMap = new LinkedHashMap<>();
+                    for (var stream : audioStreams) {
+                        Integer itag = stream.getItag();
+                        List<StreamingData.AdaptiveAudioFormat> adaptiveAudioFormats = streamMap.get(itag);
+                        if (adaptiveAudioFormats == null) {
+                            adaptiveAudioFormats = new ArrayList<>();
+                            streamMap.put(itag, adaptiveAudioFormats);
+                        }
+                        adaptiveAudioFormats.add(stream);
+                    }
+                    int itag = getFromQuality(quality);
+                    List<StreamingData.AdaptiveAudioFormat> audioFormats = streamMap.get(itag) != null ? streamMap.get(itag) : new ArrayList<>();
+                    audioUri = Uri.parse(audioFormats.get(audioFormats.size() - 1).getUrl());
+                    uriCache.put(videoId, new YoutubeSongUriDetail(videoId, audioStreams.get(1).getUrl(), audioStreams.get(2).getUrl(), audioStreams.get(3).getUrl(), songLength));
+                    LogHelper.d(TAG, "resolveDataSpec: quality:" + quality + " selected bitrate:" + audioStreams.get(quality).getBitrate());
+                    for (int i = 0; i < 4; i++)
+                        LogHelper.d(TAG, "resolveDataSpec: bitrate : " + audioStreams.get(i).getBitrate());
+                    break;
+            }
+            LogHelper.d(TAG, "resolveDataSpec: new uri:" + audioUri);
+
+        } else LogHelper.d(TAG, "resolveDataSpec: No Audio Streams found");
+        return audioUri;
     }
 
     private Integer getFromQuality(int quality) {
@@ -1570,7 +1614,7 @@ public class PlayerService extends MediaBrowserServiceCompat implements PlayerHe
         if (mediaId == null) return;
         String[] parts = mediaId.split("[/|]");
         String id = parts[parts.length - 1];
-        DataSource.Factory factory = new DefaultDataSourceFactory(this, Util.getUserAgent(getApplicationContext(), "YM Player"));
+        DataSource.Factory factory = new DefaultDataSourceFactory(this, Util.getUserAgent(getApplicationContext(), getString(R.string.app_name)));
         Uri contentUri = ContentUris.withAppendedId(MediaStore.Audio.Media.EXTERNAL_CONTENT_URI, Long.parseLong(id));
         if (pos != -1)
             mediaSources.addMediaSource(pos, new ProgressiveMediaSource.Factory(factory).setTag(id).createMediaSource(contentUri));

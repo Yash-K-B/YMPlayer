@@ -50,6 +50,7 @@ import androidx.core.view.GravityCompat;
 import androidx.drawerlayout.widget.DrawerLayout;
 import androidx.fragment.app.Fragment;
 import androidx.fragment.app.FragmentManager;
+import androidx.fragment.app.FragmentTransaction;
 import androidx.preference.PreferenceManager;
 import androidx.recyclerview.widget.DividerItemDecoration;
 import androidx.recyclerview.widget.ItemTouchHelper;
@@ -334,12 +335,10 @@ public class MainActivity extends BaseActivity implements ActivityActionProvider
 
             @Override
             public void onDelete(Song song) {
-                int pos = songs.indexOf(song);
-                songs.remove(pos);
+                songs.remove(song);
                 Bundle extra = new Bundle();
                 extra.putString(Keys.MEDIA_ID, song.getId());
                 mediaController.getTransportControls().sendCustomAction(Keys.Action.REMOVE_FROM_QUEUE, extra);
-                adapter.notifyItemDeleted(pos);
             }
 
             @Override
@@ -449,7 +448,7 @@ public class MainActivity extends BaseActivity implements ActivityActionProvider
                 videoId = parts[parts.length - 1];
             }
             extras.putBoolean(Keys.PLAY_SINGLE, true);
-            mediaController.getTransportControls().playFromMediaId(Constants.SHARED + "|" + videoId, extras);
+            mediaController.getTransportControls().playFromMediaId(Constants.PREFIX_SHARED + "|" + videoId, extras);
         }
 
     }
@@ -467,12 +466,7 @@ public class MainActivity extends BaseActivity implements ActivityActionProvider
             return;
         }
         if (newState == BottomSheetBehavior.STATE_COLLAPSED) {
-            ValueAnimator valueAnimator = ValueAnimator.ofInt(0, (int) ConverterUtil.getPx(this, 58));
-            valueAnimator.addUpdateListener(valueAnimator1 -> {
-                view.setPadding(0, 0, 0 , (Integer) valueAnimator1.getAnimatedValue());
-            });
-            valueAnimator.setInterpolator(new DecelerateInterpolator());
-            valueAnimator.start();
+            view.setPadding(0, 0, 0 , (int) ConverterUtil.getPx(this, 58));
         } else if (newState == BottomSheetBehavior.STATE_HIDDEN) {
             ValueAnimator valueAnimator = ValueAnimator.ofInt((int) ConverterUtil.getPx(this, 58), 0);
             valueAnimator.addUpdateListener(valueAnimator1 -> {
@@ -507,7 +501,7 @@ public class MainActivity extends BaseActivity implements ActivityActionProvider
     }
 
     private void changeFragment(int containerId, Fragment fragment, String tag) {
-        getSupportFragmentManager().beginTransaction().replace(containerId, fragment, tag).commit();
+        getSupportFragmentManager().beginTransaction().setTransition(FragmentTransaction.TRANSIT_FRAGMENT_FADE).replace(containerId, fragment, tag).commit();
     }
 
     @Override
@@ -604,7 +598,7 @@ public class MainActivity extends BaseActivity implements ActivityActionProvider
         }
     }
 
-    private MediaBrowserCompat.ConnectionCallback connectionCallback = new MediaBrowserCompat.ConnectionCallback() {
+    private final MediaBrowserCompat.ConnectionCallback connectionCallback = new MediaBrowserCompat.ConnectionCallback() {
         @Override
         public void onConnected() {
             LogHelper.d(TAG, "onConnected: MainActivity");
@@ -823,8 +817,6 @@ public class MainActivity extends BaseActivity implements ActivityActionProvider
         switch (item.getItemId()) {
             case android.R.id.home:
                 activityMainBinding.drawerLayout.openDrawer(GravityCompat.START);
-                return true;
-            case R.id.test:
                 return true;
             case R.id.exit:
                 LogHelper.d(TAG, "onOptionsItemSelected: Exit");

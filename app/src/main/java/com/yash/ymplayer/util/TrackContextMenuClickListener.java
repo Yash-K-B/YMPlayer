@@ -7,6 +7,8 @@ import android.os.Bundle;
 import android.support.v4.media.MediaBrowserCompat;
 import android.support.v4.media.session.MediaControllerCompat;
 
+import androidx.annotation.NonNull;
+
 import com.yash.ymplayer.download.manager.DownloadService;
 import com.yash.ymplayer.interfaces.Keys;
 import com.yash.ymplayer.interfaces.TrackClickListener;
@@ -18,9 +20,9 @@ import java.util.List;
 
 public class TrackContextMenuClickListener implements TrackClickListener {
 
-    private MediaControllerCompat mediaController;
-    private Context context;
-    private String playlistPrefix;
+    private final MediaControllerCompat mediaController;
+    private final Context context;
+    private final String playlistPrefix;
 
     public TrackContextMenuClickListener(Context context, MediaControllerCompat mediaController, String playlistPrefix) {
         this.mediaController = mediaController;
@@ -31,14 +33,14 @@ public class TrackContextMenuClickListener implements TrackClickListener {
     @Override
     public void onClick(YoutubeSong song) {
         String audioUri = playlistPrefix + song.getVideoId();
-        mediaController.getTransportControls().playFromMediaId(audioUri, null);
+        mediaController.getTransportControls().playFromMediaId(audioUri, MediaItemHelperUtility.createBundle(song));
     }
 
     @Override
     public void onPlaySingle(YoutubeSong song) {
-        Bundle extra = new Bundle();
-        extra.putBoolean(Keys.PLAY_SINGLE, true);
-        mediaController.getTransportControls().playFromMediaId(playlistPrefix + song.getVideoId(), extra);
+        Bundle extras = MediaItemHelperUtility.createBundle(song);
+        extras.putBoolean(Keys.PLAY_SINGLE, true);
+        mediaController.getTransportControls().playFromMediaId(playlistPrefix + song.getVideoId(), extras);
     }
 
     @Override
@@ -72,12 +74,7 @@ public class TrackContextMenuClickListener implements TrackClickListener {
         }
         builder.setItems(playlistNames.toArray(new String[0]), (dialog, which) -> {
             String playlistName = playlistNames.get(which);
-            Bundle extras = new Bundle();
-            extras.putString(Keys.MEDIA_ID, song.getVideoId());
-            extras.putString(Keys.TITLE, song.getTitle());
-            extras.putString(Keys.ARTIST, song.getChannelTitle());
-            extras.putString(Keys.ARTWORK, song.getArt_url_high());
-            extras.putString(Keys.ALBUM, "YMPlayer");
+            Bundle extras = MediaItemHelperUtility.createBundle(song);
             extras.putString(Keys.PLAYLIST_NAME, playlistName);
             mediaController.getTransportControls().sendCustomAction(Keys.Action.ADD_TO_PLAYLIST, extras);
         });

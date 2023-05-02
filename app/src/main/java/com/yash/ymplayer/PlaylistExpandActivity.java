@@ -85,7 +85,7 @@ public class PlaylistExpandActivity extends BasePlayerActivity {
             LogHelper.d(TAG, "load: [%s] -> size: [%s]", playlistId, youtubeSongs);
             pagedListAdapter.submitData(getLifecycle(), youtubeSongs);
         });
-        KotlinConverterUtil.Companion.toLiveData(pagedListAdapter.getLoadStateFlow()).observe(this, combinedLoadStates -> {
+        KotlinConverterUtil.toLiveData(pagedListAdapter.getLoadStateFlow()).observe(this, combinedLoadStates -> {
             if (combinedLoadStates.getPrepend() instanceof LoadState.NotLoading && combinedLoadStates.getPrepend().getEndOfPaginationReached()) {
                 activityBinding.listProgress.setVisibility(View.GONE);
             }

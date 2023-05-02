@@ -119,7 +119,7 @@ public class Artists extends Fragment {
                 }
             });
             if (viewModel.allArtists.getValue() == null || viewModel.allArtists.getValue().isEmpty())
-                viewModel.getAllArtists(mMediaBrowser, null);
+                viewModel.loadArtists(mMediaBrowser, null);
             viewModel.allArtists.observe(getActivity(), new Observer<List<MediaBrowserCompat.MediaItem>>() {
                 @Override
                 public void onChanged(List<MediaBrowserCompat.MediaItem> songs) {

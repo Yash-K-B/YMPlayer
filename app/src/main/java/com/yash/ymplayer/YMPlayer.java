@@ -2,6 +2,7 @@ package com.yash.ymplayer;
 
 import android.app.Application;
 import android.content.SharedPreferences;
+import android.util.Log;
 
 import androidx.preference.PreferenceManager;
 
@@ -10,6 +11,7 @@ import com.yash.logging.settings.LogHelperSettings;
 import com.yash.ymplayer.util.ConverterUtil;
 import com.yash.ymplayer.interfaces.Keys;
 import com.yash.youtube_extractor.utility.HttpUtility;
+import com.yash.youtube_extractor.utility.RequestUtility;
 
 import java.lang.Thread.UncaughtExceptionHandler;
 import java.util.concurrent.ExecutorService;
@@ -23,10 +25,6 @@ public class YMPlayer extends Application {
     UncaughtExceptionHandler defaultUncaughtExceptionHandler;
     ExecutorService executor;
 
-    public YMPlayer(){
-        defaultUncaughtExceptionHandler = Thread.getDefaultUncaughtExceptionHandler();
-    }
-
     @Override
     public void onCreate() {
         super.onCreate();
@@ -38,8 +36,11 @@ public class YMPlayer extends Application {
         executor = Executors.newSingleThreadExecutor();
 
         HttpUtility.initialise(new Cache(getCacheDir(), 40*1024*1024), null);
+        RequestUtility.updateSettings(PreferenceManager.getDefaultSharedPreferences(this));
 
+        defaultUncaughtExceptionHandler = Thread.getDefaultUncaughtExceptionHandler();
         Thread.setDefaultUncaughtExceptionHandler((t, e) -> {
+            Log.e(TAG, "Fatal Exception: ", e);
 
             String exception = ConverterUtil.toStringStackTrace(e);
             SharedPreferences.Editor editor = preferences.edit();

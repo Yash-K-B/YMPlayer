@@ -72,7 +72,6 @@ public class Albums extends Fragment {
         context = getContext();
         activity = getActivity();
 
-        albumsBinding.listRv.setHasFixedSize(true);
         albumsBinding.listRv.setItemViewCacheSize(20);
         albumsBinding.listRv.addItemDecoration(new MarginItemDecoration(10));
         albumsBinding.listRv.setLayoutManager(new GridLayoutManager(context,3));
@@ -119,15 +118,12 @@ public class Albums extends Fragment {
                 }
             });
             if (viewModel.allAlbums.getValue() == null || viewModel.allAlbums.getValue().isEmpty())
-                viewModel.getAllAlbums(mMediaBrowser, null);
+                viewModel.loadAlbums(mMediaBrowser, null);
             viewModel.allAlbums.observe(activity, new Observer<List<MediaBrowserCompat.MediaItem>>() {
                 @Override
                 public void onChanged(List<MediaBrowserCompat.MediaItem> songs) {
-                    Albums.this.songs.clear();
-                    Albums.this.songs.addAll(songs);
                     albumsBinding.albumRefresh.setRefreshing(false);
-                    albumsAdapter.refreshList();
-                    albumsAdapter.notifyDataSetChanged();
+                    albumsAdapter.refreshList(songs);
                     albumsBinding.progressBar.setVisibility(View.INVISIBLE);
 
                 }

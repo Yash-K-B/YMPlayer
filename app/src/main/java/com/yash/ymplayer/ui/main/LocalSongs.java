@@ -19,6 +19,7 @@ import android.widget.Toast;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
+import androidx.fragment.app.FragmentActivity;
 import androidx.viewpager2.widget.ViewPager2;
 
 import com.google.android.material.tabs.TabLayout;
@@ -39,7 +40,7 @@ public class LocalSongs extends Fragment {
     private static final String TAG = "debug";
     FragmentLocalSongsBinding binding;
     Context context;
-    Activity activity;
+    FragmentActivity activity;
 
     public LocalSongs() {
         // Required empty public constructor
@@ -61,7 +62,7 @@ public class LocalSongs extends Fragment {
         context = requireContext();
         activity = requireActivity();
         ((ActivityActionProvider) activity).setCustomToolbar(binding.toolbar, "Local Library");
-        SectionsPagerAdapter sectionsPagerAdapter = new SectionsPagerAdapter(getChildFragmentManager(), getActivity().getLifecycle());
+        SectionsPagerAdapter sectionsPagerAdapter = new SectionsPagerAdapter(getChildFragmentManager(), activity.getLifecycle());
         binding.floatingActionButton.hide();
         binding.viewPager.setAdapter(sectionsPagerAdapter);
         new TabLayoutMediator(binding.tabs, binding.viewPager, new TabLayoutMediator.TabConfigurationStrategy() {

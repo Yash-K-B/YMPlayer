@@ -12,6 +12,7 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.appcompat.widget.PopupMenu;
 import androidx.palette.graphics.Palette;
+import androidx.recyclerview.widget.DiffUtil;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.bumptech.glide.Glide;
@@ -26,10 +27,9 @@ import java.util.List;
 
 public class AlbumListAdapter extends RecyclerView.Adapter<AlbumListAdapter.AlbumViewHolder> {
     private static final String TAG = "AlbumListAdapter";
-    private List<MediaBrowserCompat.MediaItem> albums;
-    List<MediaBrowserCompat.MediaItem> allAlbums = new ArrayList<>();
-    private  OnItemClickListener listener;
-    private Context context;
+    private final List<MediaBrowserCompat.MediaItem> albums;
+    private final OnItemClickListener listener;
+    private final Context context;
     AlbumOrArtistContextMenuListener albumOrArtistContextMenuListener;
 
 
@@ -130,9 +130,11 @@ public class AlbumListAdapter extends RecyclerView.Adapter<AlbumListAdapter.Albu
         }
     }
 
-    public void refreshList() {
-        allAlbums.clear();
-        allAlbums.addAll(albums);
+    public void refreshList(List<MediaBrowserCompat.MediaItem> newList) {
+        DiffUtil.DiffResult diffResult = DiffUtil.calculateDiff(new DiffCallback(this.albums, newList));
+        albums.clear();
+        albums.addAll(newList);
+        diffResult.dispatchUpdatesTo(this);
     }
 
 

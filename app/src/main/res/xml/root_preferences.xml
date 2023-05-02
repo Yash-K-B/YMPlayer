@@ -82,6 +82,21 @@
             android:inputType="number"
             android:maxLength="3" />
 
+        <EditTextPreference
+            app:key="CLIENT_API_KEY"
+            app:title="Api Key"
+            app:useSimpleSummaryProvider="true" />
+
+        <EditTextPreference
+            app:key="CLIENT_VERSION_KEY"
+            app:title="Client Version"
+            app:useSimpleSummaryProvider="true" />
+
+        <EditTextPreference
+            app:key="VISITOR_DATA_KEY"
+            app:title="Visitor Info"
+            app:useSimpleSummaryProvider="true" />
+
     </PreferenceCategory>
 
 </PreferenceScreen>

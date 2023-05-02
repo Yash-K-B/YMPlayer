@@ -1,5 +1,6 @@
 package com.yash.ymplayer.util;
 
+import android.annotation.SuppressLint;
 import android.content.Context;
 import android.graphics.Color;
 import android.util.TypedValue;
@@ -43,7 +44,7 @@ public class QueueListAdapter extends RecyclerView.Adapter<QueueListAdapter.Queu
     @Override
     public void onBindViewHolder(@NonNull QueueItemHolder holder, int position) {
         songs.get(position).setColor((position == activePosition) ? Color.GREEN : color);
-        holder.bindQueueItem(songs.get(position), listener, holder);
+        holder.bindQueueItem(songs.get(position), listener, holder, position);
     }
 
     @Override
@@ -53,7 +54,7 @@ public class QueueListAdapter extends RecyclerView.Adapter<QueueListAdapter.Queu
 
 
 
-    static class QueueItemHolder extends RecyclerView.ViewHolder {
+    class QueueItemHolder extends RecyclerView.ViewHolder {
         ItemPlayingQueueBinding binding;
 
         public QueueItemHolder(ItemPlayingQueueBinding binding) {
@@ -61,21 +62,22 @@ public class QueueListAdapter extends RecyclerView.Adapter<QueueListAdapter.Queu
             this.binding = binding;
         }
 
-        void bindQueueItem(Song song, QueueItemOnClickListener listener, RecyclerView.ViewHolder holder) {
+        @SuppressLint("SetTextI18n")
+        void bindQueueItem(Song song, QueueItemOnClickListener listener, RecyclerView.ViewHolder holder, int position) {
             binding.trackName.setText(song.getTitle());
             binding.trackName.setTextColor(song.getColor());
+            binding.trackPosition.setText((position + 1) + ".");
+            binding.trackPosition.setTextColor(song.getColor());
             binding.removeFromQueue.setOnClickListener(v -> {
                 binding.removeFromQueue.setOnClickListener(null);
                 listener.onDelete(song);
+                notifyItemDeleted(position);
             });
-            binding.dragToArrange.setOnTouchListener(new View.OnTouchListener() {
-                @Override
-                public boolean onTouch(View v, MotionEvent event) {
-                    if (event.getActionMasked() == MotionEvent.ACTION_DOWN) {
-                        listener.startDrag(holder);
-                    }
-                    return false;
+            binding.dragToArrange.setOnTouchListener((v, event) -> {
+                if (event.getActionMasked() == MotionEvent.ACTION_DOWN) {
+                    listener.startDrag(holder);
                 }
+                return false;
             });
             binding.trackName.setOnClickListener(v -> listener.onClick(song));
         }

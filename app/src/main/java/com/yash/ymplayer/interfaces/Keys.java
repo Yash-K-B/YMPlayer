@@ -30,6 +30,7 @@ public interface Keys {
     String EXTRA_DOWNLOAD_QUALITY = "downloadQuality";
 
     interface Action {
+        String LIKE = "like";
         String ADD_TO_PLAYLIST = "addToPlaylist";
         String QUEUE_NEXT = "queueNext";
         String QUEUE_LAST = "queueLast";

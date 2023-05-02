@@ -39,8 +39,8 @@ public class SearchListAdapter extends RecyclerView.Adapter<SearchListAdapter.So
     private static final String TAG = "SearchListAdapter";
 
     List<MediaBrowserCompat.MediaItem> songs;
-    private OnItemClickListener listener;
-    private Context context;
+    private final OnItemClickListener listener;
+    private final Context context;
     ExecutorService executor;
     private final Handler handler = new Handler(Looper.getMainLooper());
     int listPos;
@@ -81,13 +81,13 @@ public class SearchListAdapter extends RecyclerView.Adapter<SearchListAdapter.So
         int type = getItemViewType(position);
         LogHelper.d(TAG, "onBindViewHolder: " + type);
         if (type == ItemType.SONGS)
-            ((ItemViewHolder) holder).bindSongs(songs.get(holder.getAdapterPosition()), listener);
+            ((ItemViewHolder) holder).bindSongs(songs.get(holder.getAbsoluteAdapterPosition()), listener);
         else if (type == ItemType.ALBUMS)
-            ((AlbumViewHolder) holder).bindAlbums(songs.get(holder.getAdapterPosition()), listener);
+            ((AlbumViewHolder) holder).bindAlbums(songs.get(holder.getAbsoluteAdapterPosition()), listener);
         else if (type == ItemType.ARTISTS)
-            ((ItemViewHolder) holder).bindArtists(songs.get(holder.getAdapterPosition()), listener);
+            ((ItemViewHolder) holder).bindArtists(songs.get(holder.getAbsoluteAdapterPosition()), listener);
         else if (type == ItemType.HEADING)
-            ((HeadingViewHolder) holder).bindHeading(songs.get(holder.getAdapterPosition()), listener);
+            ((HeadingViewHolder) holder).bindHeading(songs.get(holder.getAbsoluteAdapterPosition()), listener);
 
 
     }
@@ -266,7 +266,7 @@ public class SearchListAdapter extends RecyclerView.Adapter<SearchListAdapter.So
     }
 
     public void updateList(List<MediaBrowserCompat.MediaItem> newList) {
-        DiffUtil.DiffResult diffResult = DiffUtil.calculateDiff(new SearchListDiffCallback(this.songs, newList));
+        DiffUtil.DiffResult diffResult = DiffUtil.calculateDiff(new DiffCallback(this.songs, newList));
         this.songs.clear();
         this.songs.addAll(newList);
         diffResult.dispatchUpdatesTo(this);
@@ -340,35 +340,6 @@ public class SearchListAdapter extends RecyclerView.Adapter<SearchListAdapter.So
         int ARTISTS = 2;
         int HEADING = 3;
 
-    }
-
-    public static class SearchListDiffCallback extends DiffUtil.Callback {
-        List<MediaBrowserCompat.MediaItem> oldList, newList;
-
-        public SearchListDiffCallback(List<MediaBrowserCompat.MediaItem> oldList, List<MediaBrowserCompat.MediaItem> newList) {
-            this.oldList = oldList;
-            this.newList = newList;
-        }
-
-        @Override
-        public int getOldListSize() {
-            return oldList != null ? oldList.size() : 0;
-        }
-
-        @Override
-        public int getNewListSize() {
-            return newList != null ? newList.size() : 0;
-        }
-
-        @Override
-        public boolean areItemsTheSame(int oldItemPosition, int newItemPosition) {
-            return oldList.get(oldItemPosition).getMediaId().equals(newList.get(newItemPosition).getMediaId());
-        }
-
-        @Override
-        public boolean areContentsTheSame(int oldItemPosition, int newItemPosition) {
-            return oldList.get(oldItemPosition).equals(newList.get(newItemPosition));
-        }
     }
 
 }

@@ -105,10 +105,10 @@ public class Playlists extends Fragment implements PlaylistUpdateListener {
                     @Override
                     public void onRefresh() {
                         playlistsBinding.playlistRefresh.setRefreshing(true);
-                        viewModel.getAllPlaylists(mMediaBrowser, null);
+                        viewModel.loadPlaylists(mMediaBrowser, null);
                     }
                 });
-                viewModel.getAllPlaylists(mMediaBrowser, null);
+                viewModel.loadPlaylists(mMediaBrowser, null);
                 viewModel.allPlaylists.observe(getActivity(), new Observer<List<MediaBrowserCompat.MediaItem>>() {
                     @Override
                     public void onChanged(List<MediaBrowserCompat.MediaItem> songs) {
@@ -154,7 +154,7 @@ public class Playlists extends Fragment implements PlaylistUpdateListener {
     @Override
     public void onChanged() {
         if (mMediaBrowser.isConnected())
-            viewModel.getAllPlaylists(mMediaBrowser, null);
+            viewModel.loadPlaylists(mMediaBrowser, null);
     }
 
 

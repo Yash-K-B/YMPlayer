@@ -34,11 +34,8 @@ public class AboutFragment extends Fragment {
         // Inflate the layout for this fragment
         FragmentAboutBinding binding = FragmentAboutBinding.inflate(inflater,container,false);
         binding.authorImage.setClipToOutline(true);
-        binding.licenses.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
+        binding.licenses.setOnClickListener(v -> {
 
-            }
         });
         return binding.getRoot();
     }

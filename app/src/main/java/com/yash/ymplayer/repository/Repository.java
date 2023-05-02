@@ -43,12 +43,7 @@ public class Repository {
 
     public static Repository getInstance(Context context) {
         if (instance == null)
-            instance = new Repository(context);
-        return instance;
-    }
-
-    public static Repository getRefreshedInstance(Context context) {
-        instance = new Repository(context);
+            instance = new Repository(context.getApplicationContext());
         return instance;
     }
 
