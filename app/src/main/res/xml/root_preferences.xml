@@ -35,26 +35,28 @@
     <PreferenceCategory app:title="Playback">
 
         <SwitchPreference
-            android:key="builtin_equalizer"
             android:defaultValue="false"
-            android:title="Use built-in equalizer"
+            android:key="builtin_equalizer"
             android:summaryOff="System Equalizer is configured to give audio effects"
-            android:summaryOn="Built-In Equalizer is configured to give audio effects"/>
+            android:summaryOn="Built-In Equalizer is configured to give audio effects"
+            android:title="Use built-in equalizer" />
 
         <Preference
-            android:key="equalizer"
             android:dependency="builtin_equalizer"
+            android:key="equalizer"
             android:title="Equalizer">
-            <intent android:targetPackage="com.yash.ymplayer" android:targetClass="com.yash.ymplayer.EqualizerActivity"/>
+            <intent
+                android:targetClass="com.yash.ymplayer.EqualizerActivity"
+                android:targetPackage="com.yash.ymplayer" />
         </Preference>
 
         <ListPreference
             android:dependency="builtin_equalizer"
             app:defaultValue="1000"
-            app:key="loudness_gain"
-            app:title="Loudness Gain"
             app:entries="@array/loudness_gain"
             app:entryValues="@array/loudness_gain_values"
+            app:key="loudness_gain"
+            app:title="Loudness Gain"
             app:useSimpleSummaryProvider="true" />
 
         <SwitchPreferenceCompat
@@ -65,37 +67,48 @@
             app:title="Album art on lock screen" />
 
         <ListPreference
-            app:key="playback_quality"
-            app:title="Online streaming audio quality"
-            app:useSimpleSummaryProvider="true"
+            app:defaultValue="2"
             app:entries="@array/audio_quality"
             app:entryValues="@array/audio_quality_values"
-            app:defaultValue="2"/>
+            app:key="playback_quality"
+            app:title="Online streaming audio quality"
+            app:useSimpleSummaryProvider="true" />
 
         <ListPreference
+            android:entries="@array/download_threads"
+            android:entryValues="@array/download_threads"
+            android:inputType="number"
+            android:maxLength="3"
             app:defaultValue="4"
             app:key="download_threads"
             app:title="Download Threads"
-            android:entries="@array/download_threads"
-            android:entryValues="@array/download_threads"
-            app:useSimpleSummaryProvider="true"
-            android:inputType="number"
-            android:maxLength="3" />
-
-        <EditTextPreference
-            app:key="CLIENT_API_KEY"
-            app:title="Api Key"
             app:useSimpleSummaryProvider="true" />
 
-        <EditTextPreference
-            app:key="CLIENT_VERSION_KEY"
-            app:title="Client Version"
-            app:useSimpleSummaryProvider="true" />
 
-        <EditTextPreference
-            app:key="VISITOR_DATA_KEY"
-            app:title="Visitor Info"
-            app:useSimpleSummaryProvider="true" />
+        <PreferenceCategory
+            android:summary="Information for streaming on YouTube"
+            android:title="Youtube">
+
+            <EditTextPreference
+                app:selectable="false"
+                app:key="CLIENT_API_KEY"
+                app:title="Api Key"
+                app:useSimpleSummaryProvider="true" />
+
+            <EditTextPreference
+                app:selectable="false"
+                app:key="CLIENT_VERSION_KEY"
+                app:title="Client Version"
+                app:useSimpleSummaryProvider="true" />
+
+            <EditTextPreference
+                app:selectable="false"
+                app:key="VISITOR_DATA_KEY"
+                app:title="Visitor Info"
+                app:useSimpleSummaryProvider="true" />
+
+        </PreferenceCategory>
+
 
     </PreferenceCategory>
 

@@ -29,33 +29,25 @@ import androidx.recyclerview.widget.LinearLayoutManager;
 
 import com.yash.logging.LogHelper;
 import com.yash.ymplayer.BasePlayerActivity;
-import com.yash.ymplayer.PlaylistExpandActivity;
 import com.yash.ymplayer.R;
 import com.yash.ymplayer.constant.Constants;
 import com.yash.ymplayer.databinding.ActivityUtubeSearchBinding;
 import com.yash.ymplayer.databinding.BasePlayerActivityBinding;
-import com.yash.ymplayer.repository.OnlineYoutubeRepository;
 import com.yash.ymplayer.ui.youtube.YoutubeLibraryViewModel;
-import com.yash.ymplayer.ui.youtube.YoutubeTracksAdapter;
 import com.yash.ymplayer.ui.youtube.adapters.LoadStateFooterAdapter;
 import com.yash.ymplayer.ui.youtube.livepage.YoutubePagedListAdapter;
 import com.yash.ymplayer.util.DownloadUtil;
 import com.yash.ymplayer.util.KotlinConverterUtil;
 import com.yash.ymplayer.util.StringUtil;
 import com.yash.ymplayer.util.TrackContextMenuClickListener;
-import com.yash.ymplayer.util.YoutubeSong;
 import com.yash.youtube_extractor.utility.JsonUtil;
 
 
-import org.apache.commons.text.StringEscapeUtils;
-
 import java.net.URLEncoder;
-import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
-import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
+import java.util.Timer;
+import java.util.TimerTask;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.regex.Matcher;
@@ -67,7 +59,7 @@ public class YoutubeSearch extends BasePlayerActivity {
     SearchView searchView;
     SuggestionAdapter suggestionAdapter;
     MediaControllerCompat mediaController;
-    Handler handler = new Handler();
+    Timer timer = new Timer();
 
     YoutubeLibraryViewModel viewModel;
 
@@ -116,14 +108,17 @@ public class YoutubeSearch extends BasePlayerActivity {
 
             return false;
         }
-
-        private Runnable queryTask = null;
         @Override
         public boolean onQueryTextChange(String newText) {
-            if(queryTask != null)
-                handler.removeCallbacks(queryTask);
-            queryTask = () -> getSuggestions(newText, suggestionAdapter::updateCursor);
-            handler.postDelayed(queryTask, 100);
+            if(timer != null)
+                timer.cancel();
+            timer = new Timer();
+            timer.schedule(new TimerTask() {
+                @Override
+                public void run() {
+                    getSuggestions(newText, suggestionAdapter::updateCursor);
+                }
+            }, 100);
             return true;
         }
     };
@@ -188,20 +183,19 @@ public class YoutubeSearch extends BasePlayerActivity {
     }
 
     private final ExecutorService executorService = Executors.newSingleThreadExecutor();
-    private Pattern pattern = Pattern.compile("\\[\"([^\"]+)\",");
+    private final Pattern suggestionPattern = Pattern.compile("\\[\"([^\"]+)\",");
 
     private void getSuggestions(String query, CallBack callback) {
         executorService.execute(() -> {
             try {
-                String url = "https://suggestqueries-clients6.youtube.com/complete/search?client=youtube&hl=en&gl=in&sugexp=foo%2Chm.evie%3D0&gs_rn=64&gs_ri=youtube&ds=yt&cp=1&gs_id=4&q=" + URLEncoder.encode(query) + "&xhr=t&xssi=t";
+                String url = "https://suggestqueries-clients6.youtube.com/complete/search?client=youtube&hl=en&gl=in&sugexp=foo%2Chm.evie%3D0&gs_rn=64&gs_ri=youtube&ds=yt&cp=1&gs_id=4&q=" + URLEncoder.encode(query, StandardCharsets.UTF_8.displayName()) + "&xhr=t&xssi=t";
                 byte[] download = DownloadUtil.download(url);
                 String response = unescapeUTF8(new String(download, StandardCharsets.UTF_8));
                 String result = JsonUtil.extractJsonFromHtml("[", response);
-                Matcher matcher = pattern.matcher(result);
+                Matcher matcher = suggestionPattern.matcher(result);
                 MatrixCursor cursor = new MatrixCursor(new String[]{SearchManager.SUGGEST_COLUMN_TEXT_1, "_id"});
                 int i = 0;
                 while (matcher.find()) {
-                    LogHelper.d(TAG, "Suggestion available : %s", matcher.group(1));
                     cursor.addRow(Arrays.asList(matcher.group(1), ++i));
                 }
                 callback.onDone(cursor);
