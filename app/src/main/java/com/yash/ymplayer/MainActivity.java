@@ -74,6 +74,8 @@ import com.yash.ymplayer.equaliser.DialogEqualizerFragment;
 import com.yash.logging.LogHelper;
 import com.yash.ymplayer.interfaces.ActivityActionProvider;
 import com.yash.ymplayer.interfaces.EmbeddedListener;
+import com.yash.ymplayer.ui.custom.PlayerAware;
+import com.yash.ymplayer.ui.custom.PlayerAwareRecyclerView;
 import com.yash.ymplayer.ui.main.AboutFragment;
 import com.yash.ymplayer.ui.main.LocalSongs;
 import com.yash.ymplayer.ui.main.SettingsFragment;
@@ -461,20 +463,7 @@ public class MainActivity extends BaseActivity implements ActivityActionProvider
 
     private void expandOrCompressMainLayout(int newState) {
         View view = getEmbeddedRecyclerView();
-        if(view == null) {
-            LogHelper.d(TAG, "expandOrCompressMainLayout: Skipped as no view found");
-            return;
-        }
-        if (newState == BottomSheetBehavior.STATE_COLLAPSED) {
-            view.setPadding(0, 0, 0 , (int) ConverterUtil.getPx(this, 58));
-        } else if (newState == BottomSheetBehavior.STATE_HIDDEN) {
-            ValueAnimator valueAnimator = ValueAnimator.ofInt((int) ConverterUtil.getPx(this, 58), 0);
-            valueAnimator.addUpdateListener(valueAnimator1 -> {
-                view.setPadding(0, 0, 0, (int) valueAnimator1.getAnimatedValue());
-            });
-            valueAnimator.setInterpolator(new LinearInterpolator());
-            valueAnimator.start();
-        }
+        PlayerAware.adjust(view, newState);
     }
 
     private View getEmbeddedRecyclerView() {
@@ -484,11 +473,13 @@ public class MainActivity extends BaseActivity implements ActivityActionProvider
             FragmentManager childFragmentManager = Objects.requireNonNull(fragment).getChildFragmentManager();
             if (Objects.equals(currentFragment, Keys.Fragments.LOCAL_SONGS) && (viewPager = activityMainBinding.container.findViewById(R.id.view_pager)) != null) {
                 LogHelper.d(TAG, "getEmbeddedRecyclerView: %s, %s", viewPager.getCurrentItem(), viewPager.getChildCount());
-                return Objects.requireNonNull(childFragmentManager.findFragmentByTag("f" + viewPager.getCurrentItem())).requireView().findViewById(R.id.listRv);
+                return Objects.requireNonNull(childFragmentManager.findFragmentByTag("f" + viewPager.getCurrentItem())).requireView();
             } else if (Objects.equals(currentFragment, Keys.Fragments.YOUTUBE_SONGS) && (viewPager = activityMainBinding.container.findViewById(R.id.youtubeViewPager)) != null) {
-                return Objects.requireNonNull(childFragmentManager.findFragmentByTag("f" + viewPager.getCurrentItem())).requireView().findViewById(R.id.listRv);
+                return Objects.requireNonNull(childFragmentManager.findFragmentByTag("f" + viewPager.getCurrentItem())).requireView();
+            } else if (fragment.getView() != null && currentFragment.equals(Keys.Fragments.SETTINGS)) {
+                return new PlayerAwareRecyclerView((RecyclerView) fragment.getView().findViewById(R.id.recycler_view));
             } else {
-                return (fragment.getView() != null) ? fragment.getView().findViewById(currentFragment.equals(Keys.Fragments.SETTINGS) ? R.id.recycler_view : R.id.listRv) : null;
+                return fragment.getView();
             }
         } catch (Exception e) {
             return null;

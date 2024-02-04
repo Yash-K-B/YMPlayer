@@ -51,7 +51,7 @@
         android:layout_height="match_parent"
         app:layout_behavior="com.google.android.material.appbar.AppBarLayout$ScrollingViewBehavior">
 
-        <androidx.recyclerview.widget.RecyclerView
+        <com.yash.ymplayer.ui.custom.PlayerAwareRecyclerView
             android:id="@+id/listRv"
             android:clipToPadding="false"
             android:layout_width="match_parent"
@@ -61,6 +61,17 @@
 
 
     </androidx.constraintlayout.widget.ConstraintLayout>
+
+    <com.google.android.material.floatingactionbutton.FloatingActionButton
+        android:id="@+id/shuffle"
+        android:contentDescription="@string/play_all"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_margin="@dimen/fab_margin"
+        app:layout_anchor="@+id/appbar"
+        app:layout_anchorGravity="bottom|end"
+        app:srcCompat="@drawable/round_shuffle_24"
+        />
 
     <ProgressBar
         android:id="@+id/list_progress"

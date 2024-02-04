@@ -6,12 +6,15 @@ import android.support.v4.media.MediaBrowserCompat;
 import android.support.v4.media.session.MediaControllerCompat;
 import android.view.MenuItem;
 import android.view.View;
+import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.lifecycle.ViewModelProvider;
 import androidx.paging.LoadState;
+import androidx.recyclerview.widget.ConcatAdapter;
 import androidx.recyclerview.widget.LinearLayoutManager;
+import androidx.recyclerview.widget.RecyclerView;
 
 import com.bumptech.glide.Glide;
 import com.yash.logging.LogHelper;
@@ -22,7 +25,10 @@ import com.yash.ymplayer.ui.youtube.adapters.LoadStateFooterAdapter;
 import com.yash.ymplayer.ui.youtube.livepage.YoutubePagedListAdapter;
 import com.yash.ymplayer.interfaces.Keys;
 import com.yash.ymplayer.util.KotlinConverterUtil;
+import com.yash.ymplayer.util.SongsListAdapter;
 import com.yash.ymplayer.util.TrackContextMenuClickListener;
+
+import java.util.List;
 
 public class PlaylistExpandActivity extends BasePlayerActivity {
     private static final String TAG = "PlaylistExpandActivity";
@@ -61,6 +67,19 @@ public class PlaylistExpandActivity extends BasePlayerActivity {
     protected void onConnected(MediaControllerCompat mediaController) {
         this.mediaController = mediaController;
         load(mediaController);
+        activityBinding.shuffle.setOnClickListener(v -> {
+            ConcatAdapter concatAdapter = (ConcatAdapter) activityBinding.listRv.getAdapter();
+            if (concatAdapter != null) {
+                List<? extends RecyclerView.Adapter<? extends RecyclerView.ViewHolder>> adapters = concatAdapter.getAdapters();
+                for (RecyclerView.Adapter<? extends RecyclerView.ViewHolder> thisAdapter : adapters) {
+                    if (thisAdapter instanceof YoutubePagedListAdapter) {
+                        ((YoutubePagedListAdapter) thisAdapter).playRandom();
+                    }
+                }
+            } else {
+                Toast.makeText(PlaylistExpandActivity.this, "Initializing player! Please wait...", Toast.LENGTH_SHORT).show();
+            }
+        });
     }
 
     @Override

@@ -6,7 +6,7 @@
     android:layout_height="match_parent"
     tools:context=".ui.main.AboutFragment">
 
-    <ScrollView
+    <com.yash.ymplayer.ui.custom.PlayerAwareScrollView
         android:id="@+id/listRv"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
@@ -116,7 +116,7 @@
                 app:layout_constraintTop_toBottomOf="@+id/body_changelog"/>
 
         </androidx.constraintlayout.widget.ConstraintLayout>
-    </ScrollView>
+    </com.yash.ymplayer.ui.custom.PlayerAwareScrollView>
 
 
 </FrameLayout>

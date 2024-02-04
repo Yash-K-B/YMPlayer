@@ -50,6 +50,8 @@ import com.yash.ymplayer.constant.Constants;
 import com.yash.ymplayer.databinding.BasePlayerActivityBinding;
 import com.yash.ymplayer.equaliser.DialogEqualizerFragment;
 import com.yash.ymplayer.interfaces.ActivityActionProvider;
+import com.yash.ymplayer.ui.custom.PlayerAware;
+import com.yash.ymplayer.ui.custom.PlayerAwareRecyclerView;
 import com.yash.ymplayer.util.CommonUtil;
 import com.yash.ymplayer.util.ConverterUtil;
 import com.yash.ymplayer.util.EqualizerUtil;
@@ -196,19 +198,7 @@ public abstract class BasePlayerActivity extends BaseActivity implements Activit
     abstract protected void onConnected(MediaControllerCompat mediaController);
 
     private void expandOrCompressMainLayout(int newState) {
-        RecyclerView view = basePlayerActivityBinding.contentViewer.findViewById(R.id.listRv);
-        if(view == null)
-            return;
-        if (newState == BottomSheetBehavior.STATE_COLLAPSED) {
-            view.setPadding(0, 0, 0 , (int) ConverterUtil.getPx(this, 58));
-        } else if (newState == BottomSheetBehavior.STATE_HIDDEN) {
-            ValueAnimator valueAnimator = ValueAnimator.ofInt((int) ConverterUtil.getPx(this, 58), 0);
-            valueAnimator.addUpdateListener(valueAnimator1 -> {
-                view.setPadding(0, 0, 0, (int) valueAnimator1.getAnimatedValue());
-            });
-            valueAnimator.setInterpolator(new LinearInterpolator());
-            valueAnimator.start();
-        }
+        PlayerAware.adjust(basePlayerActivityBinding.contentViewer, newState);
     }
 
     @Override

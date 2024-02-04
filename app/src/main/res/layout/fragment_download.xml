@@ -19,7 +19,7 @@
         android:layout_width="match_parent"
         android:layout_height="match_parent">
 
-        <androidx.recyclerview.widget.RecyclerView
+        <com.yash.ymplayer.ui.custom.PlayerAwareRecyclerView
             android:id="@+id/listRv"
             android:clipToPadding="false"
             android:layout_width="match_parent"

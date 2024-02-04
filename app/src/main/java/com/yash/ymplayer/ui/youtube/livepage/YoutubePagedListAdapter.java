@@ -3,6 +3,7 @@ package com.yash.ymplayer.ui.youtube.livepage;
 import android.content.Context;
 import android.support.v4.media.session.MediaControllerCompat;
 import android.view.LayoutInflater;
+import android.view.View;
 import android.view.ViewGroup;
 import android.widget.PopupMenu;
 
@@ -48,6 +49,14 @@ public class YoutubePagedListAdapter extends PagingDataAdapter<YoutubeSong, Yout
         if(getItemCount() - 1 == position) {
             LogHelper.d(TAG, "onBindViewHolder: End of the list");
         }
+    }
+
+    public void playRandom() {
+        int itemCount = getItemCount();
+        if(itemCount < 1)
+            return;
+        int randomIndex = (int) (Math.random() * itemCount);
+        listener.onClick(getItem(randomIndex));
     }
 
     class TopTracksViewHolder extends RecyclerView.ViewHolder {

@@ -10,6 +10,7 @@ import android.os.Looper;
 import android.provider.MediaStore;
 import android.support.v4.media.MediaBrowserCompat;
 import android.view.LayoutInflater;
+import android.view.View;
 import android.view.ViewGroup;
 import android.widget.PopupMenu;
 
@@ -97,6 +98,12 @@ public class SongsListAdapter extends RecyclerView.Adapter<SongsListAdapter.Item
     @Override
     public int getItemCount() {
         return songs.size();
+    }
+
+    public void playRandom(View v) {
+        // Play a random song from songs list
+        int randomIndex = (int) (Math.random() * songs.size());
+        listener.onClick(v, songs.get(randomIndex));
     }
 
     class ItemViewHolder extends RecyclerView.ViewHolder {

@@ -32,6 +32,7 @@ import com.yash.ymplayer.util.SongsContextMenuClickListener;
 import com.yash.ymplayer.util.SongsListAdapter;
 
 import java.util.List;
+import java.util.Objects;
 
 public class ListExpandActivity extends BasePlayerActivity {
     private static final String TAG = "debug";
@@ -69,6 +70,14 @@ public class ListExpandActivity extends BasePlayerActivity {
         } else if (type.equalsIgnoreCase("playlist")) {
             playListTracks();
         }
+        binding.shuffle.setOnClickListener(v -> {
+            SongsListAdapter songsAdapter = (SongsListAdapter) binding.listRv.getAdapter();
+            if(songsAdapter != null) {
+                songsAdapter.playRandom(v);
+            } else {
+                Toast.makeText(context, "Initializing player! Please wait...", Toast.LENGTH_SHORT).show();
+            }
+        });
     }
 
     @Override
