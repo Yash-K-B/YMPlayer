@@ -549,13 +549,22 @@ public class PlayerService extends MediaBrowserServiceCompat implements PlayerHe
          */
         @Override
         public void onStop() {
-            if (player == null) return;
-            savedPlayerPosition = player.getCurrentPosition();
-            player.stop();
-            player.release();
-            player = null;
-            setPlaybackState(PlaybackStateCompat.STATE_STOPPED);
-            pushNotification(PlaybackStateCompat.STATE_STOPPED);
+            LogHelper.d(TAG, "onStop: ");
+            queuePos = -1;
+            playingQueue.clear();
+            mediaIdLists.clear();
+            mediaSources.clear();
+            mSession.setMetadata(null);
+            mSession.setQueueTitle("");
+            currentMediaIdOrVideoId = null;
+            if (player != null) {
+                savedPlayerPosition = player.getCurrentPosition();
+                player.stop();
+                player.release();
+                player = null;
+            }
+            setPlaybackState(PlaybackStateCompat.STATE_NONE);
+            removeAsForegroundService(true);
             EqualizerUtil.getInstance(PlayerService.this).release();
             LogHelper.d(TAG, "onStop: " + savedPlayerPosition);
         }
@@ -838,19 +847,7 @@ public class PlayerService extends MediaBrowserServiceCompat implements PlayerHe
                     break;
 
                 case Keys.Action.CLOSE_PLAYBACK:
-                    queuePos = -1;
-                    playingQueue.clear();
-                    mediaIdLists.clear();
-                    mediaSources.clear();
-                    mSession.setMetadata(null);
-                    mSession.setQueueTitle("");
-                    currentMediaIdOrVideoId = null;
-                    if (player != null) {
-                        player.release();
-                        player = null;
-                    }
-                    setPlaybackState(PlaybackStateCompat.STATE_NONE);
-                    removeAsForegroundService(true);
+                    onStop();
                     break;
                 default:
             }
@@ -1098,6 +1095,7 @@ public class PlayerService extends MediaBrowserServiceCompat implements PlayerHe
                         | PlaybackStateCompat.ACTION_PLAY_FROM_URI
                         | PlaybackStateCompat.ACTION_PLAY
                         | PlaybackStateCompat.ACTION_PAUSE
+                        | PlaybackStateCompat.ACTION_STOP
                         | PlaybackStateCompat.ACTION_PLAY_PAUSE
                         | PlaybackStateCompat.ACTION_SKIP_TO_NEXT
                         | PlaybackStateCompat.ACTION_SKIP_TO_PREVIOUS
@@ -1249,6 +1247,7 @@ public class PlayerService extends MediaBrowserServiceCompat implements PlayerHe
                 .addAction(R.drawable.icon_skip_prev, getString(R.string.prev), MediaButtonReceiver.buildMediaButtonPendingIntent(this, PlaybackStateCompat.ACTION_SKIP_TO_PREVIOUS))
                 .addAction(state == PlaybackStateCompat.STATE_PLAYING ? R.drawable.icon_pause : R.drawable.icon_play, getString(R.string.play_pause), MediaButtonReceiver.buildMediaButtonPendingIntent(this, PlaybackStateCompat.ACTION_PLAY_PAUSE))
                 .addAction(R.drawable.icon_skip_next, getString(R.string.next), MediaButtonReceiver.buildMediaButtonPendingIntent(this, PlaybackStateCompat.ACTION_SKIP_TO_NEXT))
+                .addAction(R.drawable.icon_close, getString(R.string.close), MediaButtonReceiver.buildMediaButtonPendingIntent(this, PlaybackStateCompat.ACTION_STOP))
                 .setOngoing(!(state == PlaybackStateCompat.STATE_STOPPED || state == PlaybackStateCompat.STATE_NONE || state == PlaybackStateCompat.STATE_PAUSED))
                 .build();
 
