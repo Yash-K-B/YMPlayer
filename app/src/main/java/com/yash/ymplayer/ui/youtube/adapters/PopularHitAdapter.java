@@ -8,6 +8,7 @@ import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.bumptech.glide.Glide;
+import com.bumptech.glide.load.engine.DiskCacheStrategy;
 import com.yash.ymplayer.databinding.ItemPlaylistBannerBinding;
 import com.yash.ymplayer.models.PopularPlaylist;
 
@@ -54,7 +55,7 @@ public class PopularHitAdapter extends RecyclerView.Adapter<PopularHitAdapter.Po
             binding.playlistTitle.setText(playlist.getSnippet().getLocalized().getTitle());
             binding.playlistSubTitle.setText(playlist.getSnippet().getLocalized().getDescription());
             binding.itemCount.setText(playlist.getContentDetails().getItemCount() + " Tracks");
-            Glide.with(context).load(playlist.getSnippet().getThumbnails().getMedium().getUrl()).into(binding.playlistArt);
+            Glide.with(context).load(playlist.getSnippet().getThumbnails().getMedium().getUrl()).diskCacheStrategy(DiskCacheStrategy.AUTOMATIC).into(binding.playlistArt);
             itemView.setOnClickListener(v -> listener.onClick(binding, playlist));
         }
     }

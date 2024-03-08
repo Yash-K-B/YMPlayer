@@ -10,7 +10,6 @@ import android.os.Looper;
 import android.provider.MediaStore;
 import android.support.v4.media.MediaBrowserCompat;
 import android.view.LayoutInflater;
-import android.view.View;
 import android.view.ViewGroup;
 import android.widget.PopupMenu;
 
@@ -18,6 +17,7 @@ import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.IntentSenderRequest;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.paging.PagingDataAdapter;
 import androidx.recyclerview.widget.DiffUtil;
 import androidx.recyclerview.widget.RecyclerView;
 
@@ -30,18 +30,17 @@ import com.bumptech.glide.request.transition.Transition;
 import com.yash.ymplayer.R;
 import com.yash.ymplayer.databinding.ItemMusicBinding;
 import com.yash.ymplayer.interfaces.Keys;
+import com.yash.ymplayer.interfaces.SongContextMenuListener;
 import com.yash.ymplayer.pool.ThreadPool;
 import com.yash.ymplayer.repository.Repository;
 import com.yash.ymplayer.ui.main.LocalViewModel;
-import com.yash.ymplayer.interfaces.SongContextMenuListener;
 
 import java.util.List;
 import java.util.Objects;
 import java.util.regex.Pattern;
 
-public class SongsListAdapter extends RecyclerView.Adapter<SongsListAdapter.ItemViewHolder> {
+public class SongsPageListAdapter extends PagingDataAdapter<MediaBrowserCompat.MediaItem, SongsPageListAdapter.ItemViewHolder> {
     private static final String TAG = "SongsListAdapter";
-    List<MediaBrowserCompat.MediaItem> songs;
     private final SongListAdapter.OnItemClickListener listener;
     private final SongsContextMenuClickListener songContextMenuListener;
     private final int mode;
@@ -54,8 +53,8 @@ public class SongsListAdapter extends RecyclerView.Adapter<SongsListAdapter.Item
     ActivityResultLauncher<IntentSenderRequest> launcher;
 
 
-    public SongsListAdapter(Context context, ActivityResultLauncher<IntentSenderRequest> launcher, List<MediaBrowserCompat.MediaItem> songs, SongListAdapter.OnItemClickListener listener, SongsContextMenuClickListener songContextMenuListener, int mode) {
-        this.songs = songs;
+    public SongsPageListAdapter(Context context, ActivityResultLauncher<IntentSenderRequest> launcher, SongListAdapter.OnItemClickListener listener, SongsContextMenuClickListener songContextMenuListener, int mode) {
+        super(DiffCallback);
         this.launcher = launcher;
         this.listener = listener;
         this.songContextMenuListener = songContextMenuListener;
@@ -80,27 +79,22 @@ public class SongsListAdapter extends RecyclerView.Adapter<SongsListAdapter.Item
 
     @Override
     public void onBindViewHolder(@NonNull ItemViewHolder holder, int position) {
-        holder.bindSongs(songs.get(position), listener, songContextMenuListener, mode);
+        holder.bindSongs(getItem(position), listener, songContextMenuListener, mode);
         //Log.d(TAG, "No of Processors: " + Runtime.getRuntime().availableProcessors());
     }
 
-    public void refreshList(List<MediaBrowserCompat.MediaItem> newList) {
-        DiffUtil.DiffResult diffResult = DiffUtil.calculateDiff(new DiffCallback(this.songs, newList));
-        songs.clear();
-        songs.addAll(newList);
-        diffResult.dispatchUpdatesTo(this);
-    }
-
-    @Override
-    public int getItemCount() {
-        return songs.size();
-    }
-
-    public void playRandom(View v) {
-        // Play a random song from songs list
-        int randomIndex = (int) (Math.random() * songs.size());
-        listener.onClick(v, songs.get(randomIndex));
-    }
+//    public void refreshList(List<MediaBrowserCompat.MediaItem> newList) {
+//        DiffUtil.DiffResult diffResult = DiffUtil.calculateDiff(new DiffCallback(this.songs, newList));
+//        songs.clear();
+//        songs.addAll(newList);
+//        diffResult.dispatchUpdatesTo(this);
+//    }
+//
+//    public void playRandom(View v) {
+//        // Play a random song from songs list
+//        int randomIndex = (int) (Math.random() * songs.size());
+//        listener.onClick(v, songs.get(randomIndex));
+//    }
 
     class ItemViewHolder extends RecyclerView.ViewHolder {
         ItemMusicBinding binding;
@@ -164,8 +158,8 @@ public class SongsListAdapter extends RecyclerView.Adapter<SongsListAdapter.Item
                         return true;
                     case R.id.deleteFromStorage:
                         if (songContextMenuListener.deleteFromStorage(song, launcher)) {
-                            songs.remove(getAbsoluteAdapterPosition());
-                            SongsListAdapter.this.notifyItemRemoved(getAbsoluteAdapterPosition());
+//                            get.remove(getAbsoluteAdapterPosition());
+                            SongsPageListAdapter.this.notifyItemRemoved(getAbsoluteAdapterPosition());
                         }
                         return true;
                     default:
@@ -229,4 +223,16 @@ public class SongsListAdapter extends RecyclerView.Adapter<SongsListAdapter.Item
         public static final int ARTIST = 2;
         public static final int PLAYLIST = 3;
     }
+
+    private static final DiffUtil.ItemCallback<MediaBrowserCompat.MediaItem> DiffCallback = new DiffUtil.ItemCallback<>() {
+        @Override
+        public boolean areItemsTheSame(@NonNull MediaBrowserCompat.MediaItem oldItem, @NonNull MediaBrowserCompat.MediaItem newItem) {
+            return oldItem == newItem;
+        }
+
+        @Override
+        public boolean areContentsTheSame(@NonNull MediaBrowserCompat.MediaItem oldItem, @NonNull MediaBrowserCompat.MediaItem newItem) {
+            return oldItem.getMediaId() != null && newItem.getMediaId() != null && oldItem.getMediaId().equals(newItem.getMediaId());
+        }
+    };
 }

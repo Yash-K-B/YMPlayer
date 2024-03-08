@@ -39,7 +39,7 @@ public class LocalViewModel extends ViewModel {
             @Override
             public void onChildrenLoaded(@NonNull String parentId, @NonNull List<MediaBrowserCompat.MediaItem> children, @NonNull Bundle options) {
                 Log.d(TAG, "onChildrenLoaded: ViewModel");
-                songs.setValue(children);
+                songs.postValue(children);
             }
         });
         Log.d(TAG, "querySongs: Subscribed");
@@ -51,7 +51,7 @@ public class LocalViewModel extends ViewModel {
         mediaBrowser.subscribe(getAlbumParentId(parentId), extra, new MediaBrowserCompat.SubscriptionCallback() {
             @Override
             public void onChildrenLoaded(@NonNull String parentId, @NonNull List<MediaBrowserCompat.MediaItem> children, @NonNull Bundle options) {
-                allAlbums.setValue(children);
+                allAlbums.postValue(children);
             }
         });
     }
@@ -68,7 +68,7 @@ public class LocalViewModel extends ViewModel {
         mediaBrowser.subscribe(getArtistParentId(parentId), extra, new MediaBrowserCompat.SubscriptionCallback() {
             @Override
             public void onChildrenLoaded(@NonNull String parentId, @NonNull List<MediaBrowserCompat.MediaItem> children, @NonNull Bundle options) {
-                allArtists.setValue(children);
+                allArtists.postValue(children);
             }
         });
     }
@@ -85,7 +85,7 @@ public class LocalViewModel extends ViewModel {
         mediaBrowser.subscribe(getPlaylistParentId(parentId), extra, new MediaBrowserCompat.SubscriptionCallback() {
             @Override
             public void onChildrenLoaded(@NonNull String parentId, @NonNull List<MediaBrowserCompat.MediaItem> children, @NonNull Bundle options) {
-                allPlaylists.setValue(children);
+                allPlaylists.postValue(children);
             }
         });
     }

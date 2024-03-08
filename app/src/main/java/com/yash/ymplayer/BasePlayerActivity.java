@@ -1,6 +1,5 @@
 package com.yash.ymplayer;
 
-import android.animation.ValueAnimator;
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
@@ -20,7 +19,6 @@ import android.support.v4.media.session.MediaControllerCompat;
 import android.support.v4.media.session.MediaSessionCompat;
 import android.support.v4.media.session.PlaybackStateCompat;
 import android.view.View;
-import android.view.animation.LinearInterpolator;
 import android.view.inputmethod.InputMethodManager;
 import android.widget.ImageView;
 import android.widget.PopupMenu;
@@ -30,7 +28,6 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.ActionBarDrawerToggle;
 import androidx.appcompat.widget.Toolbar;
-import androidx.coordinatorlayout.widget.CoordinatorLayout;
 import androidx.preference.PreferenceManager;
 import androidx.recyclerview.widget.DividerItemDecoration;
 import androidx.recyclerview.widget.ItemTouchHelper;
@@ -39,6 +36,7 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import com.bumptech.glide.Glide;
 import com.bumptech.glide.load.DataSource;
+import com.bumptech.glide.load.engine.DiskCacheStrategy;
 import com.bumptech.glide.load.engine.GlideException;
 import com.bumptech.glide.request.RequestListener;
 import com.bumptech.glide.request.target.CustomTarget;
@@ -51,9 +49,7 @@ import com.yash.ymplayer.databinding.BasePlayerActivityBinding;
 import com.yash.ymplayer.equaliser.DialogEqualizerFragment;
 import com.yash.ymplayer.interfaces.ActivityActionProvider;
 import com.yash.ymplayer.ui.custom.PlayerAware;
-import com.yash.ymplayer.ui.custom.PlayerAwareRecyclerView;
 import com.yash.ymplayer.util.CommonUtil;
-import com.yash.ymplayer.util.ConverterUtil;
 import com.yash.ymplayer.util.EqualizerUtil;
 import com.yash.ymplayer.interfaces.Keys;
 import com.yash.ymplayer.util.QueueListAdapter;
@@ -178,7 +174,7 @@ public abstract class BasePlayerActivity extends BaseActivity implements Activit
             }
 
             @Override
-            public void startDrag(RecyclerView.ViewHolder viewHolder) {
+            public void startDrag(QueueListAdapter.QueueItemHolder viewHolder) {
                 itemTouchHelper.startDrag(viewHolder);
             }
         }, songs);
@@ -221,7 +217,7 @@ public abstract class BasePlayerActivity extends BaseActivity implements Activit
                         isUriSufficient = false;
                     }
                     songArt = String.format("https://i.ytimg.com/vi/%s/hqdefault.jpg", mediaController.getMetadata().getString(MediaMetadataCompat.METADATA_KEY_MEDIA_ID));
-                    Glide.with(BasePlayerActivity.this).load(isUriSufficient ? songArt : CommonUtil.getEmbeddedPicture(BasePlayerActivity.this, songArt)).placeholder(R.drawable.album_art_placeholder).into(new CustomTarget<Drawable>() {
+                    Glide.with(BasePlayerActivity.this).load(isUriSufficient ? songArt : CommonUtil.getEmbeddedPicture(BasePlayerActivity.this, songArt)).placeholder(R.drawable.album_art_placeholder).diskCacheStrategy(DiskCacheStrategy.AUTOMATIC).into(new CustomTarget<Drawable>() {
                         @Override
                         public void onResourceReady(@NonNull Drawable resource, @Nullable Transition<? super Drawable> transition) {
                             setSongArt(resource);
@@ -342,7 +338,7 @@ public abstract class BasePlayerActivity extends BaseActivity implements Activit
                     isUriSufficient = false;
                 }
 
-                Glide.with(BasePlayerActivity.this).load(isUriSufficient ? currentAlbumArtUri : CommonUtil.getEmbeddedPicture(BasePlayerActivity.this, currentAlbumArtUri)).placeholder(R.drawable.album_art_placeholder).into(new CustomTarget<Drawable>() {
+                Glide.with(BasePlayerActivity.this).load(isUriSufficient ? currentAlbumArtUri : CommonUtil.getEmbeddedPicture(BasePlayerActivity.this, currentAlbumArtUri)).placeholder(R.drawable.album_art_placeholder).diskCacheStrategy(DiskCacheStrategy.AUTOMATIC).into(new CustomTarget<Drawable>() {
                     @Override
                     public void onResourceReady(@NonNull Drawable resource, @Nullable Transition<? super Drawable> transition) {
                         LogHelper.d(TAG, "onResourceReady: uri:" + currentAlbumArtUri);
@@ -698,7 +694,7 @@ public abstract class BasePlayerActivity extends BaseActivity implements Activit
             if (deviceUriPattern.matcher(currentAlbumArtUri).matches()) {
                 isSufficient = false;
             }
-            Glide.with(BasePlayerActivity.this).load(isSufficient ? currentAlbumArtUri : CommonUtil.getEmbeddedPicture(BasePlayerActivity.this, currentAlbumArtUri)).listener(new RequestListener<Drawable>() {
+            Glide.with(BasePlayerActivity.this).load(isSufficient ? currentAlbumArtUri : CommonUtil.getEmbeddedPicture(BasePlayerActivity.this, currentAlbumArtUri)).diskCacheStrategy(DiskCacheStrategy.AUTOMATIC).listener(new RequestListener<Drawable>() {
                 @Override
                 public boolean onLoadFailed(@Nullable GlideException e, Object model, Target<Drawable> target, boolean isFirstResource) {
                     setSongArt();
@@ -791,10 +787,10 @@ public abstract class BasePlayerActivity extends BaseActivity implements Activit
 
         @Override
         public boolean onMove(@NonNull RecyclerView recyclerView, @NonNull RecyclerView.ViewHolder viewHolder, @NonNull RecyclerView.ViewHolder target) {
-            LogHelper.d(TAG, "onMove: Source Pos: " + viewHolder.getAdapterPosition() + " Target Pos: " + target.getAdapterPosition());
+            LogHelper.d(TAG, "onMove: Source Pos: " + viewHolder.getAbsoluteAdapterPosition() + " Target Pos: " + target.getAbsoluteAdapterPosition());
             isQueueItemArranging = true;
-            int fromPosition = viewHolder.getAdapterPosition();
-            int toPosition = target.getAdapterPosition();
+            int fromPosition = viewHolder.getAbsoluteAdapterPosition();
+            int toPosition = target.getAbsoluteAdapterPosition();
             if (this.fromPosition == -1) {
                 this.fromPosition = fromPosition;
             }

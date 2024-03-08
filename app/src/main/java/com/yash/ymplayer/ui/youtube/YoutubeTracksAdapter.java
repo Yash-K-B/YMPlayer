@@ -9,6 +9,7 @@ import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.bumptech.glide.Glide;
+import com.bumptech.glide.load.engine.DiskCacheStrategy;
 import com.yash.logging.LogHelper;
 import com.yash.ymplayer.R;
 import com.yash.ymplayer.databinding.ItemMusicBinding;
@@ -89,7 +90,7 @@ public class YoutubeTracksAdapter extends RecyclerView.Adapter<YoutubeTracksAdap
             binding.more.setOnClickListener(v -> menu.show());
             binding.title.setText(song.getTitle());
             binding.subTitle.setText(song.getChannelTitle());
-            Glide.with(context).load(song.getArt_url_small()).into(binding.art);
+            Glide.with(context).load(song.getArt_url_small()).diskCacheStrategy(DiskCacheStrategy.AUTOMATIC).into(binding.art);
             itemView.setOnClickListener(v -> listener.onClick(song));
             LogHelper.d(TAG, "bindTracks: %s",  song);
         }

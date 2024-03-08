@@ -1,7 +1,9 @@
 package com.yash.ymplayer;
 
 import android.app.Application;
+import android.content.IntentFilter;
 import android.content.SharedPreferences;
+import android.net.ConnectivityManager;
 import android.util.Log;
 
 import androidx.preference.PreferenceManager;
@@ -10,14 +12,18 @@ import com.yash.logging.LogHelper;
 import com.yash.logging.settings.LogHelperSettings;
 import com.yash.ymplayer.util.ConverterUtil;
 import com.yash.ymplayer.interfaces.Keys;
+import com.yash.youtube_extractor.receivers.ConnectivityReceiver;
 import com.yash.youtube_extractor.utility.HttpUtility;
 import com.yash.youtube_extractor.utility.RequestUtility;
 
 import java.lang.Thread.UncaughtExceptionHandler;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 
+import kotlin.time.DurationUnit;
 import okhttp3.Cache;
+import okhttp3.CacheControl;
 
 public class YMPlayer extends Application {
     private static final String TAG = "YMPlayer";
@@ -35,8 +41,12 @@ public class YMPlayer extends Application {
         LogHelper.deploy(this, TAG);
         executor = Executors.newSingleThreadExecutor();
 
-        HttpUtility.initialise(new Cache(getCacheDir(), 40*1024*1024), null);
+        HttpUtility.initialise(new Cache(getCacheDir(), 40 * 1024 * 1024), new CacheControl.Builder()
+                .maxAge(1, TimeUnit.DAYS)
+                .maxStale(Integer.MAX_VALUE, DurationUnit.SECONDS)
+                .build());
         RequestUtility.updateSettings(PreferenceManager.getDefaultSharedPreferences(this));
+        registerReceiver(new ConnectivityReceiver(), new IntentFilter(ConnectivityManager.CONNECTIVITY_ACTION));
 
         defaultUncaughtExceptionHandler = Thread.getDefaultUncaughtExceptionHandler();
         Thread.setDefaultUncaughtExceptionHandler((t, e) -> {

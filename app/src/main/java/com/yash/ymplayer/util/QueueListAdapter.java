@@ -44,7 +44,7 @@ public class QueueListAdapter extends RecyclerView.Adapter<QueueListAdapter.Queu
     @Override
     public void onBindViewHolder(@NonNull QueueItemHolder holder, int position) {
         songs.get(position).setColor((position == activePosition) ? Color.GREEN : color);
-        holder.bindQueueItem(songs.get(position), listener, holder, position);
+        holder.bindQueueItem(songs.get(position), listener);
     }
 
     @Override
@@ -54,7 +54,7 @@ public class QueueListAdapter extends RecyclerView.Adapter<QueueListAdapter.Queu
 
 
 
-    class QueueItemHolder extends RecyclerView.ViewHolder {
+    public class QueueItemHolder extends RecyclerView.ViewHolder {
         ItemPlayingQueueBinding binding;
 
         public QueueItemHolder(ItemPlayingQueueBinding binding) {
@@ -63,19 +63,20 @@ public class QueueListAdapter extends RecyclerView.Adapter<QueueListAdapter.Queu
         }
 
         @SuppressLint("SetTextI18n")
-        void bindQueueItem(Song song, QueueItemOnClickListener listener, RecyclerView.ViewHolder holder, int position) {
+        void bindQueueItem(Song song, QueueItemOnClickListener listener) {
             binding.trackName.setText(song.getTitle());
             binding.trackName.setTextColor(song.getColor());
-            binding.trackPosition.setText((position + 1) + ".");
+            binding.trackPosition.setText((song.getPosition() + 1) + ".");
             binding.trackPosition.setTextColor(song.getColor());
             binding.removeFromQueue.setOnClickListener(v -> {
                 binding.removeFromQueue.setOnClickListener(null);
+                int deletePos = songs.indexOf(song);
                 listener.onDelete(song);
-                notifyItemDeleted(position);
+                notifyItemDeleted(deletePos);
             });
             binding.dragToArrange.setOnTouchListener((v, event) -> {
                 if (event.getActionMasked() == MotionEvent.ACTION_DOWN) {
-                    listener.startDrag(holder);
+                    listener.startDrag(QueueItemHolder.this);
                 }
                 return false;
             });
@@ -142,6 +143,6 @@ public class QueueListAdapter extends RecyclerView.Adapter<QueueListAdapter.Queu
          *
          * @param viewHolder current ViewHolder
          */
-        void startDrag(RecyclerView.ViewHolder viewHolder);
+        void startDrag(QueueItemHolder viewHolder);
     }
 }

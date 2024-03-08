@@ -252,12 +252,12 @@ public class DownloadTask extends Thread {
             fFmpegSession = FFMpegUtil.createSession(audioFile, new FFMpegUtil.OnConversionListener() {
                 @Override
                 public void onSuccess(AudioFile audioFile) {
-
+                    LogHelper.d(TAG, "onSuccess: FFMPEG Conversion");
                 }
 
                 @Override
                 public void onFailed(AudioFile audioFile) {
-
+                    LogHelper.d(TAG, "onFailed: FFMPEG Conversion");
                 }
             });
 

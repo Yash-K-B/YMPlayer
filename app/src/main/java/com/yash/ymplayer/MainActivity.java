@@ -1,7 +1,6 @@
 package com.yash.ymplayer;
 
 import android.Manifest;
-import android.animation.ValueAnimator;
 import android.app.Activity;
 import android.app.AlertDialog;
 import android.app.NotificationChannel;
@@ -30,8 +29,6 @@ import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
-import android.view.animation.DecelerateInterpolator;
-import android.view.animation.LinearInterpolator;
 import android.widget.HorizontalScrollView;
 import android.widget.ImageView;
 import android.widget.PopupMenu;
@@ -60,6 +57,7 @@ import androidx.viewpager2.widget.ViewPager2;
 
 import com.bumptech.glide.Glide;
 import com.bumptech.glide.load.DataSource;
+import com.bumptech.glide.load.engine.DiskCacheStrategy;
 import com.bumptech.glide.load.engine.GlideException;
 import com.bumptech.glide.request.RequestListener;
 import com.bumptech.glide.request.target.CustomTarget;
@@ -344,7 +342,7 @@ public class MainActivity extends BaseActivity implements ActivityActionProvider
             }
 
             @Override
-            public void startDrag(RecyclerView.ViewHolder viewHolder) {
+            public void startDrag(QueueListAdapter.QueueItemHolder viewHolder) {
                 itemTouchHelper.startDrag(viewHolder);
             }
         }, songs);
@@ -477,7 +475,7 @@ public class MainActivity extends BaseActivity implements ActivityActionProvider
             } else if (Objects.equals(currentFragment, Keys.Fragments.YOUTUBE_SONGS) && (viewPager = activityMainBinding.container.findViewById(R.id.youtubeViewPager)) != null) {
                 return Objects.requireNonNull(childFragmentManager.findFragmentByTag("f" + viewPager.getCurrentItem())).requireView();
             } else if (fragment.getView() != null && currentFragment.equals(Keys.Fragments.SETTINGS)) {
-                return new PlayerAwareRecyclerView((RecyclerView) fragment.getView().findViewById(R.id.recycler_view));
+                return new PlayerAwareRecyclerView(fragment.getView().findViewById(R.id.recycler_view));
             } else {
                 return fragment.getView();
             }
@@ -492,7 +490,9 @@ public class MainActivity extends BaseActivity implements ActivityActionProvider
     }
 
     private void changeFragment(int containerId, Fragment fragment, String tag) {
-        getSupportFragmentManager().beginTransaction().setTransition(FragmentTransaction.TRANSIT_FRAGMENT_FADE).replace(containerId, fragment, tag).commit();
+
+        Fragment savedFragment = getSupportFragmentManager().findFragmentByTag(tag);
+        getSupportFragmentManager().beginTransaction().setTransition(FragmentTransaction.TRANSIT_FRAGMENT_FADE).replace(containerId, savedFragment == null ? fragment: savedFragment, tag).addToBackStack(null).commit();
     }
 
     @Override
@@ -517,12 +517,9 @@ public class MainActivity extends BaseActivity implements ActivityActionProvider
 
                 executor.submit(() -> {
                     String songArt = mediaController.getMetadata().getString(MediaMetadataCompat.METADATA_KEY_ALBUM_ART_URI);
-                    boolean isUriSufficient = true;
-                    if (songArt != null && deviceUriPattern.matcher(songArt).matches()) {
-                        isUriSufficient = false;
-                    }
+                    boolean isUriSufficient = songArt == null || !deviceUriPattern.matcher(songArt).matches();
                     songArt = String.format("https://i.ytimg.com/vi/%s/hqdefault.jpg", mediaController.getMetadata().getString(MediaMetadataCompat.METADATA_KEY_MEDIA_ID));
-                    Glide.with(MainActivity.this).load(isUriSufficient ? songArt : CommonUtil.getEmbeddedPicture(MainActivity.this, songArt)).placeholder(R.drawable.album_art_placeholder).into(new CustomTarget<Drawable>() {
+                    Glide.with(MainActivity.this).load(isUriSufficient ? songArt : CommonUtil.getEmbeddedPicture(MainActivity.this, songArt)).placeholder(R.drawable.album_art_placeholder).diskCacheStrategy(DiskCacheStrategy.AUTOMATIC).into(new CustomTarget<Drawable>() {
                         @Override
                         public void onResourceReady(@NonNull Drawable resource, @Nullable Transition<? super Drawable> transition) {
                             setSongArt(resource);
@@ -671,7 +668,7 @@ public class MainActivity extends BaseActivity implements ActivityActionProvider
                     isUriSufficient = false;
                 }
 
-                Glide.with(MainActivity.this).load(isUriSufficient ? currentAlbumArtUri : CommonUtil.getEmbeddedPicture(MainActivity.this, currentAlbumArtUri)).placeholder(R.drawable.album_art_placeholder).into(new CustomTarget<Drawable>() {
+                Glide.with(MainActivity.this).load(isUriSufficient ? currentAlbumArtUri : CommonUtil.getEmbeddedPicture(MainActivity.this, currentAlbumArtUri)).placeholder(R.drawable.album_art_placeholder).diskCacheStrategy(DiskCacheStrategy.AUTOMATIC).into(new CustomTarget<Drawable>() {
                     @Override
                     public void onResourceReady(@NonNull Drawable resource, @Nullable Transition<? super Drawable> transition) {
                         LogHelper.d(TAG, "onResourceReady: uri:" + currentAlbumArtUri);
@@ -724,8 +721,6 @@ public class MainActivity extends BaseActivity implements ActivityActionProvider
                     scheduledFutureUpdate();
                     LogHelper.d(TAG, "onPlaybackStateChanged: STATE_PLAYING MainActivity");
                     break;
-                case PlaybackStateCompat.STATE_STOPPED:
-                    LogHelper.d(TAG, "onPlaybackStateChanged: STATE_STOPPED MainActivity");
                 case PlaybackStateCompat.STATE_PAUSED:
                     activityMainBinding.playPause.setImageResource(R.drawable.icon_play);
                     activityMainBinding.playPauseBtn.setImageResource(R.drawable.icon_play_circle);
@@ -748,6 +743,8 @@ public class MainActivity extends BaseActivity implements ActivityActionProvider
                     LogHelper.d(TAG, "onPlaybackStateChanged: STATE_BUFFERING MainActivity");
                     break;
                 case PlaybackStateCompat.STATE_NONE:
+                case PlaybackStateCompat.STATE_STOPPED:
+                    LogHelper.d(TAG, "onPlaybackStateChanged: STATE_NONE MainActivity");
                     stopScheduledFutureUpdate();
                     runOnUiThread(() -> playerView.setState(BottomSheetBehavior.STATE_HIDDEN));
                     break;
@@ -1075,7 +1072,7 @@ public class MainActivity extends BaseActivity implements ActivityActionProvider
             if (deviceUriPattern.matcher(currentAlbumArtUri).matches()) {
                 isSufficient = false;
             }
-            Glide.with(MainActivity.this).load(isSufficient ? currentAlbumArtUri : CommonUtil.getEmbeddedPicture(MainActivity.this, currentAlbumArtUri)).listener(new RequestListener<Drawable>() {
+            Glide.with(MainActivity.this).load(isSufficient ? currentAlbumArtUri : CommonUtil.getEmbeddedPicture(MainActivity.this, currentAlbumArtUri)).diskCacheStrategy(DiskCacheStrategy.AUTOMATIC).listener(new RequestListener<Drawable>() {
                 @Override
                 public boolean onLoadFailed(@Nullable GlideException e, Object model, Target<Drawable> target, boolean isFirstResource) {
                     setSongArt();
@@ -1219,10 +1216,10 @@ public class MainActivity extends BaseActivity implements ActivityActionProvider
 
         @Override
         public boolean onMove(@NonNull RecyclerView recyclerView, @NonNull RecyclerView.ViewHolder viewHolder, @NonNull RecyclerView.ViewHolder target) {
-            LogHelper.d(TAG, "onMove: Source Pos: " + viewHolder.getAdapterPosition() + " Target Pos: " + target.getAdapterPosition());
+            LogHelper.d(TAG, "onMove: Source Pos: " + viewHolder.getAbsoluteAdapterPosition() + " Target Pos: " + target.getAbsoluteAdapterPosition());
             isQueueItemArranging = true;
-            int fromPosition = viewHolder.getAdapterPosition();
-            int toPosition = target.getAdapterPosition();
+            int fromPosition = viewHolder.getAbsoluteAdapterPosition();
+            int toPosition = target.getAbsoluteAdapterPosition();
             if (this.fromPosition == -1) {
                 this.fromPosition = fromPosition;
             }
@@ -1258,14 +1255,6 @@ public class MainActivity extends BaseActivity implements ActivityActionProvider
             isQueueItemArranging = false;
         }
     };
-
-    Runnable notifyAdapterDataChange = new Runnable() {
-        @Override
-        public void run() {
-            adapter.notifyDataSetChanged();
-        }
-    };
-
     ResultReceiver resultReceiver = new ResultReceiver(handler) {
         @Override
         protected void onReceiveResult(int resultCode, Bundle resultData) {

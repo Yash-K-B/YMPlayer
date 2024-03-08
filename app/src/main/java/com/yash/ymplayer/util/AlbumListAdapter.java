@@ -16,13 +16,13 @@ import androidx.recyclerview.widget.DiffUtil;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.bumptech.glide.Glide;
+import com.bumptech.glide.load.engine.DiskCacheStrategy;
 import com.bumptech.glide.request.target.CustomTarget;
 import com.bumptech.glide.request.transition.Transition;
 import com.yash.ymplayer.R;
 import com.yash.ymplayer.databinding.ItemAlbumBinding;
 import com.yash.ymplayer.interfaces.AlbumOrArtistContextMenuListener;
 
-import java.util.ArrayList;
 import java.util.List;
 
 public class AlbumListAdapter extends RecyclerView.Adapter<AlbumListAdapter.AlbumViewHolder> {
@@ -68,7 +68,7 @@ public class AlbumListAdapter extends RecyclerView.Adapter<AlbumListAdapter.Albu
 
         void bindAlbums(MediaBrowserCompat.MediaItem song, OnItemClickListener listener) {
 
-            Glide.with(context).load(song.getDescription().getIconUri()).into(new CustomTarget<Drawable>() {
+            Glide.with(context).load(song.getDescription().getIconUri()).diskCacheStrategy(DiskCacheStrategy.AUTOMATIC).into(new CustomTarget<Drawable>() {
                 @Override
                 public void onResourceReady(@NonNull Drawable resource, @Nullable Transition<? super Drawable> transition) {
                     binding.albumArt.setImageDrawable(resource);

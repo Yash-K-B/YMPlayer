@@ -45,6 +45,7 @@ import androidx.media.session.MediaButtonReceiver;
 import androidx.preference.PreferenceManager;
 
 import com.bumptech.glide.Glide;
+import com.bumptech.glide.load.engine.DiskCacheStrategy;
 import com.bumptech.glide.request.target.CustomTarget;
 import com.bumptech.glide.request.transition.Transition;
 import com.google.android.exoplayer2.C;
@@ -94,7 +95,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicReference;
 import java.util.regex.Pattern;
 
 public class PlayerService extends MediaBrowserServiceCompat implements PlayerHelper {
@@ -559,7 +559,6 @@ public class PlayerService extends MediaBrowserServiceCompat implements PlayerHe
             currentMediaIdOrVideoId = null;
             if (player != null) {
                 savedPlayerPosition = player.getCurrentPosition();
-                player.stop();
                 player.release();
                 player = null;
             }
@@ -1125,7 +1124,7 @@ public class PlayerService extends MediaBrowserServiceCompat implements PlayerHe
     int retryCount = 0;
 
     void loadAlbumArtAndPushNotification(Uri uri) {
-        Glide.with(PlayerService.this).asBitmap().load(uri).into(new CustomTarget<Bitmap>() {
+        Glide.with(PlayerService.this).asBitmap().load(uri).diskCacheStrategy(DiskCacheStrategy.AUTOMATIC).into(new CustomTarget<Bitmap>() {
             @Override
             public void onResourceReady(@NonNull Bitmap resource, @Nullable Transition<? super Bitmap> transition) {
                 currentBitmapUriPair = new Pair<>(resource, uri.toString());

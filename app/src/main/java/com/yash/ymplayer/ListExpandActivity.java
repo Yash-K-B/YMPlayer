@@ -23,6 +23,7 @@ import androidx.recyclerview.widget.DividerItemDecoration;
 import androidx.recyclerview.widget.LinearLayoutManager;
 
 import com.bumptech.glide.Glide;
+import com.bumptech.glide.load.engine.DiskCacheStrategy;
 import com.yash.ymplayer.databinding.BasePlayerActivityBinding;
 import com.yash.ymplayer.databinding.ListExpandActivityBinding;
 import com.yash.ymplayer.ui.main.LocalViewModel;
@@ -32,7 +33,6 @@ import com.yash.ymplayer.util.SongsContextMenuClickListener;
 import com.yash.ymplayer.util.SongsListAdapter;
 
 import java.util.List;
-import java.util.Objects;
 
 public class ListExpandActivity extends BasePlayerActivity {
     private static final String TAG = "debug";
@@ -130,7 +130,7 @@ public class ListExpandActivity extends BasePlayerActivity {
 
     void albumTracks() {
         String[] parts = parentId.split("[/]");
-        Glide.with(context).load(ContentUris.withAppendedId(Uri.parse("content://media/external/audio/albumart"), Long.parseLong(parts[parts.length - 1]))).placeholder(R.drawable.album_art_placeholder).into(binding.appBarImage);
+        Glide.with(context).load(ContentUris.withAppendedId(Uri.parse("content://media/external/audio/albumart"), Long.parseLong(parts[parts.length - 1]))).placeholder(R.drawable.album_art_placeholder).diskCacheStrategy(DiskCacheStrategy.AUTOMATIC).into(binding.appBarImage);
         viewModel.loadAlbums(mMediaBrowser, parentId);
         viewModel.allAlbums.observe(ListExpandActivity.this, new Observer<List<MediaBrowserCompat.MediaItem>>() {
             @Override

@@ -24,6 +24,7 @@ import androidx.annotation.Nullable;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.bumptech.glide.Glide;
+import com.bumptech.glide.load.engine.DiskCacheStrategy;
 import com.bumptech.glide.request.target.CustomTarget;
 import com.bumptech.glide.request.transition.Transition;
 import com.yash.logging.LogHelper;
@@ -232,7 +233,7 @@ public class SongListAdapter extends RecyclerView.Adapter<SongListAdapter.SongVi
             String[] parts = song.getDescription().getMediaId().split("[/|]");
             long id = Long.parseLong(parts[parts.length - 1]);
             Log.d(TAG, "run: id: " + id);
-            Glide.with(context).load(CommonUtil.getEmbeddedPicture(context, ContentUris.withAppendedId(MediaStore.Audio.Media.EXTERNAL_CONTENT_URI, id))).placeholder(R.drawable.album_art_placeholder).into(new CustomTarget<Drawable>() {
+            Glide.with(context).load(CommonUtil.getEmbeddedPicture(context, ContentUris.withAppendedId(MediaStore.Audio.Media.EXTERNAL_CONTENT_URI, id))).placeholder(R.drawable.album_art_placeholder).diskCacheStrategy(DiskCacheStrategy.AUTOMATIC).into(new CustomTarget<Drawable>() {
                 @Override
                 public void onResourceReady(@NonNull Drawable resource, @Nullable Transition<? super Drawable> transition) {
                     handler.post(() -> binding.art.setImageDrawable(resource));

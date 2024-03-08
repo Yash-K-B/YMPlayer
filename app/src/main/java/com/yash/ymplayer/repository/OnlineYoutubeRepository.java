@@ -417,11 +417,11 @@ public class OnlineYoutubeRepository {
     public void getChannelPlaylists(String channelId, PlaylistLoadedCallback callback) {
         LogHelper.d(TAG, "Channel Playlists of id : %s", channelId);
 
-        if (!CollectionUtility.isEmpty(loadedPlaylistsMap.get(channelId))) {
-            LogHelper.d(TAG, "Playlists for Channel %s found in cache!!!", channelId);
-            callback.onLoaded(loadedPlaylistsMap.get(channelId));
-            return;
-        }
+//        if (!CollectionUtility.isEmpty(loadedPlaylistsMap.get(channelId))) {
+//            LogHelper.d(TAG, "Playlists for Channel %s found in cache!!!", channelId);
+//            callback.onLoaded(loadedPlaylistsMap.get(channelId));
+//            return;
+//        }
 
         executor.execute(() -> {
             try {

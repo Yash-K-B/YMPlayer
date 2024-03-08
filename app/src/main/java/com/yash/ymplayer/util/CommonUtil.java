@@ -118,10 +118,13 @@ public class CommonUtil {
         return getEmbeddedPicture(context, Uri.parse(uri));
     }
 
-    public static synchronized byte[] getEmbeddedPicture(Context context, Uri uri) {
-        try (MediaMetadataRetriever retriever = new MediaMetadataRetriever()) {
+    public static byte[] getEmbeddedPicture(Context context, Uri uri) {
+        try {
+            MediaMetadataRetriever retriever = new MediaMetadataRetriever();
             retriever.setDataSource(context, uri);
-            return retriever.getEmbeddedPicture();
+            byte[] embeddedPicture = retriever.getEmbeddedPicture();
+            retriever.close();
+            return embeddedPicture;
         } catch (IOException e) {
             throw new RuntimeException("Album art not found");
         }

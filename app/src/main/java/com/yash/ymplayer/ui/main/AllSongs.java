@@ -126,14 +126,11 @@ public class AllSongs extends Fragment {
             });
             if (viewModel.songs.getValue() == null || viewModel.songs.getValue().isEmpty())
                 viewModel.loadSongs(mMediaBrowser);
-            viewModel.songs.observe(AllSongs.this, new Observer<List<MediaBrowserCompat.MediaItem>>() {
-                @Override
-                public void onChanged(List<MediaBrowserCompat.MediaItem> songs) {
-                    Log.d(TAG, "onChanged: Song Refreshed");
-                    allSongsBinding.allSongsRefresh.setRefreshing(false);
-                    allSongsBinding.progressBar.setVisibility(View.INVISIBLE);
-                    songsAdapter.refreshList(songs);
-                }
+            viewModel.songs.observe(AllSongs.this, songs -> {
+                Log.d(TAG, "onChanged: Song Refreshed");
+                allSongsBinding.allSongsRefresh.setRefreshing(false);
+                allSongsBinding.progressBar.setVisibility(View.INVISIBLE);
+                songsAdapter.refreshList(songs);
             });
 
         }

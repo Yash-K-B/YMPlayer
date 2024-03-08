@@ -27,6 +27,7 @@ import android.widget.PopupMenu;
 import android.widget.Toast;
 
 import com.bumptech.glide.Glide;
+import com.bumptech.glide.load.engine.DiskCacheStrategy;
 import com.yash.logging.LogHelper;
 import com.yash.ymplayer.databinding.DownloadItemBinding;
 import com.yash.ymplayer.databinding.FragmentDownloadBinding;
@@ -185,7 +186,7 @@ public class DownloadFragment extends Fragment {
 
             public void bind(Download file, OnClickListener listener) {
                 this.file = file;
-                Glide.with(context).load(file.getFileImageUrl()).into(binding.fileArt);
+                Glide.with(context).load(file.getFileImageUrl()).diskCacheStrategy(DiskCacheStrategy.AUTOMATIC).into(binding.fileArt);
                 binding.fileArt.setClipToOutline(true);
                 binding.fileName.setText(file.getFileName());
                 binding.subName.setText(String.format("by %s", file.getFileSubText()));
