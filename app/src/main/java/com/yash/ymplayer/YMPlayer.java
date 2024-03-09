@@ -41,10 +41,7 @@ public class YMPlayer extends Application {
         LogHelper.deploy(this, TAG);
         executor = Executors.newSingleThreadExecutor();
 
-        HttpUtility.initialise(new Cache(getCacheDir(), 40 * 1024 * 1024), new CacheControl.Builder()
-                .maxAge(1, TimeUnit.DAYS)
-                .maxStale(Integer.MAX_VALUE, DurationUnit.SECONDS)
-                .build());
+        HttpUtility.initialise(new Cache(getCacheDir(), 41_943_040), new CacheControl.Builder().maxAge(4, TimeUnit.HOURS).build());
         RequestUtility.updateSettings(PreferenceManager.getDefaultSharedPreferences(this));
         registerReceiver(new ConnectivityReceiver(), new IntentFilter(ConnectivityManager.CONNECTIVITY_ACTION));
 

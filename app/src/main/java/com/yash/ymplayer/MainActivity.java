@@ -730,6 +730,8 @@ public class MainActivity extends BaseActivity implements ActivityActionProvider
                     LogHelper.d(TAG, "onPlaybackStateChanged: STATE_PAUSED MainActivity");
 
                     break;
+                case PlaybackStateCompat.STATE_STOPPED:
+                    LogHelper.d(TAG, "onPlaybackStateChanged: STATE_STOPPED MainActivity");
                 case PlaybackStateCompat.STATE_BUFFERING:
                     activityMainBinding.playPause.setImageResource(R.drawable.icon_pause);
                     activityMainBinding.playPauseBtn.setImageResource(R.drawable.icon_pause);
@@ -743,7 +745,6 @@ public class MainActivity extends BaseActivity implements ActivityActionProvider
                     LogHelper.d(TAG, "onPlaybackStateChanged: STATE_BUFFERING MainActivity");
                     break;
                 case PlaybackStateCompat.STATE_NONE:
-                case PlaybackStateCompat.STATE_STOPPED:
                     LogHelper.d(TAG, "onPlaybackStateChanged: STATE_NONE MainActivity");
                     stopScheduledFutureUpdate();
                     runOnUiThread(() -> playerView.setState(BottomSheetBehavior.STATE_HIDDEN));

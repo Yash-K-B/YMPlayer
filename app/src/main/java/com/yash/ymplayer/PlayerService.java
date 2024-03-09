@@ -479,8 +479,7 @@ public class PlayerService extends MediaBrowserServiceCompat implements PlayerHe
             LogHelper.d(TAG, "onPause: ");
             if (player != null) {
                 LogHelper.d(TAG, "onPause: isPlaying: " + player.isPlaying());
-                if (player.isPlaying()) setPlaybackState(PlaybackStateCompat.STATE_PAUSED);
-                else setPlaybackState(PlaybackStateCompat.STATE_STOPPED);
+                setPlaybackState(PlaybackStateCompat.STATE_PAUSED);
                 player.setPlayWhenReady(false);
                 handler.removeCallbacks(playNextOnMediaError);
                 pushNotification(PlaybackStateCompat.STATE_PAUSED);
@@ -838,7 +837,7 @@ public class PlayerService extends MediaBrowserServiceCompat implements PlayerHe
                     if (player == null) return;
                     String tag = (String) player.getCurrentTag();
                     if (tag != null && mediaIdPattern.matcher(tag).matches()) return;
-                    onStop();
+                    onPause();
                     player = getSimpleExoPlayer(player);
                     seekPlayer(queuePos, savedPlayerPosition);
                     setPlayWhenReady(true);
@@ -1362,7 +1361,7 @@ public class PlayerService extends MediaBrowserServiceCompat implements PlayerHe
                         if (!isInternetAvailable) {
                             playbackEndedStatus = PlaybackEndedStatus.INTERRUPTED;
                             Toast.makeText(PlayerService.this, "No Internet Access", Toast.LENGTH_SHORT).show();
-                            mSession.getController().getTransportControls().stop();
+                            mSession.getController().getTransportControls().pause();
                         } else {
                             if (mSession.getController().getPlaybackState().getState() == PlaybackStateCompat.STATE_PAUSED || mSession.getController().getPlaybackState().getState() == PlaybackStateCompat.STATE_STOPPED)
                                 return;
@@ -1720,7 +1719,7 @@ public class PlayerService extends MediaBrowserServiceCompat implements PlayerHe
         public void run() {
             LogHelper.d(TAG, "playNextOnMediaError : Executed playNextOnMediaError");
             if (player.getNextWindowIndex() == -1)
-                mSession.getController().getTransportControls().stop();
+                mSession.getController().getTransportControls().pause();
             else {
                 queuePos = player.getNextWindowIndex();
                 initializeAndPlay();

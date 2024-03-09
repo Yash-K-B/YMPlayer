@@ -25,7 +25,8 @@
                 android:id="@+id/app_bar_image"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:scaleType="fitCenter" />
+                android:scaleType="fitCenter"
+                android:src="@drawable/album_art_placeholder"/>
 
             <RelativeLayout
                 android:layout_width="match_parent"
