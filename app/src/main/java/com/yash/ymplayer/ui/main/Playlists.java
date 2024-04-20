@@ -7,11 +7,9 @@ import android.os.Bundle;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
-import androidx.lifecycle.Observer;
 import androidx.lifecycle.ViewModelProvider;
 import androidx.recyclerview.widget.DividerItemDecoration;
 import androidx.recyclerview.widget.LinearLayoutManager;
-import androidx.swiperefreshlayout.widget.SwipeRefreshLayout;
 
 import android.os.Handler;
 import android.os.Looper;
@@ -33,7 +31,7 @@ import com.yash.ymplayer.databinding.FragmentPlaylistsBinding;
 import com.yash.ymplayer.interfaces.PlaylistUpdateListener;
 import com.yash.ymplayer.util.AlbumOrArtistContextMenuClickListener;
 import com.yash.ymplayer.interfaces.Keys;
-import com.yash.ymplayer.util.SongListAdapter;
+import com.yash.ymplayer.util.CategoryAdapter;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -42,7 +40,7 @@ public class Playlists extends Fragment implements PlaylistUpdateListener {
     private static final String TAG = "debug";
     private static Playlists instance;
     private MediaBrowserCompat mMediaBrowser;
-    private SongListAdapter adapter;
+    private CategoryAdapter adapter;
     private final List<MediaBrowserCompat.MediaItem> songs = new ArrayList<>();
     FragmentPlaylistsBinding playlistsBinding;
     private LocalViewModel viewModel;
@@ -67,7 +65,7 @@ public class Playlists extends Fragment implements PlaylistUpdateListener {
         super.onViewCreated(view, savedInstanceState);
         mMediaBrowser = new MediaBrowserCompat(getContext(), new ComponentName(getContext(), PlayerService.class), mConnectionCallbacks, null);
         mMediaBrowser.connect();
-        adapter = new SongListAdapter(getContext(), songs, (v, song) -> {
+        adapter = new CategoryAdapter(getContext(), (v, song) -> {
             if (song.isBrowsable()) {
                 Intent intent = new Intent(getActivity(), ListExpandActivity.class);
                 intent.putExtra(Keys.EXTRA_PARENT_ID, song.getMediaId());
@@ -75,7 +73,7 @@ public class Playlists extends Fragment implements PlaylistUpdateListener {
                 intent.putExtra(Keys.EXTRA_TITLE, song.getDescription().getTitle());
                 startActivity(intent);
             }
-        }, new AlbumOrArtistContextMenuClickListener(getContext(), mMediaController), SongListAdapter.Mode.PLAYLIST);
+        }, new AlbumOrArtistContextMenuClickListener(getContext(), mMediaController), CategoryAdapter.Mode.PLAYLIST);
         playlistsBinding.listRv.setAdapter(adapter);
         playlistsBinding.listRv.setLayoutManager(new LinearLayoutManager(getContext()));
         playlistsBinding.listRv.addItemDecoration(new DividerItemDecoration(requireContext(), DividerItemDecoration.VERTICAL));
@@ -93,38 +91,27 @@ public class Playlists extends Fragment implements PlaylistUpdateListener {
         mMediaBrowser.disconnect();
     }
 
-    private MediaBrowserCompat.ConnectionCallback mConnectionCallbacks = new MediaBrowserCompat.ConnectionCallback() {
+    private final MediaBrowserCompat.ConnectionCallback mConnectionCallbacks = new MediaBrowserCompat.ConnectionCallback() {
         @Override
         public void onConnected() {
             try {
                 viewModel = new ViewModelProvider(Playlists.this).get(LocalViewModel.class);
                 mMediaController = new MediaControllerCompat(getContext(), mMediaBrowser.getSessionToken());
                 mMediaController.registerCallback(mMediaControllerCallbacks);
-                playlistsBinding.playlistRefresh.setColorSchemeColors(BaseActivity.getAttributeColor(getContext(), R.attr.colorPrimary));
-                playlistsBinding.playlistRefresh.setOnRefreshListener(new SwipeRefreshLayout.OnRefreshListener() {
-                    @Override
-                    public void onRefresh() {
-                        playlistsBinding.playlistRefresh.setRefreshing(true);
-                        viewModel.loadPlaylists(mMediaBrowser, null);
-                    }
+                playlistsBinding.playlistRefresh.setColorSchemeColors(BaseActivity.getAttributeColor(requireContext(), R.attr.colorPrimary));
+                playlistsBinding.playlistRefresh.setOnRefreshListener(() -> {
+                    playlistsBinding.playlistRefresh.setRefreshing(true);
+                    viewModel.loadPlaylists(mMediaBrowser, null);
                 });
                 viewModel.loadPlaylists(mMediaBrowser, null);
-                viewModel.allPlaylists.observe(getActivity(), new Observer<List<MediaBrowserCompat.MediaItem>>() {
-                    @Override
-                    public void onChanged(List<MediaBrowserCompat.MediaItem> songs) {
-                        Log.d(TAG, "onChanged: Playlist: " + songs.size());
-                        initPlaylist();
-                        Playlists.this.songs.addAll(songs);
-                        handler.postDelayed(new Runnable() {
-                            @Override
-                            public void run() {
-                                adapter.notifyDataSetChanged();
-                                playlistsBinding.noPlaylist.setVisibility((Playlists.this.songs.size() == 0) ? View.VISIBLE : View.INVISIBLE);
-                                playlistsBinding.playlistRefresh.setRefreshing(false);
-                                playlistsBinding.loading.setVisibility(View.INVISIBLE);
-                            }
-                        }, 400);
-                    }
+                viewModel.allPlaylists.observe(requireActivity(), songs -> {
+                    Log.d(TAG, "onChanged: Playlist: " + songs.size());
+                    initPlaylist();
+                    Playlists.this.songs.addAll(songs);
+                    adapter.refreshList(Playlists.this.songs);
+                    playlistsBinding.noPlaylist.setVisibility((Playlists.this.songs.size() == 0) ? View.VISIBLE : View.INVISIBLE);
+                    playlistsBinding.playlistRefresh.setRefreshing(false);
+                    playlistsBinding.loading.setVisibility(View.INVISIBLE);
                 });
                 LocalSongs localSongs = (LocalSongs) Playlists.this.getParentFragment();
                 localSongs.onFabClicked(Playlists.this);
@@ -134,7 +121,7 @@ public class Playlists extends Fragment implements PlaylistUpdateListener {
         }
     };
 
-    private MediaControllerCompat.Callback mMediaControllerCallbacks = new MediaControllerCompat.Callback() {
+    private final MediaControllerCompat.Callback mMediaControllerCallbacks = new MediaControllerCompat.Callback() {
         @Override
         public void onPlaybackStateChanged(PlaybackStateCompat state) {
             super.onPlaybackStateChanged(state);

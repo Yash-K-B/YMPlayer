@@ -30,7 +30,7 @@ import com.yash.ymplayer.R;
 import com.yash.ymplayer.databinding.FragmentArtistsBinding;
 import com.yash.ymplayer.util.AlbumOrArtistContextMenuClickListener;
 import com.yash.ymplayer.interfaces.Keys;
-import com.yash.ymplayer.util.SongListAdapter;
+import com.yash.ymplayer.util.CategoryAdapter;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -43,8 +43,7 @@ public class Artists extends Fragment {
     MediaBrowserCompat mMediaBrowser;
     LocalViewModel viewModel;
     MediaControllerCompat mMediaController;
-    List<MediaBrowserCompat.MediaItem> songs = new ArrayList<>();
-    SongListAdapter artistsAdapter;
+    CategoryAdapter artistsAdapter;
     private static Artists instance;
     Context context;
     FragmentActivity activity;
@@ -90,12 +89,12 @@ public class Artists extends Fragment {
         mMediaBrowser.disconnect();
     }
 
-    private MediaBrowserCompat.ConnectionCallback mConnectionCallbacks = new MediaBrowserCompat.ConnectionCallback() {
+    private final MediaBrowserCompat.ConnectionCallback mConnectionCallbacks = new MediaBrowserCompat.ConnectionCallback() {
         @Override
         public void onConnected() {
             viewModel = new ViewModelProvider(activity).get(LocalViewModel.class);
             mMediaController = new MediaControllerCompat(getContext(), mMediaBrowser.getSessionToken());
-            artistsAdapter = new SongListAdapter(getContext(), songs, new SongListAdapter.OnItemClickListener() {
+            artistsAdapter = new CategoryAdapter(getContext(), new CategoryAdapter.OnItemClickListener() {
                 @Override
                 public void onClick(View v, MediaBrowserCompat.MediaItem song) {
                     if (song.isBrowsable()) {
@@ -106,7 +105,7 @@ public class Artists extends Fragment {
                         startActivity(intent);
                     }
                 }
-            }, new AlbumOrArtistContextMenuClickListener(context, mMediaController), SongListAdapter.Mode.ARTIST);
+            }, new AlbumOrArtistContextMenuClickListener(context, mMediaController), CategoryAdapter.Mode.ARTIST);
             artistsBinding.listRv.setAdapter(artistsAdapter);
             mMediaController.registerCallback(mMediaControllerCallbacks);
             artistsBinding.artistsRefresh.setColorSchemeColors(BaseActivity.getAttributeColor(context, R.attr.colorPrimary));
@@ -120,16 +119,10 @@ public class Artists extends Fragment {
             });
             if (viewModel.allArtists.getValue() == null || viewModel.allArtists.getValue().isEmpty())
                 viewModel.loadArtists(mMediaBrowser, null);
-            viewModel.allArtists.observe(getActivity(), new Observer<List<MediaBrowserCompat.MediaItem>>() {
-                @Override
-                public void onChanged(List<MediaBrowserCompat.MediaItem> songs) {
-                    Artists.this.songs.clear();
-                    Artists.this.songs.addAll(songs);
-                    artistsBinding.artistsRefresh.setRefreshing(false);
-                    artistsAdapter.refreshList();
-                    artistsAdapter.notifyDataSetChanged();
-                    artistsBinding.progressBar.setVisibility(View.INVISIBLE);
-                }
+            viewModel.allArtists.observe(requireActivity(), songs -> {
+                artistsBinding.artistsRefresh.setRefreshing(false);
+                artistsAdapter.refreshList(songs);
+                artistsBinding.progressBar.setVisibility(View.INVISIBLE);
             });
 
         }

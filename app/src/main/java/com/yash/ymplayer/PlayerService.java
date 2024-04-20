@@ -71,6 +71,7 @@ import com.yash.ymplayer.cache.impl.UriCache;
 import com.yash.ymplayer.constant.Constants;
 import com.yash.ymplayer.interfaces.PlayerHelper;
 import com.yash.ymplayer.models.YoutubeSongUriDetail;
+import com.yash.ymplayer.pool.ThreadPool;
 import com.yash.ymplayer.repository.OnlineYoutubeRepository;
 import com.yash.ymplayer.repository.Repository;
 import com.yash.ymplayer.interfaces.AudioProvider;
@@ -263,6 +264,10 @@ public class PlayerService extends MediaBrowserServiceCompat implements PlayerHe
         LogHelper.d(TAG, "onLoadChildren: PlayerService: Parent Id: " + parentId);
         result.detach();
         resultSender = result;
+        ThreadPool.getInstance().getExecutor().execute(() -> processResult(parentId, result));
+    }
+
+    private void processResult(@NonNull String parentId, @NonNull Result<List<MediaBrowserCompat.MediaItem>> result) {
         List<MediaBrowserCompat.MediaItem> mediaItems = null;
         if (parentId.contains("YOUTUBE")) {
             loadChannelYoutube(parentId, result);

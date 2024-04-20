@@ -4,21 +4,26 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     tools:context=".ui.youtube.magic90s.Magic90s">
-    <com.yash.ymplayer.ui.custom.PlayerAwareRecyclerView
-        android:id="@+id/listRv"
-        android:clipToPadding="false"
+
+    <com.yash.ymplayer.util.NestedScrollableHost
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        tools:listitem="@layout/item_playlist_banner" />
+        android:layout_height="match_parent">
+        <com.yash.ymplayer.ui.custom.PlayerAwareRecyclerView
+            android:id="@+id/listRv"
+            android:clipToPadding="false"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            tools:listitem="@layout/item_playlist_banner" />
+    </com.yash.ymplayer.util.NestedScrollableHost>
 
     <ProgressBar
-        android:id="@+id/magic90s_progress"
+        android:id="@+id/playlist_progress"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_gravity="center" />
 
     <LinearLayout
-        android:id="@+id/magic90s_error"
+        android:id="@+id/playlist_error"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_gravity="center"

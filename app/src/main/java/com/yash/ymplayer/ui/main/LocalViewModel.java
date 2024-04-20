@@ -24,6 +24,8 @@ public class LocalViewModel extends ViewModel {
     public MutableLiveData<List<MediaBrowserCompat.MediaItem>> allArtists = new MutableLiveData<>();
     public MutableLiveData<List<MediaBrowserCompat.MediaItem>> allPlaylists = new MutableLiveData<>();
 
+
+
     public Map<String, Drawable> songImages = new HashMap<>();
 
     public void refresh(Context context, MediaBrowserCompat mediaBrowser) {

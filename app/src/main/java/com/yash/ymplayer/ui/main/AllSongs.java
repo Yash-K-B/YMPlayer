@@ -23,35 +23,30 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
 import androidx.fragment.app.FragmentActivity;
-import androidx.lifecycle.Observer;
 import androidx.lifecycle.ViewModelProvider;
 import androidx.recyclerview.widget.DividerItemDecoration;
 import androidx.recyclerview.widget.LinearLayoutManager;
 
+import com.yash.logging.LogHelper;
 import com.yash.ymplayer.BaseActivity;
 import com.yash.ymplayer.PlayerService;
 import com.yash.ymplayer.R;
 import com.yash.ymplayer.databinding.FragmentAllSongsBinding;
-import com.yash.ymplayer.util.SongListAdapter;
 import com.yash.ymplayer.util.SongsContextMenuClickListener;
-import com.yash.ymplayer.util.SongsListAdapter;
-
-import java.util.ArrayList;
-import java.util.List;
+import com.yash.ymplayer.util.SongsAdapter;
 
 /**
  * A simple {@link Fragment} subclass.
  */
 public class AllSongs extends Fragment {
-    private static final String TAG = "debug";
+    private static final String TAG = "AllSongs";
     Context context;
     FragmentActivity activity;
     MediaBrowserCompat mMediaBrowser;
     MediaControllerCompat mMediaController;
     LocalViewModel viewModel;
     FragmentAllSongsBinding allSongsBinding;
-    List<MediaBrowserCompat.MediaItem> songs = new ArrayList<>();
-    SongsListAdapter songsAdapter;
+    SongsAdapter songsAdapter;
 
     public AllSongs() {
         // Required empty public constructor
@@ -73,7 +68,7 @@ public class AllSongs extends Fragment {
         mMediaBrowser = new MediaBrowserCompat(context, new ComponentName(context, PlayerService.class), mConnectionCallbacks, null);
         mMediaBrowser.connect();
         viewModel = new ViewModelProvider(activity).get(LocalViewModel.class);
-        allSongsBinding.listRv.setItemViewCacheSize(20);
+        allSongsBinding.listRv.setItemViewCacheSize(10);
         allSongsBinding.listRv.setLayoutManager(new LinearLayoutManager(context));
         allSongsBinding.listRv.addItemDecoration(new DividerItemDecoration(context, DividerItemDecoration.VERTICAL));
 
@@ -90,7 +85,6 @@ public class AllSongs extends Fragment {
     public void onStop() {
         super.onStop();
         Log.d(TAG, "onStop: Allsongs");
-        // mMediaBrowser.disconnect();
     }
 
 
@@ -101,28 +95,25 @@ public class AllSongs extends Fragment {
         mMediaBrowser.disconnect();
     }
 
-    private MediaBrowserCompat.ConnectionCallback mConnectionCallbacks = new MediaBrowserCompat.ConnectionCallback() {
+    private final MediaBrowserCompat.ConnectionCallback mConnectionCallbacks = new MediaBrowserCompat.ConnectionCallback() {
         /**
          * Invoked after {@link MediaBrowser#connect()} when the request has successfully completed.
          */
         @Override
         public void onConnected() {
-            songs.clear();
             mMediaController = new MediaControllerCompat(context, mMediaBrowser.getSessionToken());
             mMediaController.registerCallback(mMediaControllerCallbacks);
-            songsAdapter = new SongsListAdapter(context,launcher, songs, new SongListAdapter.OnItemClickListener() {
-                @Override
-                public void onClick(View v, MediaBrowserCompat.MediaItem song) {
-                    mMediaController.getTransportControls().playFromMediaId(song.getDescription().getMediaId(), null);
-                    Log.d(TAG, "onClick: Extra: null");
-                }
-            }, new SongsContextMenuClickListener(context, mMediaController), SongsListAdapter.MODE.ALL);
+            songsAdapter = new SongsAdapter(context,launcher, (v, song) -> {
+                mMediaController.getTransportControls().playFromMediaId(song.getDescription().getMediaId(), null);
+                Log.d(TAG, "onClick: Extra: null");
+            }, new SongsContextMenuClickListener(context, mMediaController), SongsAdapter.MODE.ALL);
             songsAdapter.setViewModel(viewModel);
             allSongsBinding.listRv.setAdapter(songsAdapter);
             allSongsBinding.allSongsRefresh.setColorSchemeColors(BaseActivity.getAttributeColor(context, R.attr.colorPrimary));
             allSongsBinding.allSongsRefresh.setOnRefreshListener(() -> {
                 allSongsBinding.allSongsRefresh.setRefreshing(true);
                 viewModel.refresh(getContext(), mMediaBrowser);
+                LogHelper.d(TAG, "onConnected: Refresh completed");
             });
             if (viewModel.songs.getValue() == null || viewModel.songs.getValue().isEmpty())
                 viewModel.loadSongs(mMediaBrowser);

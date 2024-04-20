@@ -2,10 +2,12 @@ package com.yash.ymplayer.pool;
 
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
 
 public class ThreadPool {
 
-    private final ExecutorService executorService = Executors.newFixedThreadPool(10);
+    private final ExecutorService executorService = Executors.newFixedThreadPool(2);
+    private final ScheduledExecutorService scheduledExecutorService = Executors.newSingleThreadScheduledExecutor();
     private ThreadPool() {}
 
     private static ThreadPool instance;
@@ -17,6 +19,10 @@ public class ThreadPool {
 
     public ExecutorService getExecutor() {
         return executorService;
+    }
+
+    public ScheduledExecutorService getScheduledExecutor() {
+        return scheduledExecutorService;
     }
 
 

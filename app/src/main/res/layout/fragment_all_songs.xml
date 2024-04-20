@@ -10,12 +10,16 @@
         android:layout_width="match_parent"
         android:layout_height="match_parent">
 
-        <com.yash.ymplayer.ui.custom.PlayerAwareRecyclerView
-            android:id="@+id/listRv"
-            android:clipToPadding="false"
+        <androidx.core.widget.NestedScrollView
             android:layout_width="match_parent"
-            android:layout_height="match_parent"
-            tools:listitem="@layout/item_music" />
+            android:layout_height="match_parent">
+            <com.yash.ymplayer.ui.custom.PlayerAwareRecyclerView
+                android:id="@+id/listRv"
+                android:clipToPadding="false"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                tools:listitem="@layout/item_music" />
+        </androidx.core.widget.NestedScrollView>
     </androidx.swiperefreshlayout.widget.SwipeRefreshLayout>
 
     <ProgressBar

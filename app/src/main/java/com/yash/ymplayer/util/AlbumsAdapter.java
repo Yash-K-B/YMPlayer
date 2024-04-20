@@ -12,6 +12,7 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.appcompat.widget.PopupMenu;
 import androidx.palette.graphics.Palette;
+import androidx.recyclerview.widget.AsyncListDiffer;
 import androidx.recyclerview.widget.DiffUtil;
 import androidx.recyclerview.widget.RecyclerView;
 
@@ -25,16 +26,15 @@ import com.yash.ymplayer.interfaces.AlbumOrArtistContextMenuListener;
 
 import java.util.List;
 
-public class AlbumListAdapter extends RecyclerView.Adapter<AlbumListAdapter.AlbumViewHolder> {
+public class AlbumsAdapter extends RecyclerView.Adapter<AlbumsAdapter.AlbumViewHolder> {
     private static final String TAG = "AlbumListAdapter";
-    private final List<MediaBrowserCompat.MediaItem> albums;
+    private final AsyncListDiffer<MediaBrowserCompat.MediaItem> asyncListDiffer = new AsyncListDiffer<>(this, DiffCallbacks.MEDIAITEM_DIFF_CALLBACK);
     private final OnItemClickListener listener;
     private final Context context;
     AlbumOrArtistContextMenuListener albumOrArtistContextMenuListener;
 
 
-    public AlbumListAdapter(Context context, List<MediaBrowserCompat.MediaItem> songs, OnItemClickListener listener, AlbumOrArtistContextMenuListener albumOrArtistContextMenuListener) {
-        this.albums = songs;
+    public AlbumsAdapter(Context context, OnItemClickListener listener, AlbumOrArtistContextMenuListener albumOrArtistContextMenuListener) {
         this.listener = listener;
         this.context = context;
         this.albumOrArtistContextMenuListener = albumOrArtistContextMenuListener;
@@ -49,12 +49,13 @@ public class AlbumListAdapter extends RecyclerView.Adapter<AlbumListAdapter.Albu
 
     @Override
     public void onBindViewHolder(@NonNull AlbumViewHolder holder, int position) {
-        holder.bindAlbums(albums.get(position), listener);
+        MediaBrowserCompat.MediaItem mediaItem = asyncListDiffer.getCurrentList().get(position);
+        holder.bindAlbums(mediaItem, listener);
     }
 
     @Override
     public int getItemCount() {
-        return albums.size();
+        return asyncListDiffer.getCurrentList().size();
     }
 
     class AlbumViewHolder extends RecyclerView.ViewHolder {
@@ -131,10 +132,7 @@ public class AlbumListAdapter extends RecyclerView.Adapter<AlbumListAdapter.Albu
     }
 
     public void refreshList(List<MediaBrowserCompat.MediaItem> newList) {
-        DiffUtil.DiffResult diffResult = DiffUtil.calculateDiff(new DiffCallback(this.albums, newList));
-        albums.clear();
-        albums.addAll(newList);
-        diffResult.dispatchUpdatesTo(this);
+        asyncListDiffer.submitList(newList);
     }
 
 

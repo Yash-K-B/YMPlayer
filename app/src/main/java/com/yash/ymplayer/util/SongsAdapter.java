@@ -1,11 +1,15 @@
 package com.yash.ymplayer.util;
 
+import static com.yash.ymplayer.util.DiffCallbacks.MEDIAITEM_DIFF_CALLBACK;
+
+import android.annotation.SuppressLint;
 import android.app.AlertDialog;
 import android.content.ContentUris;
 import android.content.Context;
 import android.graphics.drawable.Drawable;
 import android.net.Uri;
 import android.os.Handler;
+import android.os.HandlerThread;
 import android.os.Looper;
 import android.provider.MediaStore;
 import android.support.v4.media.MediaBrowserCompat;
@@ -18,7 +22,7 @@ import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.IntentSenderRequest;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
-import androidx.recyclerview.widget.DiffUtil;
+import androidx.recyclerview.widget.AsyncListDiffer;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.bumptech.glide.Glide;
@@ -27,26 +31,31 @@ import com.bumptech.glide.load.resource.drawable.DrawableTransitionOptions;
 import com.bumptech.glide.request.target.BitmapImageViewTarget;
 import com.bumptech.glide.request.target.CustomTarget;
 import com.bumptech.glide.request.transition.Transition;
+import com.yash.logging.LogHelper;
 import com.yash.ymplayer.R;
-import com.yash.ymplayer.databinding.ItemMusicBinding;
 import com.yash.ymplayer.interfaces.Keys;
-import com.yash.ymplayer.pool.ThreadPool;
+import com.yash.ymplayer.interfaces.SongContextMenuListener;
 import com.yash.ymplayer.repository.Repository;
 import com.yash.ymplayer.ui.main.LocalViewModel;
-import com.yash.ymplayer.interfaces.SongContextMenuListener;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
+import java.util.concurrent.TimeUnit;
 import java.util.regex.Pattern;
 
-public class SongsListAdapter extends RecyclerView.Adapter<SongsListAdapter.ItemViewHolder> {
+public class SongsAdapter extends RecyclerView.Adapter<SongsAdapter.ItemViewHolder> {
     private static final String TAG = "SongsListAdapter";
-    List<MediaBrowserCompat.MediaItem> songs;
-    private final SongListAdapter.OnItemClickListener listener;
+
+    private final AsyncListDiffer<MediaBrowserCompat.MediaItem> asyncListDiffer = new AsyncListDiffer<>(this, MEDIAITEM_DIFF_CALLBACK);
+    private final CategoryAdapter.OnItemClickListener listener;
     private final SongsContextMenuClickListener songContextMenuListener;
     private final int mode;
     Context context;
-    Handler handler = new Handler(Looper.getMainLooper());
+    Handler mainHandler = new Handler(Looper.getMainLooper());
+    HandlerThread handlerThread;
+    Handler handler;
+
     int size;
     Drawable failedDrawable;
     LocalViewModel viewModel;
@@ -54,8 +63,8 @@ public class SongsListAdapter extends RecyclerView.Adapter<SongsListAdapter.Item
     ActivityResultLauncher<IntentSenderRequest> launcher;
 
 
-    public SongsListAdapter(Context context, ActivityResultLauncher<IntentSenderRequest> launcher, List<MediaBrowserCompat.MediaItem> songs, SongListAdapter.OnItemClickListener listener, SongsContextMenuClickListener songContextMenuListener, int mode) {
-        this.songs = songs;
+    @SuppressLint("UseCompatLoadingForDrawables")
+    public SongsAdapter(Context context, ActivityResultLauncher<IntentSenderRequest> launcher, CategoryAdapter.OnItemClickListener listener, SongsContextMenuClickListener songContextMenuListener, int mode) {
         this.launcher = launcher;
         this.listener = listener;
         this.songContextMenuListener = songContextMenuListener;
@@ -64,6 +73,10 @@ public class SongsListAdapter extends RecyclerView.Adapter<SongsListAdapter.Item
         size = (int) (context.getResources().getDisplayMetrics().density * 50);
         failedDrawable = context.getDrawable(R.drawable.album_art_placeholder);
         pattern = Pattern.compile("[0-9]+");
+
+        handlerThread = new HandlerThread("Artwork");
+        handlerThread.start();
+        handler = new Handler(handlerThread.getLooper());
     }
 
     public void setViewModel(LocalViewModel viewModel) {
@@ -74,43 +87,47 @@ public class SongsListAdapter extends RecyclerView.Adapter<SongsListAdapter.Item
     @NonNull
     @Override
     public ItemViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
-        ItemMusicBinding itemMusicBinding = ItemMusicBinding.inflate(LayoutInflater.from(parent.getContext()), parent, false);
+        com.yash.ymplayer.databinding.ItemMusicBinding itemMusicBinding = com.yash.ymplayer.databinding.ItemMusicBinding.inflate(LayoutInflater.from(parent.getContext()), parent, false);
         return new ItemViewHolder(itemMusicBinding);
     }
 
     @Override
     public void onBindViewHolder(@NonNull ItemViewHolder holder, int position) {
-        holder.bindSongs(songs.get(position), listener, songContextMenuListener, mode);
-        //Log.d(TAG, "No of Processors: " + Runtime.getRuntime().availableProcessors());
+        MediaBrowserCompat.MediaItem mediaItem = asyncListDiffer.getCurrentList().get(position);
+        holder.bindSongs(mediaItem, listener, songContextMenuListener, mode);
+    }
+
+
+    @Override
+    public void onViewRecycled(@NonNull ItemViewHolder holder) {
+        holder.cancelLoadArtJob();
     }
 
     public void refreshList(List<MediaBrowserCompat.MediaItem> newList) {
-        DiffUtil.DiffResult diffResult = DiffUtil.calculateDiff(new DiffCallback(this.songs, newList));
-        songs.clear();
-        songs.addAll(newList);
-        diffResult.dispatchUpdatesTo(this);
+        asyncListDiffer.submitList(newList);
     }
 
     @Override
     public int getItemCount() {
-        return songs.size();
+        return asyncListDiffer.getCurrentList().size();
     }
 
     public void playRandom(View v) {
         // Play a random song from songs list
-        int randomIndex = (int) (Math.random() * songs.size());
-        listener.onClick(v, songs.get(randomIndex));
+        int randomIndex = (int) (Math.random() * asyncListDiffer.getCurrentList().size());
+        listener.onClick(v, asyncListDiffer.getCurrentList().get(randomIndex));
     }
 
     class ItemViewHolder extends RecyclerView.ViewHolder {
-        ItemMusicBinding binding;
+        com.yash.ymplayer.databinding.ItemMusicBinding binding;
+        Runnable loadArtJob = null;
 
-        ItemViewHolder(ItemMusicBinding binding) {
+        ItemViewHolder(com.yash.ymplayer.databinding.ItemMusicBinding binding) {
             super(binding.getRoot());
             this.binding = binding;
         }
 
-        void bindSongs(MediaBrowserCompat.MediaItem song, SongListAdapter.OnItemClickListener listener, SongContextMenuListener songContextMenuListener, int mode) {
+        void bindSongs(MediaBrowserCompat.MediaItem song, CategoryAdapter.OnItemClickListener listener, SongContextMenuListener songContextMenuListener, int mode) {
 
             PopupMenu menu = new PopupMenu(context, binding.more);
             switch (mode) {
@@ -164,8 +181,9 @@ public class SongsListAdapter extends RecyclerView.Adapter<SongsListAdapter.Item
                         return true;
                     case R.id.deleteFromStorage:
                         if (songContextMenuListener.deleteFromStorage(song, launcher)) {
-                            songs.remove(getAbsoluteAdapterPosition());
-                            SongsListAdapter.this.notifyItemRemoved(getAbsoluteAdapterPosition());
+                            List<MediaBrowserCompat.MediaItem> items = new ArrayList<>(asyncListDiffer.getCurrentList());
+                            items.remove(song);
+                            refreshList(items);
                         }
                         return true;
                     default:
@@ -179,49 +197,64 @@ public class SongsListAdapter extends RecyclerView.Adapter<SongsListAdapter.Item
             binding.subTitle.setText(song.getDescription().getSubtitle());
             itemView.setOnClickListener(v -> listener.onClick(v, song));
 
-            ThreadPool.getInstance().getExecutor().submit(() -> {
-                if (viewModel.songImages.get(song.getDescription().getMediaId()) == null) {
-                    String[] parts = Objects.requireNonNull(song.getDescription().getMediaId()).split("[/|]");
-                    try {
-                        boolean isEmbeddedArt = pattern.matcher(parts[parts.length - 1]).matches();
-                        Uri artUrl = song.getDescription().getIconUri();
-                        if (isEmbeddedArt)
-                            artUrl = ContentUris.withAppendedId(MediaStore.Audio.Media.EXTERNAL_CONTENT_URI, Long.parseLong(parts[parts.length - 1]));
-                        Glide.with(binding.art).load(isEmbeddedArt ? CommonUtil.getEmbeddedPicture(context, artUrl) : artUrl).transition(DrawableTransitionOptions.withCrossFade()).diskCacheStrategy(DiskCacheStrategy.AUTOMATIC).into(new CustomTarget<Drawable>(size, size) {
-                            @Override
-                            public void onResourceReady(@NonNull Drawable resource, @Nullable Transition<? super Drawable> transition) {
-                                viewModel.songImages.put(song.getDescription().getMediaId(), resource);
-                                handler.post(() -> {
-                                    if(!Objects.requireNonNull(transition).transition(resource, new BitmapImageViewTarget(binding.art))) {
-                                        binding.art.setImageDrawable(resource);
-                                    }
-                                });
-                            }
-
-                            @Override
-                            public void onLoadFailed(@Nullable Drawable errorDrawable) {
-                                handler.post(() -> binding.art.setImageDrawable(failedDrawable));
-                                viewModel.songImages.put(song.getDescription().getMediaId(), failedDrawable);
-                            }
-
-                            @Override
-                            public void onLoadCleared(@Nullable Drawable placeholder) {
-
-                            }
-                        });
-                    } catch (Exception e) {
-                        e.printStackTrace();
-                    }
-                } else {
-                    handler.post(() -> {
-                        binding.art.setImageDrawable(viewModel.songImages.get(song.getDescription().getMediaId()));
-                    });
-                }
-
-            });
-
+            loadArtJob = () -> loadArt(song);
+            LogHelper.d(TAG, "bindSongs: loadArtJob");
+            handler.postDelayed(loadArtJob, TimeUnit.MILLISECONDS.toMillis(300));
         }
+
+        void cancelLoadArtJob() {
+            if (loadArtJob != null) {
+                handler.removeCallbacks(loadArtJob);
+            }
+        }
+
+
+        private void loadArt(MediaBrowserCompat.MediaItem song) {
+                try {
+                    String[] parts = Objects.requireNonNull(song.getDescription().getMediaId()).split("[/|]");
+                    boolean isEmbeddedArt = pattern.matcher(parts[parts.length - 1]).matches();
+                    Uri artUrl = song.getDescription().getIconUri();
+                    if (isEmbeddedArt)
+                        artUrl = ContentUris.withAppendedId(MediaStore.Audio.Media.EXTERNAL_CONTENT_URI, Long.parseLong(parts[parts.length - 1]));
+
+                    Glide.with(binding.art).load(isEmbeddedArt ? CommonUtil.getEmbeddedPictureOrDefault(context, artUrl, failedDrawable) : artUrl).transition(DrawableTransitionOptions.withCrossFade()).diskCacheStrategy(DiskCacheStrategy.AUTOMATIC).into(new CustomTarget<Drawable>(size, size) {
+                        @Override
+                        public void onResourceReady(@NonNull Drawable resource, @Nullable Transition<? super Drawable> transition) {
+                            viewModel.songImages.put(song.getDescription().getMediaId(), resource);
+                            mainHandler.post(() -> {
+                                if(!Objects.requireNonNull(transition).transition(resource, new BitmapImageViewTarget(binding.art))) {
+                                    binding.art.setImageDrawable(resource);
+                                }
+                            });
+                        }
+
+                        @Override
+                        public void onLoadFailed(@Nullable Drawable errorDrawable) {
+                            mainHandler.post(() -> binding.art.setImageDrawable(failedDrawable));
+                            viewModel.songImages.put(song.getDescription().getMediaId(), failedDrawable);
+                        }
+
+                        @Override
+                        public void onLoadCleared(@Nullable Drawable placeholder) {
+
+                        }
+                    });
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+        }
+
+
     }
+
+
+    @Override
+    public void onDetachedFromRecyclerView(@NonNull RecyclerView recyclerView) {
+        handlerThread.interrupt();
+    }
+
+
+
 
     public static class MODE {
         public static final int ALL = 0;

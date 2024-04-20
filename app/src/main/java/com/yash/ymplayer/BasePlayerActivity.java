@@ -255,7 +255,7 @@ public abstract class BasePlayerActivity extends BaseActivity implements Activit
     }
 
 
-    private MediaBrowserCompat.ConnectionCallback connectionCallback = new MediaBrowserCompat.ConnectionCallback() {
+    private final MediaBrowserCompat.ConnectionCallback connectionCallback = new MediaBrowserCompat.ConnectionCallback() {
         @Override
         public void onConnected() {
             LogHelper.d(TAG, "onConnected: MainActivity");

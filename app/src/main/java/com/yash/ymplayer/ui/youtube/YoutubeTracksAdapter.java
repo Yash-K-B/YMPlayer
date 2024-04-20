@@ -18,6 +18,7 @@ import com.yash.ymplayer.util.YoutubeSong;
 
 import java.util.List;
 
+@Deprecated
 public class YoutubeTracksAdapter extends RecyclerView.Adapter<YoutubeTracksAdapter.YouTubeTracksViewHolder> {
     private static final String TAG = "YoutubeTracksAdapter";
     Context context;

@@ -85,6 +85,7 @@ public class YoutubeLibrary extends Fragment {
                 TAB_TITLES = playlistsByCategory.keySet().toArray(new String[0]);
                 YoutubeViewPagerAdapter adapter = new YoutubeViewPagerAdapter(getChildFragmentManager(), getLifecycle(), playlistsByCategory);
                 youtubeLibraryBinding.youtubeViewPager.setAdapter(adapter);
+                youtubeLibraryBinding.youtubeViewPager.canScrollVertically(ViewPager2.ORIENTATION_HORIZONTAL);
                 youtubeLibraryBinding.youtubeViewPager.registerOnPageChangeCallback(viewPagerPageChangeCallback);
                 new TabLayoutMediator(youtubeLibraryBinding.tabs, youtubeLibraryBinding.youtubeViewPager, (tab, position) -> tab.setText(TAB_TITLES[position])).attach();
             }

@@ -41,7 +41,7 @@ import java.util.regex.Pattern;
 
 public class SongsPageListAdapter extends PagingDataAdapter<MediaBrowserCompat.MediaItem, SongsPageListAdapter.ItemViewHolder> {
     private static final String TAG = "SongsListAdapter";
-    private final SongListAdapter.OnItemClickListener listener;
+    private final CategoryAdapter.OnItemClickListener listener;
     private final SongsContextMenuClickListener songContextMenuListener;
     private final int mode;
     Context context;
@@ -53,7 +53,7 @@ public class SongsPageListAdapter extends PagingDataAdapter<MediaBrowserCompat.M
     ActivityResultLauncher<IntentSenderRequest> launcher;
 
 
-    public SongsPageListAdapter(Context context, ActivityResultLauncher<IntentSenderRequest> launcher, SongListAdapter.OnItemClickListener listener, SongsContextMenuClickListener songContextMenuListener, int mode) {
+    public SongsPageListAdapter(Context context, ActivityResultLauncher<IntentSenderRequest> launcher, CategoryAdapter.OnItemClickListener listener, SongsContextMenuClickListener songContextMenuListener, int mode) {
         super(DiffCallback);
         this.launcher = launcher;
         this.listener = listener;
@@ -104,7 +104,7 @@ public class SongsPageListAdapter extends PagingDataAdapter<MediaBrowserCompat.M
             this.binding = binding;
         }
 
-        void bindSongs(MediaBrowserCompat.MediaItem song, SongListAdapter.OnItemClickListener listener, SongContextMenuListener songContextMenuListener, int mode) {
+        void bindSongs(MediaBrowserCompat.MediaItem song, CategoryAdapter.OnItemClickListener listener, SongContextMenuListener songContextMenuListener, int mode) {
 
             PopupMenu menu = new PopupMenu(context, binding.more);
             switch (mode) {

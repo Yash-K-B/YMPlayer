@@ -65,7 +65,7 @@ public class PlaylistsViewer extends Fragment {
         playlistViewerBinding.listRv.setAdapter(adapter);
         playlistViewerBinding.listRv.setLayoutManager(new LinearLayoutManager(context));
         playlistViewerBinding.listRv.addItemDecoration(new DividerItemDecoration(context, DividerItemDecoration.VERTICAL));
-        playlistViewerBinding.magic90sProgress.setVisibility(View.GONE);
-        playlistViewerBinding.magic90sError.setVisibility(View.GONE);
+        playlistViewerBinding.playlistProgress.setVisibility(View.GONE);
+        playlistViewerBinding.playlistError.setVisibility(View.GONE);
     }
 }

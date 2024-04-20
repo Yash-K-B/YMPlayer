@@ -137,6 +137,8 @@ public class SearchActivity extends BasePlayerActivity {
                     return true;
                 }
 
+                searchBinding.noResult.setVisibility(View.GONE);
+
 
                 handler.post(new RunnableWithParams(query) {
                     @Override
@@ -170,6 +172,10 @@ public class SearchActivity extends BasePlayerActivity {
                                     LogHelper.d(TAG, "run: update filtered list size - %s", filteredModelList.size());
                                     searchBinding.noResult.setVisibility(filteredModelList.isEmpty() ? View.VISIBLE : View.INVISIBLE);
                                     searchResultAdapter.updateList(filteredModelList);
+
+                                    if(filteredModelList.isEmpty()) {
+                                        searchBinding.noResult.setVisibility(View.VISIBLE);
+                                    }
                                 });
                             }
                         });

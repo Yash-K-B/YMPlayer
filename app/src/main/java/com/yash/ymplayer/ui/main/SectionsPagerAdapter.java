@@ -8,6 +8,7 @@ import androidx.viewpager2.adapter.FragmentStateAdapter;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Objects;
 
 /**
  * A [FragmentPagerAdapter] that returns a fragment corresponding to
@@ -34,7 +35,7 @@ public class SectionsPagerAdapter extends FragmentStateAdapter {
     public Fragment createFragment(int position) {
 
         if(fragmentMap.containsKey(position))
-            return fragmentMap.get(position);
+            return Objects.requireNonNull(fragmentMap.get(position));
 
         Fragment fragmentInstance = createFragmentInstance(position);
         fragmentMap.put(position, fragmentInstance);

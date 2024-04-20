@@ -25,7 +25,6 @@ import com.yash.ymplayer.ui.youtube.adapters.LoadStateFooterAdapter;
 import com.yash.ymplayer.ui.youtube.livepage.YoutubePagedListAdapter;
 import com.yash.ymplayer.interfaces.Keys;
 import com.yash.ymplayer.util.KotlinConverterUtil;
-import com.yash.ymplayer.util.SongsListAdapter;
 import com.yash.ymplayer.util.TrackContextMenuClickListener;
 
 import java.util.List;

@@ -110,12 +110,12 @@ public class YoutubePagedListAdapter extends PagingDataAdapter<YoutubeSong, Yout
     private static final DiffUtil.ItemCallback<YoutubeSong> DiffCallback = new DiffUtil.ItemCallback<YoutubeSong>() {
         @Override
         public boolean areItemsTheSame(@NonNull YoutubeSong oldItem, @NonNull YoutubeSong newItem) {
-            return oldItem == newItem;
+            return oldItem.getVideoId().equals(newItem.getVideoId());
         }
 
         @Override
         public boolean areContentsTheSame(@NonNull YoutubeSong oldItem, @NonNull YoutubeSong newItem) {
-            return oldItem.getVideoId().equals(newItem.getVideoId());
+            return oldItem.getVideoId().equals(newItem.getVideoId()) && oldItem.getDurationMillis() == newItem.getDurationMillis();
         }
     };
 }

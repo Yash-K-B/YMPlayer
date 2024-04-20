@@ -7,6 +7,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.os.Bundle;
 import android.provider.MediaStore;
+import android.support.v4.media.session.MediaControllerCompat;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.Menu;
@@ -31,11 +32,14 @@ import com.yash.ymplayer.databinding.CreatePlaylistBinding;
 import com.yash.ymplayer.databinding.FragmentLocalSongsBinding;
 import com.yash.ymplayer.interfaces.EmbeddedListener;
 import com.yash.ymplayer.repository.Repository;
+import com.yash.ymplayer.ui.custom.ConnectionAwareFragment;
+
+import java.util.Objects;
 
 /**
  * A simple {@link Fragment} subclass.
  */
-public class LocalSongs extends Fragment {
+public class LocalSongs extends ConnectionAwareFragment {
     private static final String[] TAB_TITLES = new String[]{"All Songs", "Albums", "Artists", "Playlist"};
     private static final String TAG = "debug";
     FragmentLocalSongsBinding binding;
@@ -62,15 +66,14 @@ public class LocalSongs extends Fragment {
         context = requireContext();
         activity = requireActivity();
         ((ActivityActionProvider) activity).setCustomToolbar(binding.toolbar, "Local Library");
+    }
+
+    @Override
+    public void onConnected(MediaControllerCompat mediaController) {
         SectionsPagerAdapter sectionsPagerAdapter = new SectionsPagerAdapter(getChildFragmentManager(), activity.getLifecycle());
         binding.floatingActionButton.hide();
         binding.viewPager.setAdapter(sectionsPagerAdapter);
-        new TabLayoutMediator(binding.tabs, binding.viewPager, new TabLayoutMediator.TabConfigurationStrategy() {
-            @Override
-            public void onConfigureTab(@NonNull TabLayout.Tab tab, int position) {
-                tab.setText(TAB_TITLES[position]);
-            }
-        }).attach();
+        new TabLayoutMediator(binding.tabs, binding.viewPager, (tab, position) -> tab.setText(TAB_TITLES[position])).attach();
         binding.viewPager.registerOnPageChangeCallback(viewPagerPageChangeCallback);
         binding.viewPager.setOffscreenPageLimit(1);
     }
@@ -105,7 +108,7 @@ public class LocalSongs extends Fragment {
         Log.d(TAG, "onOptionsItemSelected: LocalSongs");
         if (item.getItemId() == R.id.search) {
             startActivity(new Intent(getContext(), SearchActivity.class));
-            getActivity().overridePendingTransition(android.R.anim.fade_in, android.R.anim.fade_out);
+            requireActivity().overridePendingTransition(android.R.anim.fade_in, android.R.anim.fade_out);
         }
         return super.onOptionsItemSelected(item);
     }

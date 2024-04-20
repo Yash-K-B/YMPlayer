@@ -166,6 +166,7 @@ public class DownloadTask extends Thread {
 
             PendingIntent dFilePendingIntent = getPendingIntentByAction(Action.PAUSE);
             notificationBuilder = new NotificationCompat.Builder(context, Keys.Notification.CHANNEL_ID)
+                    .setPriority(NotificationCompat.PRIORITY_DEFAULT)
                     .setSmallIcon(R.drawable.ic_cloud_download)
                     .setColor(Color.BLUE)
                     .setContentTitle(videoDetails.getVideoData().getTitle())
@@ -178,8 +179,8 @@ public class DownloadTask extends Thread {
             int index = getIndex(bitrate, audioStreams);
             String url = audioStreams.get(index).getUrl();
             LogHelper.d(TAG, "Downloading file using url : %s", url);
-            if(!url.contains("ratebypass"))
-                url = url + "&ratebypass=yes";
+//            if(!url.contains("ratebypass"))
+//                url = url + "&ratebypass=yes";
             Uri httpUri = Uri.parse(url);
             String format = httpUri.getQueryParameter("mime") != null? httpUri.getQueryParameter("mime").split("/")[1]: "aac";
             int fileLength = Integer.parseInt(httpUri.getQueryParameter("clen"));

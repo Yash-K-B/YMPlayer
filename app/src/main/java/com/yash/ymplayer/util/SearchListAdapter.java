@@ -1,5 +1,6 @@
 package com.yash.ymplayer.util;
 
+import android.annotation.SuppressLint;
 import android.content.ContentUris;
 import android.content.Context;
 import android.graphics.drawable.BitmapDrawable;
@@ -15,6 +16,7 @@ import android.view.ViewGroup;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.palette.graphics.Palette;
+import androidx.recyclerview.widget.AsyncListDiffer;
 import androidx.recyclerview.widget.DiffUtil;
 import androidx.recyclerview.widget.RecyclerView;
 import androidx.recyclerview.widget.StaggeredGridLayoutManager;
@@ -33,13 +35,14 @@ import com.yash.ymplayer.interfaces.Keys;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 public class SearchListAdapter extends RecyclerView.Adapter<SearchListAdapter.SongViewHolder> {
     private static final String TAG = "SearchListAdapter";
 
-    List<MediaBrowserCompat.MediaItem> songs;
+    private final AsyncListDiffer<MediaBrowserCompat.MediaItem> asyncListDiffer = new AsyncListDiffer<>(this, DiffCallbacks.MEDIAITEM_DIFF_CALLBACK);
     private final OnItemClickListener listener;
     private final Context context;
     ExecutorService executor;
@@ -47,7 +50,6 @@ public class SearchListAdapter extends RecyclerView.Adapter<SearchListAdapter.So
     int listPos;
 
     public SearchListAdapter(Context context, OnItemClickListener listener) {
-        this.songs = new ArrayList<>();
         this.listener = listener;
         this.context = context;
         this.executor = Executors.newFixedThreadPool(2);
@@ -81,34 +83,30 @@ public class SearchListAdapter extends RecyclerView.Adapter<SearchListAdapter.So
     public void onBindViewHolder(@NonNull SongViewHolder holder, int position) {
         int type = getItemViewType(position);
         LogHelper.d(TAG, "onBindViewHolder: " + type);
+        MediaBrowserCompat.MediaItem mediaItem = asyncListDiffer.getCurrentList().get(holder.getAbsoluteAdapterPosition());
         if (type == ItemType.SONGS)
-            ((ItemViewHolder) holder).bindSongs(songs.get(holder.getAbsoluteAdapterPosition()), listener);
+            ((ItemViewHolder) holder).bindSongs(mediaItem, listener);
         else if (type == ItemType.ALBUMS)
-            ((AlbumViewHolder) holder).bindAlbums(songs.get(holder.getAbsoluteAdapterPosition()), listener);
+            ((AlbumViewHolder) holder).bindAlbums(mediaItem, listener);
         else if (type == ItemType.ARTISTS)
-            ((ItemViewHolder) holder).bindArtists(songs.get(holder.getAbsoluteAdapterPosition()), listener);
+            ((ItemViewHolder) holder).bindArtists(mediaItem, listener);
         else if (type == ItemType.HEADING)
-            ((HeadingViewHolder) holder).bindHeading(songs.get(holder.getAbsoluteAdapterPosition()), listener);
-
+            ((HeadingViewHolder) holder).bindHeading(mediaItem, listener);
 
     }
 
 
     @Override
     public int getItemCount() {
-        LogHelper.d(TAG, "getItemCount: " + songs.size());
-        return songs.size();
+        LogHelper.d(TAG, "getItemCount: " + asyncListDiffer.getCurrentList().size());
+        return asyncListDiffer.getCurrentList().size();
     }
 
     @Override
     public int getItemViewType(int position) {
-        int anInt = songs.get(position).getDescription().getExtras().getInt(Keys.EXTRA_TYPE);
+        int anInt = Objects.requireNonNull(asyncListDiffer.getCurrentList().get(position).getDescription().getExtras()).getInt(Keys.EXTRA_TYPE);
         LogHelper.d(TAG, "getItemViewType: " + anInt);
         return anInt;
-    }
-
-    public void setModels(List<MediaBrowserCompat.MediaItem> models) {
-        songs = new ArrayList<>(models);
     }
 
 
@@ -119,7 +117,7 @@ public class SearchListAdapter extends RecyclerView.Adapter<SearchListAdapter.So
 
     }
 
-    class PlayingQueueViewHolder extends SongViewHolder {
+    static class PlayingQueueViewHolder extends SongViewHolder {
         ItemPlayingQueueBinding binding;
 
         public PlayingQueueViewHolder(ItemPlayingQueueBinding binding) {
@@ -127,7 +125,7 @@ public class SearchListAdapter extends RecyclerView.Adapter<SearchListAdapter.So
             this.binding = binding;
         }
 
-        void bindQueueItem(MediaBrowserCompat.MediaItem song, com.yash.ymplayer.util.SongListAdapter.OnItemClickListener listener) {
+        void bindQueueItem(MediaBrowserCompat.MediaItem song, CategoryAdapter.OnItemClickListener listener) {
             binding.trackName.setText(song.getDescription().getTitle());
             binding.trackName.setOnClickListener(new View.OnClickListener() {
                 @Override
@@ -174,6 +172,7 @@ public class SearchListAdapter extends RecyclerView.Adapter<SearchListAdapter.So
 
                         @Override
                         public void onLoadFailed(@Nullable Drawable errorDrawable) {
+                            @SuppressLint("UseCompatLoadingForDrawables")
                             Drawable drawable = context.getResources().getDrawable(R.drawable.album_art_placeholder, context.getTheme());
                             handler.post(() -> binding.albumArt.setImageDrawable(drawable));
                             Palette.from(((BitmapDrawable) drawable).getBitmap())
@@ -213,7 +212,7 @@ public class SearchListAdapter extends RecyclerView.Adapter<SearchListAdapter.So
         }
     }
 
-    class ItemViewHolder extends SongViewHolder {
+    static class ItemViewHolder extends SongViewHolder {
         ItemSearchSongBinding binding;
 
         public ItemViewHolder(ItemSearchSongBinding binding) {
@@ -253,7 +252,7 @@ public class SearchListAdapter extends RecyclerView.Adapter<SearchListAdapter.So
     }
 
 
-    class HeadingViewHolder extends SongViewHolder {
+    static class HeadingViewHolder extends SongViewHolder {
         ItemSearchHeaderBinding binding;
 
         public HeadingViewHolder(ItemSearchHeaderBinding binding) {
@@ -267,62 +266,7 @@ public class SearchListAdapter extends RecyclerView.Adapter<SearchListAdapter.So
     }
 
     public void updateList(List<MediaBrowserCompat.MediaItem> newList) {
-        DiffUtil.DiffResult diffResult = DiffUtil.calculateDiff(new DiffCallback(this.songs, newList));
-        this.songs.clear();
-        this.songs.addAll(newList);
-        diffResult.dispatchUpdatesTo(this);
-
-    }
-
-
-    public void animateTo(List<MediaBrowserCompat.MediaItem> models) {
-        applyAndAnimateRemovals(models);
-        applyAndAnimateAdditions(models);
-        applyAndAnimateMovedItems(models);
-    }
-
-    private void applyAndAnimateRemovals(List<MediaBrowserCompat.MediaItem> newModels) {
-        for (int i = songs.size() - 1; i >= 0; i--) {
-            final MediaBrowserCompat.MediaItem model = songs.get(i);
-            if (!newModels.contains(model)) {
-                removeItem(i);
-            }
-        }
-    }
-
-    private void applyAndAnimateAdditions(List<MediaBrowserCompat.MediaItem> newModels) {
-        for (int i = 0, count = newModels.size(); i < count; i++) {
-            final MediaBrowserCompat.MediaItem model = newModels.get(i);
-            if (!songs.contains(model)) {
-                addItem(i, model);
-            }
-        }
-    }
-
-    private void applyAndAnimateMovedItems(List<MediaBrowserCompat.MediaItem> newModels) {
-        for (int toPosition = newModels.size() - 1; toPosition >= 0; toPosition--) {
-            final MediaBrowserCompat.MediaItem model = newModels.get(toPosition);
-            final int fromPosition = songs.indexOf(model);
-            if (fromPosition >= 0 && fromPosition != toPosition) {
-                moveItem(fromPosition, toPosition);
-            }
-        }
-    }
-
-    public void removeItem(int position) {
-        songs.remove(position);
-        notifyItemRemoved(position);
-    }
-
-    public void addItem(int position, MediaBrowserCompat.MediaItem model) {
-        songs.add(position, model);
-        notifyItemInserted(position);
-    }
-
-    public void moveItem(int fromPosition, int toPosition) {
-        final MediaBrowserCompat.MediaItem model = songs.remove(fromPosition);
-        songs.add(toPosition, model);
-        notifyItemMoved(fromPosition, toPosition);
+        asyncListDiffer.submitList(newList);
     }
 
     public interface OnItemClickListener {

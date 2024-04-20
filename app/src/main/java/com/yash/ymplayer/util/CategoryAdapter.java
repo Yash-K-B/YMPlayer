@@ -21,6 +21,7 @@ import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.recyclerview.widget.AsyncListDiffer;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.bumptech.glide.Glide;
@@ -43,11 +44,12 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadPoolExecutor;
 
 import static com.yash.ymplayer.interfaces.AlbumOrArtistContextMenuListener.*;
+import static com.yash.ymplayer.util.DiffCallbacks.MEDIAITEM_DIFF_CALLBACK;
 
-public class SongListAdapter extends RecyclerView.Adapter<SongListAdapter.SongViewHolder> {
+public class CategoryAdapter extends RecyclerView.Adapter<CategoryAdapter.SongViewHolder> {
     private static final String TAG = "debug";
 
-    List<MediaBrowserCompat.MediaItem> songs;
+    private final AsyncListDiffer<MediaBrowserCompat.MediaItem> asyncListDiffer = new AsyncListDiffer<>(this, MEDIAITEM_DIFF_CALLBACK);
     List<MediaBrowserCompat.MediaItem> allSongs = new ArrayList<>();
     private OnItemClickListener listener;
     private Mode mode;
@@ -56,8 +58,7 @@ public class SongListAdapter extends RecyclerView.Adapter<SongListAdapter.SongVi
     private final Handler handler = new Handler(Looper.getMainLooper());
     AlbumOrArtistContextMenuListener albumOrArtistContextMenuListener;
 
-    public SongListAdapter(Context context, List<MediaBrowserCompat.MediaItem> songs, OnItemClickListener listener, AlbumOrArtistContextMenuListener albumOrArtistContextMenuListener, Mode mode) {
-        this.songs = songs;
+    public CategoryAdapter(Context context, OnItemClickListener listener, AlbumOrArtistContextMenuListener albumOrArtistContextMenuListener, Mode mode) {
         this.listener = listener;
         this.mode = mode;
         this.context = context;
@@ -82,14 +83,15 @@ public class SongListAdapter extends RecyclerView.Adapter<SongListAdapter.SongVi
 
     @Override
     public void onBindViewHolder(@NonNull SongViewHolder holder, int position) {
+        MediaBrowserCompat.MediaItem mediaItem = asyncListDiffer.getCurrentList().get(position);
         if (mode == Mode.ALBUM)
-            ((ItemViewHolder) holder).bindSongs(songs.get(position), listener);
+            ((ItemViewHolder) holder).bindSongs(mediaItem, listener);
         else if (mode == Mode.ARTIST)
-            ((ItemViewHolder) holder).bindArtists(songs.get(position), listener, albumOrArtistContextMenuListener);
+            ((ItemViewHolder) holder).bindArtists(mediaItem, listener, albumOrArtistContextMenuListener);
         else if (mode == Mode.PLAYLIST)
-            ((PlaylistViewHolder) holder).bindPlaylist(songs.get(position), listener);
+            ((PlaylistViewHolder) holder).bindPlaylist(mediaItem, listener);
         else
-            ((PlayingQueueViewHolder) holder).bindQueueItem(songs.get(position), listener);
+            ((PlayingQueueViewHolder) holder).bindQueueItem(mediaItem, listener);
 
 
     }
@@ -101,7 +103,7 @@ public class SongListAdapter extends RecyclerView.Adapter<SongListAdapter.SongVi
 
     @Override
     public int getItemCount() {
-        return songs.size();
+        return asyncListDiffer.getCurrentList().size();
     }
 
     static class SongViewHolder extends RecyclerView.ViewHolder {
@@ -171,8 +173,8 @@ public class SongListAdapter extends RecyclerView.Adapter<SongListAdapter.SongVi
                                             Uri uri = MediaStore.Audio.Playlists.EXTERNAL_CONTENT_URI;
                                             resolver.update(uri, values, where, new String[]{CommonUtil.extractId(song.getMediaId())});
                                         }
-                                        simulateRenamePlaylist(newName, getAdapterPosition());
-                                        notifyItemChanged(getAdapterPosition());
+                                        simulateRenamePlaylist(newName, getAbsoluteAdapterPosition());
+                                        notifyItemChanged(getAbsoluteAdapterPosition());
                                     })
                                     .setNegativeButton("CANCEL", (dialog, which) -> {
                                         dialog.dismiss();
@@ -186,8 +188,9 @@ public class SongListAdapter extends RecyclerView.Adapter<SongListAdapter.SongVi
                             } else {
                                 resolver.delete(MediaStore.Audio.Playlists.EXTERNAL_CONTENT_URI, where, new String[]{CommonUtil.extractId(song.getMediaId())});
                             }
-                            songs.remove(getAbsoluteAdapterPosition());
-                            notifyItemRemoved(getAbsoluteAdapterPosition());
+                            List<MediaBrowserCompat.MediaItem> items = new ArrayList<>(asyncListDiffer.getCurrentList());
+                            items.remove(getAbsoluteAdapterPosition());
+                            asyncListDiffer.submitList(items);
                             Toast.makeText(context, "Playlist " + song.getDescription().getTitle() + " has been deleted successfully", Toast.LENGTH_SHORT).show();
                             return true;
                         default:
@@ -211,13 +214,15 @@ public class SongListAdapter extends RecyclerView.Adapter<SongListAdapter.SongVi
     }
 
     private void simulateRenamePlaylist(String newName, int adapterPosition) {
-        MediaBrowserCompat.MediaItem mediaItem = songs.get(adapterPosition);
+        List<MediaBrowserCompat.MediaItem> items = new ArrayList<>(asyncListDiffer.getCurrentList());
+        MediaBrowserCompat.MediaItem mediaItem = items.get(adapterPosition);
         MediaBrowserCompat.MediaItem song = new MediaBrowserCompat.MediaItem(new MediaDescriptionCompat.Builder()
                 .setMediaId(mediaItem.getMediaId())
                 .setTitle(newName)
                 .build(),
                 MediaBrowserCompat.MediaItem.FLAG_BROWSABLE);
-        songs.set(adapterPosition, song);
+        items.set(adapterPosition, song);
+        asyncListDiffer.submitList(items);
     }
 
     class ItemViewHolder extends SongViewHolder {
@@ -293,9 +298,8 @@ public class SongListAdapter extends RecyclerView.Adapter<SongListAdapter.SongVi
         }
     }
 
-    public void refreshList() {
-        allSongs.clear();
-        allSongs.addAll(songs);
+    public void refreshList(List<MediaBrowserCompat.MediaItem> songs) {
+        asyncListDiffer.submitList(songs);
     }
 
 

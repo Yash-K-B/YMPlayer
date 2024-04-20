@@ -3,21 +3,22 @@ package com.yash.ymplayer.util;
 import android.content.ContentUris;
 import android.content.Context;
 import android.content.Intent;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
+import android.graphics.drawable.BitmapDrawable;
+import android.graphics.drawable.Drawable;
 import android.media.MediaMetadataRetriever;
 import android.net.Uri;
 import android.provider.MediaStore;
 import android.view.View;
 import android.widget.PopupMenu;
 
-import com.google.common.hash.HashCode;
-import com.yash.logging.LogHelper;
 import com.yash.ymplayer.download.manager.DownloadService;
 import com.yash.ymplayer.R;
 import com.yash.ymplayer.constant.Constants;
 import com.yash.ymplayer.interfaces.Keys;
 import com.yash.ymplayer.interfaces.MediaIDProvider;
 
-import java.io.IOException;
 import java.util.regex.Pattern;
 
 public class CommonUtil {
@@ -114,19 +115,20 @@ public class CommonUtil {
         };
     }
 
-    public static byte[] getEmbeddedPicture(Context context, String uri) {
+    private static final MediaMetadataRetriever retriever = new MediaMetadataRetriever();
+
+    public static Bitmap getEmbeddedPicture(Context context, String uri) {
         return getEmbeddedPicture(context, Uri.parse(uri));
     }
+    public static Bitmap getEmbeddedPicture(Context context, Uri uri) {
+        retriever.setDataSource(context, uri);
+        byte[] embeddedPicture = retriever.getEmbeddedPicture();
+        embeddedPicture = embeddedPicture == null ? new byte[]{} : embeddedPicture;
+        return BitmapFactory.decodeByteArray(embeddedPicture, 0, embeddedPicture.length);
+    }
 
-    public static byte[] getEmbeddedPicture(Context context, Uri uri) {
-        try {
-            MediaMetadataRetriever retriever = new MediaMetadataRetriever();
-            retriever.setDataSource(context, uri);
-            byte[] embeddedPicture = retriever.getEmbeddedPicture();
-            retriever.close();
-            return embeddedPicture;
-        } catch (IOException e) {
-            throw new RuntimeException("Album art not found");
-        }
+    public static Bitmap getEmbeddedPictureOrDefault(Context context, Uri uri, Drawable defaultPicture) {
+        Bitmap embeddedPicture = getEmbeddedPicture(context, uri);
+        return embeddedPicture != null? embeddedPicture: ((BitmapDrawable) defaultPicture).getBitmap();
     }
 }

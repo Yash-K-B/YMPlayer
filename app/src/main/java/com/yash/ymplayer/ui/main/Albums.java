@@ -25,7 +25,7 @@ import com.yash.ymplayer.ListExpandActivity;
 import com.yash.ymplayer.PlayerService;
 import com.yash.ymplayer.R;
 import com.yash.ymplayer.databinding.FragmentAlbumsBinding;
-import com.yash.ymplayer.util.AlbumListAdapter;
+import com.yash.ymplayer.util.AlbumsAdapter;
 import com.yash.ymplayer.util.AlbumOrArtistContextMenuClickListener;
 import com.yash.ymplayer.interfaces.Keys;
 import com.yash.ymplayer.util.MarginItemDecoration;
@@ -43,7 +43,7 @@ public class Albums extends Fragment {
     LocalViewModel viewModel;
     FragmentAlbumsBinding albumsBinding;
     List<MediaBrowserCompat.MediaItem> songs = new ArrayList<>();
-    AlbumListAdapter albumsAdapter;
+    AlbumsAdapter albumsAdapter;
     private static Albums instance;
     Context context;
     FragmentActivity activity;
@@ -98,7 +98,7 @@ public class Albums extends Fragment {
         public void onConnected() {
             viewModel = new ViewModelProvider(activity).get(LocalViewModel.class);
             mMediaController = new MediaControllerCompat(getContext(), mMediaBrowser.getSessionToken());
-            albumsAdapter = new AlbumListAdapter(context, songs, (song) -> {
+            albumsAdapter = new AlbumsAdapter(context, (song) -> {
                 if (song.isBrowsable()) {
                     Intent intent = new Intent(getActivity(), ListExpandActivity.class);
                     intent.putExtra(Keys.EXTRA_PARENT_ID, song.getMediaId());

@@ -51,6 +51,8 @@ public class FFMpegUtil {
 
         addCodec(audioFile, commands);
 
+        addTreads(commands);
+
         addCommandsForMetadata(audioFile, commands);
 
         commands.add(String.format("\"%s\"", audioFile.getOutputFile()));
@@ -77,12 +79,15 @@ public class FFMpegUtil {
             commands.add("-c:a aac");
     }
 
+    private static void addTreads(List<String> commands) {
+        commands.add("-threads 0");
+    }
+
     private static void addCommandsForMetadata(AudioFile audioFile, List<String> commands) {
         if (audioFile.getAudioMetadata() != null) {
             AudioMetadata audioMetadata = audioFile.getAudioMetadata();
             if (StringUtil.hasText(audioMetadata.getAlbumArt())) {
-                commands.add("-map_metadata 0 -map 0:0 -map 1:0");
-                commands.add("-c:v copy");
+                commands.add("-map 0:0 -map 1:0");
                 commands.add("-metadata:s:v title=\"Album cover\" -metadata:s:v comment=\"Cover (front)\" ");
                 commands.add("-id3v2_version 3");
             }

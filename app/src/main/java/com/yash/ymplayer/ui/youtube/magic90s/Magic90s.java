@@ -71,21 +71,21 @@ public class Magic90s extends Fragment {
         viewModel.get90sMagic().observe(getViewLifecycleOwner(), new Observer<List<PopularPlaylist>>() {
             @Override
             public void onChanged(List<PopularPlaylist> playlists) {
-                magic90sBinding.magic90sProgress.setVisibility(View.GONE);
+                magic90sBinding.playlistProgress.setVisibility(View.GONE);
                 if (playlists == null) {
                     LogHelper.d(TAG, "onChanged: Error");
-                    magic90sBinding.magic90sError.setVisibility(View.VISIBLE);
+                    magic90sBinding.playlistError.setVisibility(View.VISIBLE);
                     return;
                 }
-                magic90sBinding.magic90sError.setVisibility(View.GONE);
+                magic90sBinding.playlistError.setVisibility(View.GONE);
                 Magic90s.this.playlists.clear();
                 Magic90s.this.playlists.addAll(playlists);
                 adapter.notifyDataSetChanged();
             }
         });
         magic90sBinding.btnRetry.setOnClickListener(v -> {
-            magic90sBinding.magic90sProgress.setVisibility(View.VISIBLE);
-            magic90sBinding.magic90sError.setVisibility(View.GONE);
+            magic90sBinding.playlistProgress.setVisibility(View.VISIBLE);
+            magic90sBinding.playlistError.setVisibility(View.GONE);
             viewModel.refresh90sMagic();
         });
     }

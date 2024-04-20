@@ -301,10 +301,10 @@ public class MainActivity extends BaseActivity implements ActivityActionProvider
         });
 
         if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            if (checkSelfPermission(Manifest.permission.READ_MEDIA_AUDIO) == PackageManager.PERMISSION_GRANTED && checkSelfPermission(Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED) {
+            if (checkSelfPermission(Manifest.permission.READ_MEDIA_AUDIO) == PackageManager.PERMISSION_GRANTED && checkSelfPermission(Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED && checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) == PackageManager.PERMISSION_GRANTED) {
                 transactCurrentFragment();
             } else {
-                requestPermissions(new String[]{Manifest.permission.READ_MEDIA_AUDIO, Manifest.permission.RECORD_AUDIO}, 100);
+                requestPermissions(new String[]{Manifest.permission.READ_MEDIA_AUDIO, Manifest.permission.RECORD_AUDIO, Manifest.permission.POST_NOTIFICATIONS}, 100);
             }
         } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
             if (checkSelfPermission(Manifest.permission.WRITE_EXTERNAL_STORAGE) == PackageManager.PERMISSION_GRANTED && checkSelfPermission(Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED) {
@@ -492,7 +492,7 @@ public class MainActivity extends BaseActivity implements ActivityActionProvider
     private void changeFragment(int containerId, Fragment fragment, String tag) {
 
         Fragment savedFragment = getSupportFragmentManager().findFragmentByTag(tag);
-        getSupportFragmentManager().beginTransaction().setTransition(FragmentTransaction.TRANSIT_FRAGMENT_FADE).replace(containerId, savedFragment == null ? fragment: savedFragment, tag).addToBackStack(null).commit();
+        getSupportFragmentManager().beginTransaction().setTransition(FragmentTransaction.TRANSIT_FRAGMENT_OPEN).replace(containerId, savedFragment == null ? fragment: savedFragment, tag).addToBackStack(null).commit();
     }
 
     @Override
@@ -837,7 +837,7 @@ public class MainActivity extends BaseActivity implements ActivityActionProvider
 
         } else {
             if (dblClick)
-                super.onBackPressed();
+                super.finish();
             else {
                 dblClick = true;
                 Toast.makeText(MainActivity.this, "Press again to exit", Toast.LENGTH_SHORT).show();
