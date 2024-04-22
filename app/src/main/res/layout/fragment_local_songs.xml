@@ -44,6 +44,12 @@
             android:clipToPadding="false"
             app:layout_behavior="@string/appbar_scrolling_view_behavior" />
 
+        <ProgressBar
+            android:id="@+id/progressBar"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center"/>
+
         <com.google.android.material.floatingactionbutton.FloatingActionButton
             android:id="@+id/floatingActionButton"
             android:layout_width="wrap_content"

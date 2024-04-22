@@ -18,7 +18,8 @@ import com.yash.ymplayer.PlayerService;
 
 public abstract class ConnectionAwareFragment extends Fragment {
 
-    private MediaBrowserCompat mMediaBrowser;
+    private MediaBrowserCompat mediaBrowserCompat;
+    private MediaControllerCompat mediaControllerCompat;
     private Context context;
 
     public ConnectionAwareFragment() {
@@ -28,8 +29,8 @@ public abstract class ConnectionAwareFragment extends Fragment {
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
         context = requireContext();
-        mMediaBrowser = new MediaBrowserCompat(context, new ComponentName(context, PlayerService.class), mConnectionCallbacks, null);
-        mMediaBrowser.connect();
+        mediaBrowserCompat = new MediaBrowserCompat(context, new ComponentName(context, PlayerService.class), mConnectionCallbacks, null);
+        mediaBrowserCompat.connect();
     }
 
     public abstract void onConnected(MediaControllerCompat mediaController);
@@ -41,11 +42,15 @@ public abstract class ConnectionAwareFragment extends Fragment {
          */
         @Override
         public void onConnected() {
-            MediaControllerCompat mMediaController = new MediaControllerCompat(context, mMediaBrowser.getSessionToken());
-            mMediaController.registerCallback(mMediaControllerCallbacks);
-            ConnectionAwareFragment.this.onConnected(mMediaController);
+            mediaControllerCompat = new MediaControllerCompat(context, mediaBrowserCompat.getSessionToken());
+            mediaControllerCompat.registerCallback(mMediaControllerCallbacks);
+            ConnectionAwareFragment.this.onConnected(mediaControllerCompat);
         }
     };
+
+    public MediaControllerCompat getMediaController() {
+        return mediaControllerCompat;
+    }
 
     public MediaControllerCompat.Callback mMediaControllerCallbacks = new MediaControllerCompat.Callback() {
         @Override
@@ -63,4 +68,8 @@ public abstract class ConnectionAwareFragment extends Fragment {
             super.onAudioInfoChanged(info);
         }
     };
+
+    public MediaBrowserCompat getMediaBrowser() {
+        return mediaBrowserCompat;
+    }
 }

@@ -6,6 +6,8 @@ import android.content.ContentValues;
 import android.content.Context;
 import android.content.Intent;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Looper;
 import android.provider.MediaStore;
 import android.support.v4.media.session.MediaControllerCompat;
 import android.util.Log;
@@ -66,16 +68,21 @@ public class LocalSongs extends ConnectionAwareFragment {
         context = requireContext();
         activity = requireActivity();
         ((ActivityActionProvider) activity).setCustomToolbar(binding.toolbar, "Local Library");
+        binding.floatingActionButton.hide();
     }
 
     @Override
     public void onConnected(MediaControllerCompat mediaController) {
         SectionsPagerAdapter sectionsPagerAdapter = new SectionsPagerAdapter(getChildFragmentManager(), activity.getLifecycle());
-        binding.floatingActionButton.hide();
-        binding.viewPager.setAdapter(sectionsPagerAdapter);
-        new TabLayoutMediator(binding.tabs, binding.viewPager, (tab, position) -> tab.setText(TAB_TITLES[position])).attach();
-        binding.viewPager.registerOnPageChangeCallback(viewPagerPageChangeCallback);
-        binding.viewPager.setOffscreenPageLimit(1);
+        Handler handler = new Handler(Looper.getMainLooper());
+        handler.postDelayed(() -> {
+            binding.viewPager.setAdapter(sectionsPagerAdapter);
+            new TabLayoutMediator(binding.tabs, binding.viewPager, (tab, position) -> tab.setText(TAB_TITLES[position])).attach();
+            binding.viewPager.registerOnPageChangeCallback(viewPagerPageChangeCallback);
+            binding.viewPager.setOffscreenPageLimit(1);
+            binding.progressBar.setVisibility(View.GONE);
+        }, 200);
+
     }
 
     @Override
