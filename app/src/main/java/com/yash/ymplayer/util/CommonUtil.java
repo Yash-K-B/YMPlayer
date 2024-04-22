@@ -1,5 +1,6 @@
 package com.yash.ymplayer.util;
 
+import android.content.ActivityNotFoundException;
 import android.content.ContentUris;
 import android.content.Context;
 import android.content.Intent;
@@ -10,14 +11,19 @@ import android.graphics.drawable.Drawable;
 import android.media.MediaMetadataRetriever;
 import android.net.Uri;
 import android.provider.MediaStore;
+import android.support.v4.media.session.MediaControllerCompat;
 import android.view.View;
 import android.widget.PopupMenu;
+
+import androidx.annotation.Nullable;
+import androidx.fragment.app.Fragment;
 
 import com.yash.ymplayer.download.manager.DownloadService;
 import com.yash.ymplayer.R;
 import com.yash.ymplayer.constant.Constants;
 import com.yash.ymplayer.interfaces.Keys;
 import com.yash.ymplayer.interfaces.MediaIDProvider;
+import com.yash.ymplayer.ui.custom.ConnectionAwareFragment;
 
 import java.util.regex.Pattern;
 
@@ -130,5 +136,14 @@ public class CommonUtil {
     public static Bitmap getEmbeddedPictureOrDefault(Context context, Uri uri, Drawable defaultPicture) {
         Bitmap embeddedPicture = getEmbeddedPicture(context, uri);
         return embeddedPicture != null? embeddedPicture: ((BitmapDrawable) defaultPicture).getBitmap();
+    }
+
+    public static ConnectionAwareFragment getConnectionAwareFragment(Fragment fragment) {
+        while ((fragment = fragment.getParentFragment()) != null) {
+            if(fragment instanceof ConnectionAwareFragment) {
+                return  ((ConnectionAwareFragment) fragment);
+            }
+        }
+        throw new ActivityNotFoundException("No connection aware fragment available");
     }
 }

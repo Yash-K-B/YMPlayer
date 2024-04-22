@@ -25,6 +25,7 @@ import android.support.v4.media.MediaMetadataCompat;
 import android.support.v4.media.session.MediaControllerCompat;
 import android.support.v4.media.session.MediaSessionCompat;
 import android.support.v4.media.session.PlaybackStateCompat;
+import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
@@ -264,17 +265,17 @@ public class MainActivity extends BaseActivity implements ActivityActionProvider
             }
         });
         ((TextView) activityMainBinding.navView.getHeaderView(0).findViewById(R.id.nav_header_text)).setText(defaultSharedPreferences.getString("user_name", "User@YMPlayer"));
-        activityMainBinding.navView.setNavigationItemSelectedListener(new NavigationView.OnNavigationItemSelectedListener() {
-            @Override
-            public boolean onNavigationItemSelected(@NonNull MenuItem item) {
-                navigationItemId = item.getItemId();
-                boolean isDrawerFixed = getResources().getBoolean(R.bool.isDrawerFixed);
-                if(!isDrawerFixed) {
-                    activityMainBinding.drawerLayout.closeDrawer(GravityCompat.START);
-                } else
-                    handleDrawerEvent();
-                return true;
+        activityMainBinding.navView.setNavigationItemSelectedListener(item -> {
+            navigationItemId = item.getItemId();
+            item.setChecked(true);
+            item.setTitle(item.getTitle());
+            boolean isDrawerFixed = getResources().getBoolean(R.bool.isDrawerFixed);
+            if(!isDrawerFixed) {
+                activityMainBinding.drawerLayout.closeDrawer(GravityCompat.START);
+            } else {
+                handleDrawerEvent();
             }
+            return true;
         });
         activityMainBinding.drawerLayout.addDrawerListener(new DrawerLayout.DrawerListener() {
             @Override
@@ -368,26 +369,26 @@ public class MainActivity extends BaseActivity implements ActivityActionProvider
         switch (currentFragment) {
             case Keys.Fragments.SETTINGS:
                 activityMainBinding.navView.setCheckedItem(R.id.settings);
-                changeFragment(activityMainBinding.container.getId(), new SettingsFragment(), Keys.Fragments.SETTINGS);
+                changeFragment(activityMainBinding.container.getId(), SettingsFragment.class, Keys.Fragments.SETTINGS);
                 break;
             case Keys.Fragments.ABOUT:
                 activityMainBinding.navView.setCheckedItem(R.id.about);
-                changeFragment(activityMainBinding.container.getId(), new AboutFragment(), Keys.Fragments.ABOUT);
+                changeFragment(activityMainBinding.container.getId(), AboutFragment.class, Keys.Fragments.ABOUT);
                 break;
 
             case Keys.Fragments.YOUTUBE_SONGS:
                 activityMainBinding.navView.setCheckedItem(R.id.youtubeLibSongs);
-                changeFragment(activityMainBinding.container.getId(), new YoutubeLibrary(), Keys.Fragments.YOUTUBE_SONGS);
+                changeFragment(activityMainBinding.container.getId(), YoutubeLibrary.class, Keys.Fragments.YOUTUBE_SONGS);
                 break;
 
             case Keys.Fragments.DOWNLOADS:
                 activityMainBinding.navView.setCheckedItem(R.id.downloads);
-                changeFragment(activityMainBinding.container.getId(), new DownloadFragment(), Keys.Fragments.DOWNLOADS);
+                changeFragment(activityMainBinding.container.getId(), DownloadFragment.class, Keys.Fragments.DOWNLOADS);
                 break;
 
             default:
                 activityMainBinding.navView.setCheckedItem(R.id.localSongs);
-                changeFragment(activityMainBinding.container.getId(), new LocalSongs(), Keys.Fragments.LOCAL_SONGS);
+                changeFragment(activityMainBinding.container.getId(), LocalSongs.class, Keys.Fragments.LOCAL_SONGS);
                 break;
         }
     }
@@ -397,22 +398,22 @@ public class MainActivity extends BaseActivity implements ActivityActionProvider
             case R.id.youtubeLibSongs:
                 if (currentFragment.equals(Keys.Fragments.YOUTUBE_SONGS)) return;
                 currentFragment = Keys.Fragments.YOUTUBE_SONGS;
-                changeFragment(activityMainBinding.container.getId(), new YoutubeLibrary(), Keys.Fragments.YOUTUBE_SONGS);
+                changeFragment(activityMainBinding.container.getId(), YoutubeLibrary.class, Keys.Fragments.YOUTUBE_SONGS);
                 return;
             case R.id.localSongs:
                 if (currentFragment.equals(Keys.Fragments.LOCAL_SONGS)) return;
                 currentFragment = Keys.Fragments.LOCAL_SONGS;
-                changeFragment(activityMainBinding.container.getId(), new LocalSongs(), Keys.Fragments.LOCAL_SONGS);
+                changeFragment(activityMainBinding.container.getId(), LocalSongs.class, Keys.Fragments.LOCAL_SONGS);
                 return;
             case R.id.downloads:
                 if (currentFragment.equals(Keys.Fragments.DOWNLOADS)) return;
                 currentFragment = Keys.Fragments.DOWNLOADS;
-                changeFragment(activityMainBinding.container.getId(), new DownloadFragment(), Keys.Fragments.DOWNLOADS);
+                changeFragment(activityMainBinding.container.getId(), DownloadFragment.class, Keys.Fragments.DOWNLOADS);
                 return;
             case R.id.settings:
                 if (currentFragment.equals(Keys.Fragments.SETTINGS)) return;
                 currentFragment = Keys.Fragments.SETTINGS;
-                changeFragment(activityMainBinding.container.getId(), new SettingsFragment(), Keys.Fragments.SETTINGS);
+                changeFragment(activityMainBinding.container.getId(), SettingsFragment.class, Keys.Fragments.SETTINGS);
                 return;
             case R.id.share:
                 shareMyApp();
@@ -420,7 +421,7 @@ public class MainActivity extends BaseActivity implements ActivityActionProvider
             case R.id.about:
                 if (currentFragment.equals(Keys.Fragments.ABOUT)) return;
                 currentFragment = Keys.Fragments.ABOUT;
-                changeFragment(activityMainBinding.container.getId(), new AboutFragment(), Keys.Fragments.ABOUT);
+                changeFragment(activityMainBinding.container.getId(), AboutFragment.class, Keys.Fragments.ABOUT);
                 return;
             default:
         }
@@ -480,6 +481,7 @@ public class MainActivity extends BaseActivity implements ActivityActionProvider
                 return fragment.getView();
             }
         } catch (Exception e) {
+            e.printStackTrace();
             return null;
         }
     }
@@ -489,10 +491,15 @@ public class MainActivity extends BaseActivity implements ActivityActionProvider
         expandOrCompressMainLayout(playerView.getState());
     }
 
-    private void changeFragment(int containerId, Fragment fragment, String tag) {
-
-        Fragment savedFragment = getSupportFragmentManager().findFragmentByTag(tag);
-        getSupportFragmentManager().beginTransaction().setTransition(FragmentTransaction.TRANSIT_FRAGMENT_OPEN).replace(containerId, savedFragment == null ? fragment: savedFragment, tag).addToBackStack(null).commit();
+    private <T extends Fragment> void changeFragment(int containerId, Class<T> fragmentClass, String tag) {
+        try {
+            Fragment savedFragment = getSupportFragmentManager().findFragmentByTag(tag);
+            LogHelper.d(TAG, "changeFragment: Fragment found: %s", savedFragment == null  ? "null" : savedFragment.getTag());
+            getSupportFragmentManager().beginTransaction().setTransition(FragmentTransaction.TRANSIT_FRAGMENT_OPEN).replace(containerId, savedFragment == null ? fragmentClass.newInstance() : savedFragment, tag).addToBackStack(tag).commit();
+        } catch (Exception e) {
+            Log.e(TAG, "Error while creating fragment ", e);
+            Toast.makeText(this, "Error while changing screen", Toast.LENGTH_SHORT).show();
+        }
     }
 
     @Override
@@ -830,7 +837,7 @@ public class MainActivity extends BaseActivity implements ActivityActionProvider
         else if (playerView.getState() == BottomSheetBehavior.STATE_EXPANDED)
             playerView.setState(BottomSheetBehavior.STATE_COLLAPSED);
         else if (!getSupportFragmentManager().getFragments().contains(getSupportFragmentManager().findFragmentByTag(Keys.Fragments.LOCAL_SONGS))) {
-            changeFragment(activityMainBinding.container.getId(), new LocalSongs(), Keys.Fragments.LOCAL_SONGS);
+            changeFragment(activityMainBinding.container.getId(), LocalSongs.class, Keys.Fragments.LOCAL_SONGS);
             activityMainBinding.navView.setCheckedItem(R.id.localSongs);
             navigationItemId = Objects.requireNonNull(activityMainBinding.navView.getCheckedItem()).getItemId();
             currentFragment = Keys.Fragments.LOCAL_SONGS;

@@ -22,15 +22,22 @@ import java.util.Map;
 import java.util.Objects;
 
 public class SearchViewModel extends ViewModel {
-    //albums
-    private static final String TAG = "debug";
+    private static final String TAG = "SearchViewModel";
     public MutableLiveData<List<MediaBrowserCompat.MediaItem>> songs = new MutableLiveData<>();
     public MutableLiveData<List<MediaBrowserCompat.MediaItem>> allAlbums = new MutableLiveData<>();
     public MutableLiveData<List<MediaBrowserCompat.MediaItem>> allArtists = new MutableLiveData<>();
     public MutableLiveData<List<MediaBrowserCompat.MediaItem>> allPlaylists = new MutableLiveData<>();
     public MutableLiveData<List<List<MediaBrowserCompat.MediaItem>>> allSearchData = new MutableLiveData<>();
-    List<List<MediaBrowserCompat.MediaItem>> searchList = new ArrayList<>(3);;
+
+    private final int SEARCH_CATEGORY = 3;
+    private final List<List<MediaBrowserCompat.MediaItem>> searchList = new ArrayList<>(SEARCH_CATEGORY);
     int searchListUpdateCalls = 0;
+
+    public SearchViewModel() {
+        for (int i = 0; i < SEARCH_CATEGORY; i++) {
+            searchList.add(new ArrayList<>());
+        }
+    }
 
     public Map<String, Drawable> songImages = new HashMap<>();
 
@@ -41,7 +48,6 @@ public class SearchViewModel extends ViewModel {
     }
 
     public void refreshSearchData(Context context, MediaBrowserCompat mediaBrowser) {
-        searchList = new ArrayList<>(3);
         searchListUpdateCalls = 0;
         refresh(context, mediaBrowser);
     }
@@ -121,21 +127,21 @@ public class SearchViewModel extends ViewModel {
                 MediaBrowserCompat.MediaItem item = mapToNew(mediaItem, SearchListAdapter.ItemType.ALBUMS);
                 mediaItems.add(item);
             }
-            searchList.add(1, mediaItems);
+            searchList.set(1, mediaItems);
         } else if (type == UPDATE_TYPE.ARTISTS) {
             List<MediaBrowserCompat.MediaItem> mediaItems = new ArrayList<>();
             for (MediaBrowserCompat.MediaItem mediaItem : Objects.requireNonNull(allArtists.getValue())) {
                 MediaBrowserCompat.MediaItem item = mapToNew(mediaItem, SearchListAdapter.ItemType.ARTISTS);
                 mediaItems.add(item);
             }
-            searchList.add(2, mediaItems);
+            searchList.set(2, mediaItems);
         } else if (type == UPDATE_TYPE.ALL_SONGS) {
             List<MediaBrowserCompat.MediaItem> mediaItems = new ArrayList<>();
             for (MediaBrowserCompat.MediaItem mediaItem : Objects.requireNonNull(songs.getValue())) {
                 MediaBrowserCompat.MediaItem item = mapToNew(mediaItem, SearchListAdapter.ItemType.SONGS);
                 mediaItems.add(item);
             }
-            searchList.add(0, mediaItems);
+            searchList.set(0, mediaItems);
         }
         if (searchListUpdateCalls == 3)
             allSearchData.setValue(searchList);

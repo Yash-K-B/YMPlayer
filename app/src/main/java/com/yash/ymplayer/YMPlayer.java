@@ -43,6 +43,7 @@ public class YMPlayer extends Application {
 
         HttpUtility.initialise(new Cache(getCacheDir(), 41_943_040), new CacheControl.Builder().maxAge(4, TimeUnit.HOURS).build());
         RequestUtility.updateSettings(PreferenceManager.getDefaultSharedPreferences(this));
+        ConnectivityReceiver.connectivityReceiverListener = HttpUtility.getInstance();
         registerReceiver(new ConnectivityReceiver(), new IntentFilter(ConnectivityManager.CONNECTIVITY_ACTION));
 
         defaultUncaughtExceptionHandler = Thread.getDefaultUncaughtExceptionHandler();

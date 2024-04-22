@@ -77,4 +77,5 @@
     <string name="ym_player">\@YM Player</string>
     <string name="play_all">Play all</string>
     <string name="more">More</string>
+    <string name="no_downloads_available">No downloads available</string>
 </resources>

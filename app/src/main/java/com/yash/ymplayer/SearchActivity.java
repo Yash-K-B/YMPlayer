@@ -88,12 +88,7 @@ public class SearchActivity extends BasePlayerActivity {
     protected void onConnected(MediaControllerCompat mediaController) {
         this.mediaController = mediaController;
         viewModel.refreshSearchData(SearchActivity.this, mediaBrowser);
-        viewModel.allSearchData.observe(SearchActivity.this, new Observer<List<List<MediaBrowserCompat.MediaItem>>>() {
-            @Override
-            public void onChanged(List<List<MediaBrowserCompat.MediaItem>> lists) {
-                SearchActivity.this.lists = lists;
-            }
-        });
+        viewModel.allSearchData.observe(SearchActivity.this, lists -> SearchActivity.this.lists = lists);
     }
 
     @Override

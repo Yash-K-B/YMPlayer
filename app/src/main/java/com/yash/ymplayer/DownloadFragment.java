@@ -14,10 +14,12 @@ import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
 import androidx.lifecycle.LifecycleOwner;
 import androidx.lifecycle.Observer;
+import androidx.recyclerview.widget.AsyncListDiffer;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import android.os.Handler;
+import android.os.HandlerThread;
 import android.os.Looper;
 import android.view.Gravity;
 import android.view.LayoutInflater;
@@ -38,8 +40,10 @@ import com.yash.ymplayer.download.manager.Downloader;
 import com.yash.ymplayer.download.manager.constants.DownloadStatus;
 import com.yash.ymplayer.download.manager.models.Download;
 import com.yash.ymplayer.interfaces.ActivityActionProvider;
+import com.yash.ymplayer.pool.ThreadPool;
 import com.yash.ymplayer.util.ConverterUtil;
 import com.yash.ymplayer.interfaces.Keys;
+import com.yash.ymplayer.util.DiffCallbacks;
 import com.yash.ymplayer.util.StorageXI;
 
 import org.jetbrains.annotations.NotNull;
@@ -47,19 +51,22 @@ import org.jetbrains.annotations.NotNull;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
+import java.util.concurrent.TimeUnit;
 
 public class DownloadFragment extends Fragment {
     private static final String TAG = "DownloadFragment";
 
-    FragmentDownloadBinding downloadBinding;
-    Context context;
-    SharedPreferences preferences;
-    List<Download> files = new ArrayList<>();
-    DownloadFileAdapter adapter;
+    private FragmentDownloadBinding downloadBinding;
+    private Context context;
+    private DownloadFileAdapter adapter;
+    private final HandlerThread handlerThread = new HandlerThread("DownloadFragment");
     private final Handler handler = new Handler(Looper.getMainLooper());
+    private final Handler workerHandler;
 
     public DownloadFragment() {
         // Required empty public constructor
+        handlerThread.start();
+        workerHandler = new Handler(handlerThread.getLooper());
     }
 
     @Override
@@ -74,6 +81,12 @@ public class DownloadFragment extends Fragment {
     }
 
     @Override
+    public void onDestroy() {
+        super.onDestroy();
+        handlerThread.quitSafely();
+    }
+
+    @Override
     public View onCreateView(@NotNull LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
         // Inflate the layout for this fragment
@@ -85,23 +98,27 @@ public class DownloadFragment extends Fragment {
     @Override
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
-        refresh();
+        ((ActivityActionProvider) context).setCustomToolbar(null, "Downloads");
         downloadBinding.downloadsRefresh.setOnRefreshListener(() -> {
             downloadBinding.downloadsRefresh.setRefreshing(true);
             refresh();
-            adapter.notifyDataSetChanged();
             downloadBinding.downloadsRefresh.setRefreshing(false);
         });
-        adapter = new DownloadFileAdapter(context, getViewLifecycleOwner(), files, onClickListener, launcher);
+        adapter = new DownloadFileAdapter(context, getViewLifecycleOwner(), onClickListener, launcher);
         downloadBinding.listRv.setLayoutManager(new LinearLayoutManager(context));
         downloadBinding.listRv.setAdapter(adapter);
+        refresh();
     }
 
     public void refresh() {
-        ((ActivityActionProvider) context).setCustomToolbar(null, "Downloads");
-        List<Download> downloads = DownloadRepository.getInstance(context).getDownloadDao().findAllDesc();
-        files.clear();
-        files.addAll(downloads);
+        workerHandler.postDelayed(() -> {
+            List<Download> downloads = DownloadRepository.getInstance(context).getDownloadDao().findAllDesc();
+            handler.post(() -> {
+                adapter.update(downloads);
+                downloadBinding.noDownloads.setVisibility(downloads.isEmpty() ? View.VISIBLE: View.INVISIBLE);
+            });
+        }, TimeUnit.MILLISECONDS.toMillis(250));
+
     }
 
     private final DownloadFileAdapter.OnClickListener onClickListener = new DownloadFileAdapter.OnClickListener() {
@@ -139,14 +156,13 @@ public class DownloadFragment extends Fragment {
 
     public static class DownloadFileAdapter extends RecyclerView.Adapter<DownloadFileAdapter.DownloadFileViewHolder> {
         Context context;
-        List<Download> files;
         OnClickListener listener;
         LifecycleOwner lifecycleOwner;
+        private final AsyncListDiffer<Download> differ = new AsyncListDiffer<>(this, DiffCallbacks.DOWNLOAD_DIFF_CALLBACK);
         ActivityResultLauncher<IntentSenderRequest> launcher;
 
-        public DownloadFileAdapter(Context context, LifecycleOwner lifecycleOwner, List<Download> files, OnClickListener listener, ActivityResultLauncher<IntentSenderRequest> launcher) {
+        public DownloadFileAdapter(Context context, LifecycleOwner lifecycleOwner, OnClickListener listener, ActivityResultLauncher<IntentSenderRequest> launcher) {
             this.context = context;
-            this.files = files;
             this.listener = listener;
             this.lifecycleOwner = lifecycleOwner;
             this.launcher = launcher;
@@ -161,7 +177,7 @@ public class DownloadFragment extends Fragment {
 
         @Override
         public void onBindViewHolder(@NonNull DownloadFileViewHolder holder, int position) {
-            holder.bind(files.get(position), listener);
+            holder.bind(differ.getCurrentList().get(position), listener);
         }
 
         @Override
@@ -171,7 +187,11 @@ public class DownloadFragment extends Fragment {
 
         @Override
         public int getItemCount() {
-            return files.size();
+            return differ.getCurrentList().size();
+        }
+
+        public void update(List<Download> downloads) {
+            differ.submitList(downloads);
         }
 
         class DownloadFileViewHolder extends RecyclerView.ViewHolder {
@@ -195,7 +215,7 @@ public class DownloadFragment extends Fragment {
                 binding.bitrate.setText(String.format(Locale.US, "%d kbps", file.getBitrate()));
                 if (file.getStatus() != DownloadStatus.DOWNLOADED)
                     binding.status.setText(file.getStatus().getValue());
-                itemView.setOnClickListener(v -> listener.onClick(file, getAdapterPosition()));
+                itemView.setOnClickListener(v -> listener.onClick(file, getAbsoluteAdapterPosition()));
                 itemView.setOnLongClickListener(v -> showLongPressMenu());
                 attachInprogressTask(file);
 
@@ -206,11 +226,12 @@ public class DownloadFragment extends Fragment {
                 PopupMenu menu = new PopupMenu(context, binding.fileName, Gravity.END);
                 menu.inflate(R.menu.download_item_context_menu);
                 menu.setOnMenuItemClickListener(item -> {
+                    ArrayList<Download> downloads = new ArrayList<>(differ.getCurrentList());
                     switch (item.getItemId()) {
                         case R.id.remove:
                             DownloadRepository.getInstance(context).getDownloadDao().delete(file.getId());
-                            files.remove(getAdapterPosition());
-                            notifyItemRemoved(getAdapterPosition());
+                            downloads.remove(getAbsoluteAdapterPosition());
+                            update(downloads);
                             return true;
 
                         case R.id.deleteFromStorage:
@@ -220,8 +241,8 @@ public class DownloadFragment extends Fragment {
                                 StorageXI.getInstance().with(context).delete(launcher, mediaId);
                             }
                             DownloadRepository.getInstance(context).getDownloadDao().delete(file.getId());
-                            files.remove(getAdapterPosition());
-                            notifyItemRemoved(getAdapterPosition());
+                            downloads.remove(getAbsoluteAdapterPosition());
+                            update(downloads);
                             return true;
                     }
                     return true;

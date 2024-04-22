@@ -93,7 +93,7 @@ public class Albums extends Fragment {
     }
 
 
-    private MediaBrowserCompat.ConnectionCallback mConnectionCallbacks = new MediaBrowserCompat.ConnectionCallback() {
+    private final MediaBrowserCompat.ConnectionCallback mConnectionCallbacks = new MediaBrowserCompat.ConnectionCallback() {
         @Override
         public void onConnected() {
             viewModel = new ViewModelProvider(activity).get(LocalViewModel.class);
@@ -109,24 +109,17 @@ public class Albums extends Fragment {
             },new AlbumOrArtistContextMenuClickListener(context,mMediaController));
             albumsBinding.listRv.setAdapter(albumsAdapter);
             albumsBinding.albumRefresh.setColorSchemeColors(BaseActivity.getAttributeColor(context,R.attr.colorPrimary));
-            albumsBinding.albumRefresh.setOnRefreshListener(new SwipeRefreshLayout.OnRefreshListener() {
-                @Override
-                public void onRefresh() {
-                    albumsBinding.albumRefresh.setRefreshing(true);
-                    viewModel.refresh(context, mMediaBrowser);
-                    //viewModel.getAllAlbums(, null);
-                }
+            albumsBinding.albumRefresh.setOnRefreshListener(() -> {
+                albumsBinding.albumRefresh.setRefreshing(true);
+                viewModel.refresh(context, mMediaBrowser);
+                //viewModel.getAllAlbums(, null);
             });
             if (viewModel.allAlbums.getValue() == null || viewModel.allAlbums.getValue().isEmpty())
                 viewModel.loadAlbums(mMediaBrowser, null);
-            viewModel.allAlbums.observe(activity, new Observer<List<MediaBrowserCompat.MediaItem>>() {
-                @Override
-                public void onChanged(List<MediaBrowserCompat.MediaItem> songs) {
-                    albumsBinding.albumRefresh.setRefreshing(false);
-                    albumsAdapter.refreshList(songs);
-                    albumsBinding.progressBar.setVisibility(View.INVISIBLE);
-
-                }
+            viewModel.allAlbums.observe(activity, songs -> {
+                albumsBinding.albumRefresh.setRefreshing(false);
+                albumsBinding.progressBar.setVisibility(View.INVISIBLE);
+                albumsAdapter.refreshList(songs);
             });
 
         }

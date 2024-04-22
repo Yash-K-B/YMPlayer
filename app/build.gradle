@@ -4,15 +4,14 @@ plugins {
 }
 
 android {
-    compileSdkVersion 33
-    buildToolsVersion '32.1.0 rc1'
+    compileSdk 34
 
     defaultConfig {
         applicationId "com.yash.ymplayer"
         minSdkVersion 21
-        targetSdkVersion 33
-        versionCode 10
-        versionName "2.0"
+        targetSdkVersion 34
+        versionCode 11
+        versionName "2.2"
 
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
     }
@@ -30,31 +29,40 @@ android {
 
     buildFeatures{
         viewBinding true
+//        compose true
     }
+
     namespace 'com.yash.ymplayer'
 
+    splits {
+        abi {
+            enable true
+            reset()
+            include 'armeabi-v7a', 'arm64-v8a', 'x86', 'x86_64'
+        }
+    }
 
 }
 
 dependencies {
     implementation fileTree(dir: 'libs', include: ['*.jar'])
 
-    implementation "androidx.lifecycle:lifecycle-viewmodel:2.6.1"
-    implementation "androidx.lifecycle:lifecycle-viewmodel-ktx:2.6.1"
-    implementation "androidx.media:media:1.6.0"
+    implementation "androidx.lifecycle:lifecycle-viewmodel:2.7.0"
+    implementation "androidx.lifecycle:lifecycle-viewmodel-ktx:2.7.0"
+    implementation "androidx.media:media:1.7.0"
 
     implementation 'androidx.appcompat:appcompat:1.6.1'
-    implementation 'com.google.android.material:material:1.8.0'
+    implementation 'com.google.android.material:material:1.11.0'
     implementation 'androidx.constraintlayout:constraintlayout:2.1.4'
-    implementation 'androidx.preference:preference:1.2.0'
+    implementation 'androidx.preference:preference:1.2.1'
     implementation 'org.jetbrains:annotations:16.0.1'
     testImplementation 'junit:junit:4.13.2'
     androidTestImplementation 'androidx.test.ext:junit:1.1.5'
     androidTestImplementation 'androidx.test.espresso:espresso-core:3.5.1'
-    implementation 'androidx.core:core-ktx:1.10.0'
+    implementation 'androidx.core:core-ktx:1.13.0'
     //Exoplayer
-    implementation 'com.google.android.exoplayer:exoplayer:2.11.5'
-    implementation 'com.google.android.exoplayer:extension-mediasession:2.10.0'
+    implementation 'com.google.android.exoplayer:exoplayer:2.19.1'
+    implementation 'com.google.android.exoplayer:extension-mediasession:2.19.1'
     //Glide
     implementation 'com.github.bumptech.glide:glide:4.12.0'
     annotationProcessor 'com.github.bumptech.glide:compiler:4.12.0'
@@ -62,14 +70,14 @@ dependencies {
     implementation 'com.sothree.slidinguppanel:library:3.4.0'
     implementation 'androidx.palette:palette:1.0.0'
     //Room
-    implementation "androidx.room:room-runtime:2.5.1"
-    annotationProcessor "androidx.room:room-compiler:2.5.1"
+    implementation "androidx.room:room-runtime:2.6.1"
+    annotationProcessor "androidx.room:room-compiler:2.6.1"
 
     implementation "com.google.code.gson:gson:2.9.0"
     implementation 'com.android.volley:volley:1.2.1'
 
     //Paging
-    implementation "androidx.paging:paging-runtime:3.1.1"
+    implementation "androidx.paging:paging-runtime:3.2.1"
 
     //RxJava
     implementation 'io.reactivex.rxjava3:rxjava:3.1.6'

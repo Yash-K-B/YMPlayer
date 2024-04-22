@@ -97,19 +97,18 @@ public class ListExpandActivity extends BasePlayerActivity {
 
 
     void artistTracks() {
+        SongsAdapter adapter = new SongsAdapter(context, launcher, (v, song) -> {
+            if (song.isBrowsable())
+                viewModel.loadArtists(mMediaBrowser, song.getMediaId());
+            else if (song.isPlayable())
+                mMediaController.getTransportControls().playFromMediaId(song.getMediaId(), null);
+        }, new SongsContextMenuClickListener(context, mMediaController), SongsAdapter.MODE.ARTIST);
+        binding.listRv.setLayoutManager(new LinearLayoutManager(ListExpandActivity.this));
+        binding.listRv.setAdapter(adapter);
         viewModel.loadArtists(mMediaBrowser, parentId);
         viewModel.allArtists.observe(ListExpandActivity.this, songs -> {
             binding.listProgress.setVisibility(View.GONE);
-            SongsAdapter adapter = new SongsAdapter(context, launcher, (v, song) -> {
-                if (song.isBrowsable())
-                    viewModel.loadArtists(mMediaBrowser, song.getMediaId());
-                else if (song.isPlayable())
-                    mMediaController.getTransportControls().playFromMediaId(song.getMediaId(), null);
-            }, new SongsContextMenuClickListener(context, mMediaController), SongsAdapter.MODE.ARTIST);
-            adapter.setViewModel(viewModel);
             adapter.refreshList(songs);
-            binding.listRv.setLayoutManager(new LinearLayoutManager(ListExpandActivity.this));
-            binding.listRv.setAdapter(adapter);
         });
     }
 
@@ -124,38 +123,36 @@ public class ListExpandActivity extends BasePlayerActivity {
     void albumTracks() {
         String[] parts = parentId.split("[/]");
         Glide.with(context).load(ContentUris.withAppendedId(Uri.parse("content://media/external/audio/albumart"), Long.parseLong(parts[parts.length - 1]))).placeholder(R.drawable.album_art_placeholder).diskCacheStrategy(DiskCacheStrategy.AUTOMATIC).into(binding.appBarImage);
+        SongsAdapter adapter = new SongsAdapter(context, launcher, (v, song) -> {
+            if (song.isBrowsable())
+                viewModel.loadAlbums(mMediaBrowser, song.getMediaId());
+            else if (song.isPlayable())
+                mMediaController.getTransportControls().playFromMediaId(song.getMediaId(), null);
+        }, new SongsContextMenuClickListener(context, mMediaController), SongsAdapter.MODE.ALBUM);
+        binding.listRv.setLayoutManager(new LinearLayoutManager(ListExpandActivity.this));
+        binding.listRv.setAdapter(adapter);
+        binding.listRv.addItemDecoration(new DividerItemDecoration(ListExpandActivity.this, DividerItemDecoration.VERTICAL));
         viewModel.loadAlbums(mMediaBrowser, parentId);
         viewModel.allAlbums.observe(ListExpandActivity.this, songs -> {
             binding.listProgress.setVisibility(View.GONE);
-            SongsAdapter adapter = new SongsAdapter(context, launcher, (v, song) -> {
-                if (song.isBrowsable())
-                    viewModel.loadAlbums(mMediaBrowser, song.getMediaId());
-                else if (song.isPlayable())
-                    mMediaController.getTransportControls().playFromMediaId(song.getMediaId(), null);
-            }, new SongsContextMenuClickListener(context, mMediaController), SongsAdapter.MODE.ALBUM);
-            adapter.setViewModel(viewModel);
             adapter.refreshList(songs);
-            binding.listRv.setLayoutManager(new LinearLayoutManager(ListExpandActivity.this));
-            binding.listRv.setAdapter(adapter);
-            binding.listRv.addItemDecoration(new DividerItemDecoration(ListExpandActivity.this, DividerItemDecoration.VERTICAL));
         });
     }
 
 
     void playListTracks() {
+        SongsAdapter adapter = new SongsAdapter(context, launcher, (v, song) -> {
+            if (song.isBrowsable())
+                viewModel.loadPlaylists(mMediaBrowser, song.getMediaId());
+            else if (song.isPlayable())
+                mMediaController.getTransportControls().playFromMediaId(song.getMediaId(), null);
+        }, new SongsContextMenuClickListener(context, mMediaController), SongsAdapter.MODE.PLAYLIST);
+        binding.listRv.setLayoutManager(new LinearLayoutManager(ListExpandActivity.this));
+        binding.listRv.setAdapter(adapter);
         viewModel.loadPlaylists(mMediaBrowser, parentId);
         viewModel.allPlaylists.observe(ListExpandActivity.this, songs -> {
             binding.listProgress.setVisibility(View.GONE);
-            SongsAdapter adapter = new SongsAdapter(context, launcher, (v, song) -> {
-                if (song.isBrowsable())
-                    viewModel.loadPlaylists(mMediaBrowser, song.getMediaId());
-                else if (song.isPlayable())
-                    mMediaController.getTransportControls().playFromMediaId(song.getMediaId(), null);
-            }, new SongsContextMenuClickListener(context, mMediaController), SongsAdapter.MODE.PLAYLIST);
-            adapter.setViewModel(viewModel);
             adapter.refreshList(songs);
-            binding.listRv.setLayoutManager(new LinearLayoutManager(ListExpandActivity.this));
-            binding.listRv.setAdapter(adapter);
         });
     }
 
