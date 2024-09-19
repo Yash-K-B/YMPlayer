@@ -151,7 +151,7 @@ public class DownloadTask extends Thread {
 
         try {
             Extractor extractor = new Extractor();
-            VideoDetails videoDetails = extractor.extract(videoId);
+            VideoDetails videoDetails = extractor.extractV2(videoId);
 
             if (downloadId == 0) {
                 LogHelper.d(TAG, "run: Creating entry in the downloads [bitrate - %s]", bitrate);

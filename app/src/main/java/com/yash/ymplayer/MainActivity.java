@@ -83,6 +83,7 @@ import com.yash.ymplayer.util.CommonUtil;
 import com.yash.ymplayer.util.ConverterUtil;
 import com.yash.ymplayer.util.EqualizerUtil;
 import com.yash.ymplayer.interfaces.Keys;
+import com.yash.ymplayer.util.PermissionManager;
 import com.yash.ymplayer.util.QueueListAdapter;
 import com.yash.ymplayer.util.Song;
 
@@ -301,20 +302,10 @@ public class MainActivity extends BaseActivity implements ActivityActionProvider
             }
         });
 
-        if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            if (checkSelfPermission(Manifest.permission.READ_MEDIA_AUDIO) == PackageManager.PERMISSION_GRANTED && checkSelfPermission(Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED && checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) == PackageManager.PERMISSION_GRANTED) {
-                transactCurrentFragment();
-            } else {
-                requestPermissions(new String[]{Manifest.permission.READ_MEDIA_AUDIO, Manifest.permission.RECORD_AUDIO, Manifest.permission.POST_NOTIFICATIONS}, 100);
-            }
-        } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-            if (checkSelfPermission(Manifest.permission.WRITE_EXTERNAL_STORAGE) == PackageManager.PERMISSION_GRANTED && checkSelfPermission(Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED) {
-                transactCurrentFragment();
-            } else {
-                requestPermissions(new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE, Manifest.permission.RECORD_AUDIO}, 100);
-            }
-        } else {
+        if(PermissionManager.checkSelfPermission(this)){
             transactCurrentFragment();
+        } else {
+            PermissionManager.requestPermission(this);
         }
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
@@ -564,11 +555,17 @@ public class MainActivity extends BaseActivity implements ActivityActionProvider
         super.onRequestPermissionsResult(requestCode, permissions, grantResults);
         LogHelper.d(TAG, "onRequestPermissionsResult: ");
         if (requestCode == 100) {
+            List<String> nonGrantedPermissions = new ArrayList<>();
             for (int i = 0; i < permissions.length; i++) {
                 if (grantResults[i] != PackageManager.PERMISSION_GRANTED) {
-                    verifyStoragePermissions(this);
+                    nonGrantedPermissions.add(permissions[i]);
                 }
             }
+
+            if(!nonGrantedPermissions.isEmpty()) {
+                PermissionManager.requestPermission(this, nonGrantedPermissions);
+            }
+
             getSupportFragmentManager().beginTransaction().replace(activityMainBinding.container.getId(), new LocalSongs()).commitAllowingStateLoss();
         }
     }

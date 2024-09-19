@@ -384,6 +384,7 @@ public class PlayerService extends MediaBrowserServiceCompat implements PlayerHe
 
     @Override
     public void onDestroy() {
+        super.onDestroy();
         if (connectivityManager != null)
             connectivityManager.unregisterNetworkCallback(networkCallback);
         if (player != null)
@@ -1348,9 +1349,6 @@ public class PlayerService extends MediaBrowserServiceCompat implements PlayerHe
             error.printStackTrace();
             switch (error.type) {
 
-                case ExoPlaybackException.TYPE_OUT_OF_MEMORY:
-                    LogHelper.d(TAG, "PlayerError: TYPE_OUT_OF_MEMORY");
-                    break;
                 case ExoPlaybackException.TYPE_REMOTE:
                     LogHelper.d(TAG, "PlayerError: TYPE_REMOTE");
                     break;
@@ -1485,11 +1483,11 @@ public class PlayerService extends MediaBrowserServiceCompat implements PlayerHe
                         LogHelper.d(TAG, "Fetching metadata using extractor");
                         VideoDetails videoDetails;
                         try {
-                            videoDetails = extractor.extract(uriId);
+                            videoDetails = extractor.extractV2(uriId);
                         } catch (Exception e) {
                             LogHelper.e(TAG, "Error while fetching metadata of " + uriId, e);
                             // retrying another time
-                            videoDetails = extractor.extract(uriId);
+                            videoDetails = extractor.extractV2(uriId);
                         }
 
                         end = SystemClock.currentThreadTimeMillis();
@@ -1701,7 +1699,7 @@ public class PlayerService extends MediaBrowserServiceCompat implements PlayerHe
             player.setWakeMode(C.WAKE_MODE_NETWORK);
             player.addAnalyticsListener(new AnalyticsListener() {
                 @Override
-                public void onAudioSessionId(EventTime eventTime, int audioSessionId) {
+                public void onAudioSessionIdChanged(EventTime eventTime, int audioSessionId) {
                     PlayerService.this.audioSessionId = audioSessionId;
                     Bundle extras = new Bundle();
                     extras.putInt(Keys.AUDIO_SESSION_ID, audioSessionId);
