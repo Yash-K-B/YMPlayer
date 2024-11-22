@@ -8,6 +8,7 @@ import android.view.View
 import android.view.ViewGroup
 import androidx.fragment.app.Fragment
 import com.afollestad.materialdialogs.MaterialDialog
+import com.yash.ymplayer.R
 import com.yash.ymplayer.databinding.FragmentAboutBinding
 import com.yash.ymplayer.interfaces.ActivityActionProvider
 
@@ -37,6 +38,13 @@ class AboutFragment : Fragment() {
 
                         Glide - Open Source Media Management and Image Loading Framework for Android
                     """.trimIndent())
+            }
+        }
+
+        binding.changeLog.setOnClickListener { v: View? ->
+            MaterialDialog(requireContext()).show {
+                title(text = "Change Logs")
+                message(text = resources.getString(R.string.changelog).trimIndent())
             }
         }
         return binding.root

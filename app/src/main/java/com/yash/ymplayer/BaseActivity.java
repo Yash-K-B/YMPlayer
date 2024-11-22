@@ -43,6 +43,9 @@ public abstract class BaseActivity extends AppCompatActivity {
             case "skydark":
                 setTheme(R.style.YTheme_Dark_Sky_NoActionBar);
                 break;
+            case "oceandark":
+                setTheme(R.style.YTheme_Dark_Ocean_NoActionBar);
+                break;
             case "bluelight":
                 setTheme(R.style.YTheme_Light_Blue_NoActionBar);
                 break;
@@ -58,6 +61,9 @@ public abstract class BaseActivity extends AppCompatActivity {
             case "skylight":
                 setTheme(R.style.YTheme_Light_Sky_NoActionBar);
                 break;
+            case "oceanlight":
+                setTheme(R.style.YTheme_Light_Ocean_NoActionBar);
+                break;
             case "blueamoled":
                 setTheme(R.style.YTheme_AMOLED_Blue_NoActionBar);
                 break;
@@ -72,6 +78,9 @@ public abstract class BaseActivity extends AppCompatActivity {
                 break;
             case "skyamoled":
                 setTheme(R.style.YTheme_AMOLED_Sky_NoActionBar);
+                break;
+            case "oceanamoled":
+                setTheme(R.style.YTheme_AMOLED_Ocean_NoActionBar);
                 break;
         }
         super.onCreate(savedInstanceState);

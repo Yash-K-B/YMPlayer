@@ -73,47 +73,33 @@
                 android:textColor="?attr/listTitleTextColor"
                 app:layout_constraintTop_toBottomOf="@+id/author_subtitle" />
 
-            <TextView
-                android:id="@+id/heading_changelog"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                app:layout_constraintEnd_toEndOf="parent"
-                app:layout_constraintHorizontal_bias="0.5"
-                app:layout_constraintStart_toStartOf="parent"
-                android:textSize="16sp"
-                android:layout_marginTop="40dp"
-                android:gravity="center"
-                android:padding="10dp"
-                android:text="Change Logs"
-                android:textStyle="bold"
-                android:fontFamily="@font/open_sans_cond_bold"
-                android:textColor="?attr/listTitleTextColor"
-                app:layout_constraintTop_toBottomOf="@+id/app_description" />
 
-            <TextView
-                android:id="@+id/body_changelog"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
+            <Button
+                android:id="@+id/changeLog"
+                android:layout_width="match_parent"
+                android:layout_height="60dp"
+                android:text="Change Logs"
+                android:textAllCaps="false"
+                android:gravity="start|center_vertical"
+                android:paddingStart="20dp"
+                android:layout_marginTop="30dp"
+                android:background="?attr/selectableItemBackground"
                 app:layout_constraintEnd_toEndOf="parent"
                 app:layout_constraintHorizontal_bias="0.5"
                 app:layout_constraintStart_toStartOf="parent"
-                android:textSize="14sp"
-                android:layout_marginTop="40dp"
-                android:padding="10dp"
-                android:text="@string/changelog"
-                android:textColor="?attr/listTitleTextColor"
-                app:layout_constraintTop_toBottomOf="@+id/heading_changelog" />
+                app:layout_constraintTop_toBottomOf="@+id/app_description"/>
 
             <Button
                 android:id="@+id/licenses"
                 android:layout_width="match_parent"
-                android:layout_height="80dp"
+                android:layout_height="60dp"
                 android:text="Open source licenses"
                 android:textAllCaps="false"
                 android:gravity="start|center_vertical"
                 android:paddingStart="20dp"
+                android:layout_marginTop="20dp"
                 android:background="?attr/selectableItemBackground"
-                app:layout_constraintTop_toBottomOf="@+id/body_changelog"/>
+                app:layout_constraintTop_toBottomOf="@+id/changeLog"/>
 
         </androidx.constraintlayout.widget.ConstraintLayout>
     </com.yash.ymplayer.ui.custom.PlayerAwareScrollView>

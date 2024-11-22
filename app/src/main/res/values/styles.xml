@@ -80,6 +80,12 @@
         <item name="colorAccent">#18ffff</item>
     </style>
 
+    <style name="YTheme.Light.Ocean.NoActionBar" parent="YTheme.Light">
+        <item name="colorPrimary">#00695c</item>
+        <item name="colorPrimaryDark">#003d33</item>
+        <item name="colorAccent">#4db6ac</item>
+    </style>
+
     <!--   Dark Themes -->
 
     <!--    Dark Base Theme-->
@@ -126,6 +132,12 @@
         <item name="colorAccent">#18ffff</item>
     </style>
 
+    <style name="YTheme.Dark.Ocean.NoActionBar" parent="YTheme.Dark">
+        <item name="colorPrimary">#00695c</item>
+        <item name="colorPrimaryDark">#003d33</item>
+        <item name="colorAccent">#4db6ac</item>
+    </style>
+
     <!--    AMOLED Base Theme-->
     <style name="YTheme.AMOLED" parent="Theme.AppCompat">
         <item name="listTitleTextColor">#ffffff</item>
@@ -168,6 +180,12 @@
         <item name="colorPrimary">#1e88e5</item>
         <item name="colorPrimaryDark">#005cb2</item>
         <item name="colorAccent">#18ffff</item>
+    </style>
+
+    <style name="YTheme.AMOLED.Ocean.NoActionBar" parent="YTheme.AMOLED">
+        <item name="colorPrimary">#00695c</item>
+        <item name="colorPrimaryDark">#003d33</item>
+        <item name="colorAccent">#4db6ac</item>
     </style>
 
 

@@ -16,6 +16,7 @@
         <item>Red</item>
         <item>Violet</item>
         <item>Sky Blue</item>
+        <item>Ocean</item>
     </string-array>
     <string-array name="theme_values">
         <item>blue</item>
@@ -23,6 +24,7 @@
         <item>red</item>
         <item>violet</item>
         <item>sky</item>
+        <item>ocean</item>
     </string-array>
 
     <!--    Background Modes -->
