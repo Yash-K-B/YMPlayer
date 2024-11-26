@@ -1,12 +1,12 @@
 # YMPlayer
-Music Player for Android 5.0+.
+Music Player for Android 7.0+.
 
 Build upon android Media Playback Guidelines. It has support for Android Auto.
 
 # Features
-  - Stream YouTube videos like songs.
-  - YouTube songs download.
-  - Play device audio files.
+    - Stream YouTube Videos: Enjoy YouTube videos as seamless audio tracks.
+    - Download YouTube Songs: Save your favorite songs directly from YouTube.
+    - Play Local Audio Files: Access and play audio files stored on your device.
   
 # Screenshots
 ![](https://github.com/Yash-K-B/YMPlayer/blob/master/screenshots/screenshot1.png?raw=true)

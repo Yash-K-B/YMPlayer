@@ -97,9 +97,20 @@
                 android:textAllCaps="false"
                 android:gravity="start|center_vertical"
                 android:paddingStart="20dp"
-                android:layout_marginTop="20dp"
                 android:background="?attr/selectableItemBackground"
                 app:layout_constraintTop_toBottomOf="@+id/changeLog"/>
+
+
+            <Button
+                android:id="@+id/logs"
+                android:layout_width="match_parent"
+                android:layout_height="60dp"
+                android:text="Logs"
+                android:textAllCaps="false"
+                android:gravity="start|center_vertical"
+                android:paddingStart="20dp"
+                android:background="?attr/selectableItemBackground"
+                app:layout_constraintTop_toBottomOf="@+id/licenses"/>
 
         </androidx.constraintlayout.widget.ConstraintLayout>
     </com.yash.ymplayer.ui.custom.PlayerAwareScrollView>

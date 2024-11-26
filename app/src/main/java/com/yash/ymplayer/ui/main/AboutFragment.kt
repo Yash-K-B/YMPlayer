@@ -2,12 +2,14 @@
 package com.yash.ymplayer.ui.main
 
 import android.content.Context
+import android.content.Intent
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import androidx.fragment.app.Fragment
 import com.afollestad.materialdialogs.MaterialDialog
+import com.yash.logging.LogViewerActivity
 import com.yash.ymplayer.R
 import com.yash.ymplayer.databinding.FragmentAboutBinding
 import com.yash.ymplayer.interfaces.ActivityActionProvider
@@ -47,6 +49,12 @@ class AboutFragment : Fragment() {
                 message(text = resources.getString(R.string.changelog).trimIndent())
             }
         }
+
+        binding.logs.setOnClickListener { v: View? ->
+            val logsActivity = Intent(this@AboutFragment.context, LogViewerActivity::class.java)
+            startActivity(logsActivity)
+        }
+
         return binding.root
     }
 

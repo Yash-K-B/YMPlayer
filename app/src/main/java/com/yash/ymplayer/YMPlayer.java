@@ -36,7 +36,7 @@ public class YMPlayer extends Application {
         super.onCreate();
         preferences  = PreferenceManager.getDefaultSharedPreferences(this);
         LogHelperSettings logHelperSettings = new LogHelperSettings();
-        logHelperSettings.setFileLogging(false);
+        logHelperSettings.setFileLogging(true);
         LogHelper.setLogHelperSettings(logHelperSettings);
         LogHelper.deploy(this, TAG);
         executor = Executors.newSingleThreadExecutor();

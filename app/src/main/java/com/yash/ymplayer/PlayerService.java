@@ -34,6 +34,7 @@ import android.support.v4.media.MediaDescriptionCompat;
 import android.support.v4.media.MediaMetadataCompat;
 import android.support.v4.media.session.MediaSessionCompat;
 import android.support.v4.media.session.PlaybackStateCompat;
+import android.util.Log;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
@@ -81,7 +82,9 @@ import com.yash.ymplayer.util.ConverterUtil;
 import com.yash.ymplayer.util.EqualizerUtil;
 import com.yash.ymplayer.interfaces.Keys;
 import com.yash.ymplayer.util.MediaItemHelperUtility;
+import com.yash.ymplayer.util.PlayerHelperUtil;
 import com.yash.ymplayer.util.Song;
+import com.yash.ymplayer.util.StringUtil;
 import com.yash.ymplayer.util.YoutubeSong;
 import com.yash.youtube_extractor.Extractor;
 import com.yash.youtube_extractor.exceptions.ExtractionException;
@@ -426,7 +429,7 @@ public class PlayerService extends MediaBrowserServiceCompat implements PlayerHe
         public void onPlayFromYoutube(String videoId, Bundle extras) {
             playingMode = Keys.PLAYING_MODE.ONLINE;
             currentMediaIdOrVideoId = videoId;
-            if (videoId.startsWith(Constants.PREFIX_SHARED)) {
+            if (PlayerHelperUtil.isSharedYoutube(videoId)) {
                 prepareForSharedPlayingQueue(videoId, () -> {
                     resolveQueuePosition(extractId(currentMediaIdOrVideoId));
                     dispatchPlayRequest();
@@ -764,7 +767,7 @@ public class PlayerService extends MediaBrowserServiceCompat implements PlayerHe
                         if (playingQueue.size() != 0) {
                             mSession.setQueueTitle(Keys.QUEUE_TITLE.CUSTOM);
                             if (queuePos == pos) {
-                                if (isShuffleModeEnabled) {
+                                if (isShuffledEnabled()) {
                                     if (player == null) return;
                                     player.setPlayWhenReady(false);
                                     pos = player.getCurrentTimeline().getNextWindowIndex(queuePos, Player.REPEAT_MODE_ALL, true);
@@ -911,6 +914,7 @@ public class PlayerService extends MediaBrowserServiceCompat implements PlayerHe
                 break;
             default:
         }
+        player.setShuffleModeEnabled(isShuffledEnabled());
     }
 
 
@@ -942,6 +946,8 @@ public class PlayerService extends MediaBrowserServiceCompat implements PlayerHe
 
 
     private String watchNextQueueTitle;
+    private String watchNextQueueUri;
+    private String watchNextContinuationToken;
 
     private void appendWatchNextQueue(String uri, String continuationToken) {
         watchNextQueueTitle = mSession.getController().getQueueTitle().toString();
@@ -951,8 +957,11 @@ public class PlayerService extends MediaBrowserServiceCompat implements PlayerHe
                 return;
             }
             buildAndAppendQueue(uri, queueItems);
-            if (nextToken != null && playingQueue.size() < 50)
-                appendWatchNextQueue(uri, nextToken);
+            watchNextContinuationToken = nextToken;
+            watchNextQueueUri = nextToken == null ? null : uri;
+
+//            if (nextToken != null && playingQueue.size() < 50)
+//                appendWatchNextQueue(uri, nextToken);
         });
     }
 
@@ -977,7 +986,7 @@ public class PlayerService extends MediaBrowserServiceCompat implements PlayerHe
 
         clearMediaSourceAndQueue();
 
-        if (uri.startsWith(Constants.PREFIX_SEARCH)) {
+        if (PlayerHelperUtil.isSearchedYoutube(uri)) {
             playingQueue = MediaItemHelperUtility.getQueueFrom(extras);
             handler.postDelayed(() -> appendWatchNextQueue(uri, null), 100);
         } else {
@@ -1280,6 +1289,7 @@ public class PlayerService extends MediaBrowserServiceCompat implements PlayerHe
                     if (queuePos != player.getCurrentWindowIndex()) {
                         queuePos = player.getCurrentWindowIndex();
                         setMediaMetadata(playingQueue.get(queuePos));
+                        loadWatchNextIfApplicable();
                     }
                     setPlaybackState(player.getPlayWhenReady() ? PlaybackStateCompat.STATE_PLAYING : PlaybackStateCompat.STATE_PAUSED);
                     pushNotification(player.getPlayWhenReady() ? PlaybackStateCompat.STATE_PLAYING : PlaybackStateCompat.STATE_PAUSED);
@@ -1296,6 +1306,7 @@ public class PlayerService extends MediaBrowserServiceCompat implements PlayerHe
                     queuePos = player.getCurrentWindowIndex();
                     setMediaMetadata(playingQueue.get(queuePos));
                     pushNotification(player.getPlayWhenReady() ? PlaybackStateCompat.STATE_PLAYING : PlaybackStateCompat.STATE_PAUSED);
+                    loadWatchNextIfApplicable();
                     break;
                 case ExoPlayer.DISCONTINUITY_REASON_INTERNAL:
                     LogHelper.d(TAG, "onPositionDiscontinuity: DISCONTINUITY_REASON_INTERNAL");
@@ -1692,7 +1703,7 @@ public class PlayerService extends MediaBrowserServiceCompat implements PlayerHe
             player.setRepeatMode(repeatMode);
             player.prepare(mediaSources);
             player.setPlayWhenReady(false);
-            player.setShuffleModeEnabled(isShuffleModeEnabled);
+            player.setShuffleModeEnabled(isShuffledEnabled());
             player.setHandleAudioBecomingNoisy(true);
             player.setAudioAttributes(new com.google.android.exoplayer2.audio.AudioAttributes.Builder().setUsage(C.USAGE_MEDIA)
                     .setContentType(C.CONTENT_TYPE_MUSIC).build(), true);
@@ -1783,6 +1794,21 @@ public class PlayerService extends MediaBrowserServiceCompat implements PlayerHe
         }
         isForegroundService = false;
     }
+
+
+    private boolean isShuffledEnabled() {
+        return !PlayerHelperUtil.needWatchNextItems(watchNextQueueUri) && isShuffleModeEnabled;
+    }
+
+    private void loadWatchNextIfApplicable() {
+        if(PlayerHelperUtil.needWatchNextItems(watchNextQueueUri) && queuePos > playingQueue.size() - 5) {
+            LogHelper.d(TAG, "loadWatchNextIfApplicable: loading watch next queue");
+            appendWatchNextQueue(watchNextQueueUri, watchNextContinuationToken);
+        }
+    }
+
+
+
 
 }
 

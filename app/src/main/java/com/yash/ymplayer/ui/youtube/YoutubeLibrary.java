@@ -77,7 +77,7 @@ public class YoutubeLibrary extends Fragment {
                 }
                 if (CollectionUtility.isEmpty(playlistsByCategory)) {
                     LogHelper.d(TAG, "Channel playlist empty");
-                    showError();
+                    showError("No Playlists found");
                     return;
                 }
                 youtubeLibraryBinding.progressBar.setVisibility(View.GONE);
@@ -93,12 +93,13 @@ public class YoutubeLibrary extends Fragment {
             @Override
             public <E extends Exception> void onError(E e) {
                 LogHelper.e(TAG, "Error while building YouTube Lib: ", e);
-                showError();
+                showError("No Internet Connection");
             }
         });
     }
 
-    private void showError() {
+    private void showError(String error) {
+        youtubeLibraryBinding.errorText.setText(error);
         youtubeLibraryBinding.youtubeLibError.setVisibility(View.VISIBLE);
         youtubeLibraryBinding.progressBar.setVisibility(View.GONE);
     }

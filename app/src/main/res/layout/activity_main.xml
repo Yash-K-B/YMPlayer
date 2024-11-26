@@ -45,7 +45,7 @@
 
         </androidx.coordinatorlayout.widget.CoordinatorLayout>
 
-        <include layout="@layout/fragment_player" />
+        <include android:id="@+id/playerView" layout="@layout/fragment_player" />
 
     </androidx.coordinatorlayout.widget.CoordinatorLayout>
 

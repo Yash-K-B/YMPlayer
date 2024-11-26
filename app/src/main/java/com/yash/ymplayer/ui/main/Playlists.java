@@ -29,6 +29,7 @@ import com.yash.ymplayer.PlayerService;
 import com.yash.ymplayer.R;
 import com.yash.ymplayer.databinding.FragmentPlaylistsBinding;
 import com.yash.ymplayer.interfaces.PlaylistUpdateListener;
+import com.yash.ymplayer.ui.custom.PlayerAware;
 import com.yash.ymplayer.util.AlbumOrArtistContextMenuClickListener;
 import com.yash.ymplayer.interfaces.Keys;
 import com.yash.ymplayer.util.CategoryAdapter;
@@ -36,7 +37,7 @@ import com.yash.ymplayer.util.CategoryAdapter;
 import java.util.ArrayList;
 import java.util.List;
 
-public class Playlists extends Fragment implements PlaylistUpdateListener {
+public class Playlists extends Fragment implements PlaylistUpdateListener, PlayerAware {
     private static final String TAG = "debug";
     private static Playlists instance;
     private MediaBrowserCompat mMediaBrowser;

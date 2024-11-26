@@ -84,6 +84,7 @@ import com.yash.ymplayer.util.ConverterUtil;
 import com.yash.ymplayer.util.EqualizerUtil;
 import com.yash.ymplayer.interfaces.Keys;
 import com.yash.ymplayer.util.PermissionManager;
+import com.yash.ymplayer.util.PlayerHelperUtil;
 import com.yash.ymplayer.util.QueueListAdapter;
 import com.yash.ymplayer.util.Song;
 
@@ -158,12 +159,12 @@ public class MainActivity extends BaseActivity implements ActivityActionProvider
         setContentView(activityMainBinding.getRoot());
         startService(new Intent(this, PlayerService.class));
         setCustomToolbar(null, null);
-        bottomSheetBehavior = BottomSheetBehavior.from(activityMainBinding.playlists);
+        bottomSheetBehavior = BottomSheetBehavior.from(activityMainBinding.playerView.playlists);
         preferences = getSharedPreferences(STATE_PREF, MODE_PRIVATE);
         defaultSharedPreferences = PreferenceManager.getDefaultSharedPreferences(this);
         offlineAudioPattern = Pattern.compile("[0-9]+");
         deviceUriPattern = Pattern.compile(Constants.DEVICE_URI_PREFIX_REGEX);
-        downloadPopup = CommonUtil.buildYoutubeDownloadPopup(this, activityMainBinding.downloadBtn, () -> currentMediaId);
+        downloadPopup = CommonUtil.buildYoutubeDownloadPopup(this, activityMainBinding.playerView.downloadBtn, () -> currentMediaId);
 
 
         //Display Exception (If any)
@@ -233,15 +234,15 @@ public class MainActivity extends BaseActivity implements ActivityActionProvider
         }
 
         currentFragment = (getIntent().getStringExtra(EXTRA_CURRENT_FRAGMENT) != null) ? (getIntent().getStringExtra(EXTRA_CURRENT_FRAGMENT)) : "localSongs";
-        playerView = BottomSheetBehavior.from(activityMainBinding.player);
-        activityMainBinding.player.setOnClickListener(v -> playerView.setState(BottomSheetBehavior.STATE_EXPANDED));
+        playerView = BottomSheetBehavior.from(activityMainBinding.playerView.player);
+        activityMainBinding.playerView.player.setOnClickListener(v -> playerView.setState(BottomSheetBehavior.STATE_EXPANDED));
         playerView.setState(BottomSheetBehavior.STATE_HIDDEN);
         playerView.addBottomSheetCallback(new BottomSheetBehavior.BottomSheetCallback() {
             @Override
             public void onStateChanged(@NonNull View bottomSheet, int newState) {
                 expandOrCompressMainLayout(newState);
                 if (newState != BottomSheetBehavior.STATE_HIDDEN && newState != BottomSheetBehavior.STATE_EXPANDED)
-                    activityMainBinding.songTitle.setSelected(true);
+                    activityMainBinding.playerView.songTitle.setSelected(true);
                 if (newState == BottomSheetBehavior.STATE_HIDDEN) {
                     if (mediaController != null)
                         mediaController.getTransportControls().sendCustomAction(Keys.Action.CLOSE_PLAYBACK, null);
@@ -251,18 +252,18 @@ public class MainActivity extends BaseActivity implements ActivityActionProvider
             @Override
             public void onSlide(@NonNull View bottomSheet, float slideOffset) {
                 if (slideOffset > 0.5f) {
-                    activityMainBinding.trackTitle.setSelected(true);
-                    activityMainBinding.songTitle.setSelected(false);
+                    activityMainBinding.playerView.trackTitle.setSelected(true);
+                    activityMainBinding.playerView.songTitle.setSelected(false);
                 } else if (slideOffset >= 0f) {
-                    activityMainBinding.trackTitle.setSelected(false);
-                    activityMainBinding.songTitle.setSelected(true);
+                    activityMainBinding.playerView.trackTitle.setSelected(false);
+                    activityMainBinding.playerView.songTitle.setSelected(true);
                 } else {
-                    activityMainBinding.trackTitle.setSelected(false);
+                    activityMainBinding.playerView.trackTitle.setSelected(false);
                 }
 
-                activityMainBinding.playerTop.setAlpha(slideOffset >= 0.5f ? 0f : (1.0f - slideOffset * 2));
-                activityMainBinding.playerTopBack.setAlpha(slideOffset <= 0.5f ? 0f : ((slideOffset - 0.5f) * 2));
-                activityMainBinding.playerTop.setVisibility(0.95f <= slideOffset ? View.INVISIBLE : View.VISIBLE);
+                activityMainBinding.playerView.playerTop.setAlpha(slideOffset >= 0.5f ? 0f : (1.0f - slideOffset * 2));
+                activityMainBinding.playerView.playerTopBack.setAlpha(slideOffset <= 0.5f ? 0f : ((slideOffset - 0.5f) * 2));
+                activityMainBinding.playerView.playerTop.setVisibility(0.95f <= slideOffset ? View.INVISIBLE : View.VISIBLE);
             }
         });
         ((TextView) activityMainBinding.navView.getHeaderView(0).findViewById(R.id.nav_header_text)).setText(defaultSharedPreferences.getString("user_name", "User@YMPlayer"));
@@ -338,11 +339,11 @@ public class MainActivity extends BaseActivity implements ActivityActionProvider
                 itemTouchHelper.startDrag(viewHolder);
             }
         }, songs);
-        activityMainBinding.playlistContainer.setAdapter(adapter);
-        activityMainBinding.playlistContainer.addItemDecoration(new DividerItemDecoration(this, DividerItemDecoration.VERTICAL));
-        activityMainBinding.playlistContainer.setLayoutManager(new LinearLayoutManager(this));
+        activityMainBinding.playerView.playlistContainer.setAdapter(adapter);
+        activityMainBinding.playerView.playlistContainer.addItemDecoration(new DividerItemDecoration(this, DividerItemDecoration.VERTICAL));
+        activityMainBinding.playerView.playlistContainer.setLayoutManager(new LinearLayoutManager(this));
         itemTouchHelper = new ItemTouchHelper(simpleCallback);
-        itemTouchHelper.attachToRecyclerView(activityMainBinding.playlistContainer);
+        itemTouchHelper.attachToRecyclerView(activityMainBinding.playerView.playlistContainer);
 
         mediaBrowser = new MediaBrowserCompat(this, new ComponentName(this, PlayerService.class), connectionCallback, null);
         mediaBrowser.connect();
@@ -605,16 +606,17 @@ public class MainActivity extends BaseActivity implements ActivityActionProvider
         @Override
         public void onQueueTitleChanged(CharSequence title) {
             queueTitle = title.toString();
+            activityMainBinding.playerView.shuffleBtn.setVisibility(PlayerHelperUtil.needWatchNextItems(queueTitle) ? View.GONE: View.VISIBLE);
         }
 
         @Override
         public void onShuffleModeChanged(int shuffleMode) {
             switch (shuffleMode) {
                 case PlaybackStateCompat.SHUFFLE_MODE_NONE:
-                    activityMainBinding.shuffleBtn.setImageResource(R.drawable.exo_icon_shuffle_off);
+                    activityMainBinding.playerView.shuffleBtn.setImageResource(R.drawable.exo_icon_shuffle_off);
                     break;
                 case PlaybackStateCompat.SHUFFLE_MODE_ALL:
-                    activityMainBinding.shuffleBtn.setImageResource(R.drawable.exo_icon_shuffle_on);
+                    activityMainBinding.playerView.shuffleBtn.setImageResource(R.drawable.exo_icon_shuffle_on);
                     break;
             }
         }
@@ -623,13 +625,13 @@ public class MainActivity extends BaseActivity implements ActivityActionProvider
         public void onRepeatModeChanged(int repeatMode) {
             switch (repeatMode) {
                 case PlaybackStateCompat.REPEAT_MODE_ONE:
-                    activityMainBinding.repeatBtn.setImageResource(R.drawable.exo_controls_repeat_one);
+                    activityMainBinding.playerView.repeatBtn.setImageResource(R.drawable.exo_controls_repeat_one);
                     break;
                 case PlaybackStateCompat.REPEAT_MODE_ALL:
-                    activityMainBinding.repeatBtn.setImageResource(R.drawable.exo_controls_repeat_all);
+                    activityMainBinding.playerView.repeatBtn.setImageResource(R.drawable.exo_controls_repeat_all);
                     break;
                 case PlaybackStateCompat.REPEAT_MODE_NONE:
-                    activityMainBinding.repeatBtn.setImageResource(R.drawable.exo_controls_repeat_off);
+                    activityMainBinding.playerView.repeatBtn.setImageResource(R.drawable.exo_controls_repeat_off);
                     break;
                 default:
                     break;
@@ -690,17 +692,17 @@ public class MainActivity extends BaseActivity implements ActivityActionProvider
 
                     }
                 });
-                activityMainBinding.songTitle.setText(metadata.getString(MediaMetadataCompat.METADATA_KEY_TITLE));
-                activityMainBinding.trackTitle.setText(metadata.getString(MediaMetadataCompat.METADATA_KEY_TITLE));
-                activityMainBinding.songSubtitle.setText(metadata.getString(MediaMetadataCompat.METADATA_KEY_ARTIST));
-                activityMainBinding.trackSubTitle.setText(metadata.getString(MediaMetadataCompat.METADATA_KEY_ARTIST));
+                activityMainBinding.playerView.songTitle.setText(metadata.getString(MediaMetadataCompat.METADATA_KEY_TITLE));
+                activityMainBinding.playerView.trackTitle.setText(metadata.getString(MediaMetadataCompat.METADATA_KEY_TITLE));
+                activityMainBinding.playerView.songSubtitle.setText(metadata.getString(MediaMetadataCompat.METADATA_KEY_ARTIST));
+                activityMainBinding.playerView.trackSubTitle.setText(metadata.getString(MediaMetadataCompat.METADATA_KEY_ARTIST));
             }
-            activityMainBinding.maxDuration.setText(formatMillis(metadata.getLong(MediaMetadataCompat.METADATA_KEY_DURATION)));
-            activityMainBinding.musicProgress.setMax((int) metadata.getLong(MediaMetadataCompat.METADATA_KEY_DURATION));
-            activityMainBinding.favouriteBtn.setImageResource(metadata.getLong(PlayerService.METADATA_KEY_FAVOURITE) == 0 ? R.drawable.icon_favourite_off : R.drawable.icon_favourite);
+            activityMainBinding.playerView.maxDuration.setText(formatMillis(metadata.getLong(MediaMetadataCompat.METADATA_KEY_DURATION)));
+            activityMainBinding.playerView.musicProgress.setMax((int) metadata.getLong(MediaMetadataCompat.METADATA_KEY_DURATION));
+            activityMainBinding.playerView.favouriteBtn.setImageResource(metadata.getLong(PlayerService.METADATA_KEY_FAVOURITE) == 0 ? R.drawable.icon_favourite_off : R.drawable.icon_favourite);
 
             currentMediaId = metadata.getString(MediaMetadataCompat.METADATA_KEY_MEDIA_ID);
-            activityMainBinding.downloadBtn.setVisibility(CommonUtil.isYoutubeSong(currentMediaId) ? View.VISIBLE : View.GONE);
+            activityMainBinding.playerView.downloadBtn.setVisibility(CommonUtil.isYoutubeSong(currentMediaId) ? View.VISIBLE : View.GONE);
             LogHelper.d(TAG, "onMetadataChanged: Duration:" + metadata.getLong(MediaMetadataCompat.METADATA_KEY_DURATION) / 1000 + "s");
         }
 
@@ -715,21 +717,21 @@ public class MainActivity extends BaseActivity implements ActivityActionProvider
 
             switch (state.getState()) {
                 case PlaybackStateCompat.STATE_PLAYING:
-                    activityMainBinding.playPause.setImageResource(R.drawable.icon_pause);
-                    activityMainBinding.playPauseBtn.setImageResource(R.drawable.icon_pause_circle);
-                    activityMainBinding.playPauseBtn.setScaleType(ImageView.ScaleType.CENTER_CROP);
-                    activityMainBinding.playerLoading.setVisibility(View.INVISIBLE);
+                    activityMainBinding.playerView.playPause.setImageResource(R.drawable.icon_pause);
+                    activityMainBinding.playerView.playPauseBtn.setImageResource(R.drawable.icon_pause_circle);
+                    activityMainBinding.playerView.playPauseBtn.setScaleType(ImageView.ScaleType.CENTER_CROP);
+                    activityMainBinding.playerView.playerLoading.setVisibility(View.INVISIBLE);
                     currentProgress = state.getPosition();
                     currentBufferedPosition = state.getBufferedPosition();
-                    activityMainBinding.musicProgress.setSecondaryProgress((int) currentBufferedPosition);
+                    activityMainBinding.playerView.musicProgress.setSecondaryProgress((int) currentBufferedPosition);
                     scheduledFutureUpdate();
                     LogHelper.d(TAG, "onPlaybackStateChanged: STATE_PLAYING MainActivity");
                     break;
                 case PlaybackStateCompat.STATE_PAUSED:
-                    activityMainBinding.playPause.setImageResource(R.drawable.icon_play);
-                    activityMainBinding.playPauseBtn.setImageResource(R.drawable.icon_play_circle);
-                    activityMainBinding.playPauseBtn.setScaleType(ImageView.ScaleType.CENTER_CROP);
-                    activityMainBinding.playerLoading.setVisibility(View.INVISIBLE);
+                    activityMainBinding.playerView.playPause.setImageResource(R.drawable.icon_play);
+                    activityMainBinding.playerView.playPauseBtn.setImageResource(R.drawable.icon_play_circle);
+                    activityMainBinding.playerView.playPauseBtn.setScaleType(ImageView.ScaleType.CENTER_CROP);
+                    activityMainBinding.playerView.playerLoading.setVisibility(View.INVISIBLE);
                     stopScheduledFutureUpdate();
                     LogHelper.d(TAG, "onPlaybackStateChanged: STATE_PAUSED MainActivity");
 
@@ -737,14 +739,14 @@ public class MainActivity extends BaseActivity implements ActivityActionProvider
                 case PlaybackStateCompat.STATE_STOPPED:
                     LogHelper.d(TAG, "onPlaybackStateChanged: STATE_STOPPED MainActivity");
                 case PlaybackStateCompat.STATE_BUFFERING:
-                    activityMainBinding.playPause.setImageResource(R.drawable.icon_pause);
-                    activityMainBinding.playPauseBtn.setImageResource(R.drawable.icon_pause);
-                    activityMainBinding.playPauseBtn.setScaleType(ImageView.ScaleType.CENTER);
-                    activityMainBinding.playerLoading.setVisibility(View.VISIBLE);
+                    activityMainBinding.playerView.playPause.setImageResource(R.drawable.icon_pause);
+                    activityMainBinding.playerView.playPauseBtn.setImageResource(R.drawable.icon_pause);
+                    activityMainBinding.playerView.playPauseBtn.setScaleType(ImageView.ScaleType.CENTER);
+                    activityMainBinding.playerView.playerLoading.setVisibility(View.VISIBLE);
                     currentProgress = state.getPosition();
                     currentBufferedPosition = state.getBufferedPosition();
-                    activityMainBinding.musicProgress.setProgress((int) currentProgress);
-                    activityMainBinding.musicProgress.setSecondaryProgress((int) currentBufferedPosition);
+                    activityMainBinding.playerView.musicProgress.setProgress((int) currentProgress);
+                    activityMainBinding.playerView.musicProgress.setSecondaryProgress((int) currentBufferedPosition);
                     stopScheduledFutureUpdate();
                     LogHelper.d(TAG, "onPlaybackStateChanged: STATE_BUFFERING MainActivity");
                     break;
@@ -892,7 +894,7 @@ public class MainActivity extends BaseActivity implements ActivityActionProvider
         stopScheduledFutureUpdate();
         if (!mExecutorService.isShutdown()) {
             mScheduledFuture = mExecutorService.scheduleAtFixedRate(() -> handler.post(() -> {
-                activityMainBinding.musicProgress.setProgress((int) currentProgress);
+                activityMainBinding.playerView.musicProgress.setProgress((int) currentProgress);
                 currentProgress += 250;
             }), 0, TimeUnit.MILLISECONDS.toMillis(250), TimeUnit.MILLISECONDS);
         }
@@ -1008,7 +1010,7 @@ public class MainActivity extends BaseActivity implements ActivityActionProvider
     SeekBar.OnSeekBarChangeListener progressListener = new SeekBar.OnSeekBarChangeListener() {
         @Override
         public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
-            activityMainBinding.currentPos.setText(formatMillis(progress));
+            activityMainBinding.playerView.currentPos.setText(formatMillis(progress));
         }
 
         @Override
@@ -1035,22 +1037,22 @@ public class MainActivity extends BaseActivity implements ActivityActionProvider
 
         switch (mediaController.getShuffleMode()) {
             case PlaybackStateCompat.SHUFFLE_MODE_NONE:
-                activityMainBinding.shuffleBtn.setImageResource(R.drawable.exo_icon_shuffle_off);
+                activityMainBinding.playerView.shuffleBtn.setImageResource(R.drawable.exo_icon_shuffle_off);
                 break;
             case PlaybackStateCompat.SHUFFLE_MODE_ALL:
-                activityMainBinding.shuffleBtn.setImageResource(R.drawable.exo_icon_shuffle_on);
+                activityMainBinding.playerView.shuffleBtn.setImageResource(R.drawable.exo_icon_shuffle_on);
                 break;
         }
 
         switch (mediaController.getRepeatMode()) {
             case PlaybackStateCompat.REPEAT_MODE_NONE:
-                activityMainBinding.repeatBtn.setImageResource(R.drawable.exo_controls_repeat_off);
+                activityMainBinding.playerView.repeatBtn.setImageResource(R.drawable.exo_controls_repeat_off);
                 break;
             case PlaybackStateCompat.REPEAT_MODE_ONE:
-                activityMainBinding.repeatBtn.setImageResource(R.drawable.exo_controls_repeat_one);
+                activityMainBinding.playerView.repeatBtn.setImageResource(R.drawable.exo_controls_repeat_one);
                 break;
             case PlaybackStateCompat.REPEAT_MODE_ALL:
-                activityMainBinding.repeatBtn.setImageResource(R.drawable.exo_controls_repeat_all);
+                activityMainBinding.playerView.repeatBtn.setImageResource(R.drawable.exo_controls_repeat_all);
                 break;
         }
         if (mediaController.getQueue() != null) {
@@ -1099,17 +1101,17 @@ public class MainActivity extends BaseActivity implements ActivityActionProvider
 
                 }
             });
-            activityMainBinding.songTitle.setText(mediaController.getMetadata().getString(MediaMetadataCompat.METADATA_KEY_TITLE));
-            activityMainBinding.trackTitle.setText(mediaController.getMetadata().getString(MediaMetadataCompat.METADATA_KEY_TITLE));
-            activityMainBinding.songSubtitle.setText(mediaController.getMetadata().getString(MediaMetadataCompat.METADATA_KEY_ARTIST));
-            activityMainBinding.trackSubTitle.setText(mediaController.getMetadata().getString(MediaMetadataCompat.METADATA_KEY_ARTIST));
-            activityMainBinding.playPause.setImageResource(mediaController.getPlaybackState().getState() == PlaybackStateCompat.STATE_PLAYING ? R.drawable.icon_pause : R.drawable.icon_play);
-            activityMainBinding.playPauseBtn.setImageResource(mediaController.getPlaybackState().getState() == PlaybackStateCompat.STATE_PLAYING ? R.drawable.icon_pause_circle : R.drawable.icon_play_circle);
-            activityMainBinding.maxDuration.setText(formatMillis(mediaController.getMetadata().getLong(MediaMetadataCompat.METADATA_KEY_DURATION)));
-            activityMainBinding.musicProgress.setMax((int) mediaController.getMetadata().getLong(MediaMetadataCompat.METADATA_KEY_DURATION));
+            activityMainBinding.playerView.songTitle.setText(mediaController.getMetadata().getString(MediaMetadataCompat.METADATA_KEY_TITLE));
+            activityMainBinding.playerView.trackTitle.setText(mediaController.getMetadata().getString(MediaMetadataCompat.METADATA_KEY_TITLE));
+            activityMainBinding.playerView.songSubtitle.setText(mediaController.getMetadata().getString(MediaMetadataCompat.METADATA_KEY_ARTIST));
+            activityMainBinding.playerView.trackSubTitle.setText(mediaController.getMetadata().getString(MediaMetadataCompat.METADATA_KEY_ARTIST));
+            activityMainBinding.playerView.playPause.setImageResource(mediaController.getPlaybackState().getState() == PlaybackStateCompat.STATE_PLAYING ? R.drawable.icon_pause : R.drawable.icon_play);
+            activityMainBinding.playerView.playPauseBtn.setImageResource(mediaController.getPlaybackState().getState() == PlaybackStateCompat.STATE_PLAYING ? R.drawable.icon_pause_circle : R.drawable.icon_play_circle);
+            activityMainBinding.playerView.maxDuration.setText(formatMillis(mediaController.getMetadata().getLong(MediaMetadataCompat.METADATA_KEY_DURATION)));
+            activityMainBinding.playerView.musicProgress.setMax((int) mediaController.getMetadata().getLong(MediaMetadataCompat.METADATA_KEY_DURATION));
             playerView.setState(BottomSheetBehavior.STATE_COLLAPSED);
-            activityMainBinding.favouriteBtn.setImageResource(mediaController.getMetadata().getLong(PlayerService.METADATA_KEY_FAVOURITE) == 0 ? R.drawable.icon_favourite_off : R.drawable.icon_favourite);
-            activityMainBinding.downloadBtn.setVisibility(CommonUtil.isYoutubeSong(currentMediaId) ? View.VISIBLE : View.GONE);
+            activityMainBinding.playerView.favouriteBtn.setImageResource(mediaController.getMetadata().getLong(PlayerService.METADATA_KEY_FAVOURITE) == 0 ? R.drawable.icon_favourite_off : R.drawable.icon_favourite);
+            activityMainBinding.playerView.downloadBtn.setVisibility(CommonUtil.isYoutubeSong(currentMediaId) ? View.VISIBLE : View.GONE);
         }
         if (mediaController.getPlaybackState() != null) {
             long activeQueuePosition = mediaController.getPlaybackState().getActiveQueueItemId();
@@ -1118,32 +1120,32 @@ public class MainActivity extends BaseActivity implements ActivityActionProvider
                 case PlaybackStateCompat.STATE_PLAYING:
                     currentProgress = mediaController.getPlaybackState().getPosition();
                     currentBufferedPosition = mediaController.getPlaybackState().getBufferedPosition();
-                    activityMainBinding.musicProgress.setSecondaryProgress((int) currentBufferedPosition);
+                    activityMainBinding.playerView.musicProgress.setSecondaryProgress((int) currentBufferedPosition);
                     scheduledFutureUpdate();
                     break;
                 case PlaybackStateCompat.STATE_STOPPED:
                 case PlaybackStateCompat.STATE_PAUSED:
-                    activityMainBinding.currentPos.setText(formatMillis(mediaController.getPlaybackState().getPosition()));
-                    activityMainBinding.musicProgress.setProgress((int) mediaController.getPlaybackState().getPosition());
+                    activityMainBinding.playerView.currentPos.setText(formatMillis(mediaController.getPlaybackState().getPosition()));
+                    activityMainBinding.playerView.musicProgress.setProgress((int) mediaController.getPlaybackState().getPosition());
                     break;
             }
 
         }
-        activityMainBinding.playPause.setOnClickListener(playPauseListener);
-        activityMainBinding.playPauseBtn.setOnClickListener(playPauseListener);
-        activityMainBinding.next.setOnClickListener(skipNextListener);
-        activityMainBinding.skipNextBtn.setOnClickListener(skipNextListener);
-        activityMainBinding.skipPrevBtn.setOnClickListener(skipPrevListener);
-        activityMainBinding.currentPlaylistBtn.setOnClickListener(currentPlaylistListener);
-        activityMainBinding.repeatBtn.setOnClickListener(repeatModeClickListener);
-        activityMainBinding.shuffleBtn.setOnClickListener(shuffleModeListener);
-        activityMainBinding.favouriteBtn.setOnClickListener(toggleFavouriteListener);
-        activityMainBinding.downloadBtn.setOnClickListener(downloadSongListener);
-        activityMainBinding.musicProgress.setOnSeekBarChangeListener(progressListener);
-        activityMainBinding.closeBottomSheet.setOnClickListener(closeBottomSheetListener);
-        activityMainBinding.minimize.setOnClickListener(v -> playerView.setState(BottomSheetBehavior.STATE_COLLAPSED));
-        activityMainBinding.shareThis.setOnClickListener(CommonUtil.buildShareSong(this, () -> currentMediaId));
-        activityMainBinding.equalizer.setOnClickListener(openEqualizerListener);
+        activityMainBinding.playerView.playPause.setOnClickListener(playPauseListener);
+        activityMainBinding.playerView.playPauseBtn.setOnClickListener(playPauseListener);
+        activityMainBinding.playerView.next.setOnClickListener(skipNextListener);
+        activityMainBinding.playerView.skipNextBtn.setOnClickListener(skipNextListener);
+        activityMainBinding.playerView.skipPrevBtn.setOnClickListener(skipPrevListener);
+        activityMainBinding.playerView.currentPlaylistBtn.setOnClickListener(currentPlaylistListener);
+        activityMainBinding.playerView.repeatBtn.setOnClickListener(repeatModeClickListener);
+        activityMainBinding.playerView.shuffleBtn.setOnClickListener(shuffleModeListener);
+        activityMainBinding.playerView.favouriteBtn.setOnClickListener(toggleFavouriteListener);
+        activityMainBinding.playerView.downloadBtn.setOnClickListener(downloadSongListener);
+        activityMainBinding.playerView.musicProgress.setOnSeekBarChangeListener(progressListener);
+        activityMainBinding.playerView.closeBottomSheet.setOnClickListener(closeBottomSheetListener);
+        activityMainBinding.playerView.minimize.setOnClickListener(v -> playerView.setState(BottomSheetBehavior.STATE_COLLAPSED));
+        activityMainBinding.playerView.shareThis.setOnClickListener(CommonUtil.buildShareSong(this, () -> currentMediaId));
+        activityMainBinding.playerView.equalizer.setOnClickListener(openEqualizerListener);
     }
 
 
@@ -1318,20 +1320,20 @@ public class MainActivity extends BaseActivity implements ActivityActionProvider
 //    }
 
     private void setSongArt(Drawable resource) {
-        activityMainBinding.art.setImageDrawable(resource);
-        activityMainBinding.songArt.setImageDrawable(resource);
-        activityMainBinding.songArt.setBlur(3);
-        activityMainBinding.songArt2.setImageDrawable(resource);
-        activityMainBinding.playerBlurBackground.setImageDrawable(resource);
-        activityMainBinding.playerBlurBackground.setBlur(4);
+        activityMainBinding.playerView.art.setImageDrawable(resource);
+        activityMainBinding.playerView.songArt.setImageDrawable(resource);
+        activityMainBinding.playerView.songArt.setBlur(3);
+        activityMainBinding.playerView.songArt2.setImageDrawable(resource);
+        activityMainBinding.playerView.playerBlurBackground.setImageDrawable(resource);
+        activityMainBinding.playerView.playerBlurBackground.setBlur(4);
     }
 
     private void setSongArt() {
-        activityMainBinding.art.setImageResource(R.drawable.album_art_placeholder);
-        activityMainBinding.songArt.setImageResource(R.drawable.album_art_placeholder);
-        activityMainBinding.songArt2.setImageResource(R.drawable.album_art_placeholder);
-        activityMainBinding.playerBlurBackground.setImageResource(R.drawable.bg_album_art);
-        activityMainBinding.playerBlurBackground.setBlur(5);
+        activityMainBinding.playerView.art.setImageResource(R.drawable.album_art_placeholder);
+        activityMainBinding.playerView.songArt.setImageResource(R.drawable.album_art_placeholder);
+        activityMainBinding.playerView.songArt2.setImageResource(R.drawable.album_art_placeholder);
+        activityMainBinding.playerView.playerBlurBackground.setImageResource(R.drawable.bg_album_art);
+        activityMainBinding.playerView.playerBlurBackground.setBlur(5);
     }
 
 }

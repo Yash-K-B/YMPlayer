@@ -74,11 +74,12 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_margin="20dp"
+                    android:layout_marginBottom="20dp"
                     android:orientation="vertical"
                     app:layout_constraintBottom_toTopOf="@+id/track_sub_title"
-                    app:layout_constraintEnd_toStartOf="@+id/maxDuration"
+                    app:layout_constraintStart_toStartOf="parent"
                     app:layout_constraintHorizontal_bias="0.5"
-                    app:layout_constraintStart_toEndOf="@+id/currentPos">
+                    app:layout_constraintEnd_toEndOf="parent">
 
                     <TextView
                         android:id="@+id/track_title"
@@ -89,6 +90,7 @@
                         android:focusable="true"
                         android:marqueeRepeatLimit="marquee_forever"
                         android:singleLine="true"
+                        android:text="Track Title"
                         android:textColor="@android:color/white"
                         android:textSize="16sp"
                         android:textStyle="bold" />
@@ -100,15 +102,15 @@
                     android:layout_height="wrap_content"
                     android:layout_marginStart="20dp"
                     android:layout_marginEnd="20sp"
-                    android:layout_marginBottom="24dp"
+                    android:layout_marginBottom="20dp"
                     android:gravity="center"
                     android:singleLine="true"
-                    android:text="Track Title"
+                    android:text="Track sub-title"
                     android:textSize="14sp"
-                    app:layout_constraintBottom_toTopOf="@+id/shuffleBtn"
-                    app:layout_constraintEnd_toStartOf="@+id/maxDuration"
+                    app:layout_constraintBottom_toTopOf="@+id/favouriteBtn"
+                    app:layout_constraintEnd_toEndOf="parent"
                     app:layout_constraintHorizontal_bias="0.5"
-                    app:layout_constraintStart_toEndOf="@+id/currentPos" />
+                    app:layout_constraintStart_toStartOf="parent" />
 
                 <SeekBar
                     android:id="@+id/music_progress"
@@ -235,15 +237,15 @@
                     android:id="@+id/shuffleBtn"
                     android:layout_width="48dp"
                     android:layout_height="48dp"
-                    android:layout_marginBottom="20dp"
                     android:background="@drawable/ripple_click_effect"
                     android:src="@drawable/exo_icon_shuffle_off"
-                    app:layout_constraintBottom_toTopOf="@+id/music_progress"
+                    app:layout_constraintBottom_toBottomOf="@id/favouriteBtn"
                     app:layout_constraintEnd_toStartOf="@+id/favouriteBtn"
                     app:layout_constraintHorizontal_bias="0.5"
                     app:layout_constraintHorizontal_chainStyle="spread"
                     app:layout_constraintStart_toStartOf="parent"
-                    app:tint="@android:color/white" />
+                    app:tint="@android:color/white"
+                    tools:visibility="visible" />
 
                 <ImageButton
                     android:id="@+id/favouriteBtn"
@@ -263,15 +265,15 @@
                     android:id="@+id/downloadBtn"
                     android:layout_width="48dp"
                     android:layout_height="48dp"
-                    android:layout_marginBottom="20dp"
                     android:background="@drawable/ripple_click_effect"
                     android:scaleType="centerInside"
-                    android:src="@drawable/ic_round_download_24"
-                    app:layout_constraintBottom_toTopOf="@+id/music_progress"
+                    android:src="@drawable/download"
+                    app:layout_constraintBottom_toBottomOf="@id/favouriteBtn"
                     app:layout_constraintEnd_toEndOf="parent"
                     app:layout_constraintHorizontal_bias="0.5"
                     app:layout_constraintStart_toEndOf="@+id/favouriteBtn"
-                    app:tint="@android:color/white" />
+                    app:tint="@android:color/white"
+                    tools:visibility="visible" />
 
             </androidx.constraintlayout.widget.ConstraintLayout>
 
