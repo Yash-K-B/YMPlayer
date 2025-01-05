@@ -7,7 +7,7 @@ import lombok.NoArgsConstructor;
 
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
 public class PlayerHelperUtil {
-    public static boolean needWatchNextItems(String uri) {
+    public static boolean isDynamicQueue(String uri) {
         return StringUtil.hasText(uri) && (isSharedYoutube(uri) || isSearchedYoutube(uri));
     }
 

@@ -37,8 +37,8 @@ public class YMPlayer extends Application {
         preferences  = PreferenceManager.getDefaultSharedPreferences(this);
         LogHelperSettings logHelperSettings = new LogHelperSettings();
         logHelperSettings.setFileLogging(true);
-        LogHelper.setLogHelperSettings(logHelperSettings);
         LogHelper.deploy(this, TAG);
+        LogHelper.setLogHelperSettings(logHelperSettings);
         executor = Executors.newSingleThreadExecutor();
 
         HttpUtility.initialise(new Cache(getCacheDir(), 41_943_040), new CacheControl.Builder().maxAge(4, TimeUnit.HOURS).build());

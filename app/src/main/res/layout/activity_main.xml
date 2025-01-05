@@ -57,6 +57,8 @@
         android:fitsSystemWindows="true"
         app:headerLayout="@layout/nav_header_layout"
         app:itemBackground="@android:color/transparent"
+        app:itemTextColor="@color/navigation_selector"
+        app:itemIconTint="@color/navigation_selector"
         app:menu="@menu/nav_menu" />
 
 

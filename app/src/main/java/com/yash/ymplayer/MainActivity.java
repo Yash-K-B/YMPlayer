@@ -65,7 +65,6 @@ import com.bumptech.glide.request.target.CustomTarget;
 import com.bumptech.glide.request.target.Target;
 import com.bumptech.glide.request.transition.Transition;
 import com.google.android.material.bottomsheet.BottomSheetBehavior;
-import com.google.android.material.navigation.NavigationView;
 import com.yash.logging.utils.ExceptionUtil;
 import com.yash.ymplayer.constant.Constants;
 import com.yash.ymplayer.databinding.ActivityMainBinding;
@@ -269,8 +268,6 @@ public class MainActivity extends BaseActivity implements ActivityActionProvider
         ((TextView) activityMainBinding.navView.getHeaderView(0).findViewById(R.id.nav_header_text)).setText(defaultSharedPreferences.getString("user_name", "User@YMPlayer"));
         activityMainBinding.navView.setNavigationItemSelectedListener(item -> {
             navigationItemId = item.getItemId();
-            item.setChecked(true);
-            item.setTitle(item.getTitle());
             boolean isDrawerFixed = getResources().getBoolean(R.bool.isDrawerFixed);
             if(!isDrawerFixed) {
                 activityMainBinding.drawerLayout.closeDrawer(GravityCompat.START);
@@ -360,27 +357,27 @@ public class MainActivity extends BaseActivity implements ActivityActionProvider
         LogHelper.d(TAG, "onCreate: Fragment Transaction:");
         switch (currentFragment) {
             case Keys.Fragments.SETTINGS:
-                activityMainBinding.navView.setCheckedItem(R.id.settings);
                 changeFragment(activityMainBinding.container.getId(), SettingsFragment.class, Keys.Fragments.SETTINGS);
+                activityMainBinding.navView.setCheckedItem(R.id.settings);
                 break;
             case Keys.Fragments.ABOUT:
-                activityMainBinding.navView.setCheckedItem(R.id.about);
                 changeFragment(activityMainBinding.container.getId(), AboutFragment.class, Keys.Fragments.ABOUT);
+                activityMainBinding.navView.setCheckedItem(R.id.about);
                 break;
 
             case Keys.Fragments.YOUTUBE_SONGS:
-                activityMainBinding.navView.setCheckedItem(R.id.youtubeLibSongs);
                 changeFragment(activityMainBinding.container.getId(), YoutubeLibrary.class, Keys.Fragments.YOUTUBE_SONGS);
+                activityMainBinding.navView.setCheckedItem(R.id.youtubeLibSongs);
                 break;
 
             case Keys.Fragments.DOWNLOADS:
-                activityMainBinding.navView.setCheckedItem(R.id.downloads);
                 changeFragment(activityMainBinding.container.getId(), DownloadFragment.class, Keys.Fragments.DOWNLOADS);
+                activityMainBinding.navView.setCheckedItem(R.id.downloads);
                 break;
 
             default:
-                activityMainBinding.navView.setCheckedItem(R.id.localSongs);
                 changeFragment(activityMainBinding.container.getId(), LocalSongs.class, Keys.Fragments.LOCAL_SONGS);
+                activityMainBinding.navView.setCheckedItem(R.id.localSongs);
                 break;
         }
     }
@@ -606,7 +603,7 @@ public class MainActivity extends BaseActivity implements ActivityActionProvider
         @Override
         public void onQueueTitleChanged(CharSequence title) {
             queueTitle = title.toString();
-            activityMainBinding.playerView.shuffleBtn.setVisibility(PlayerHelperUtil.needWatchNextItems(queueTitle) ? View.GONE: View.VISIBLE);
+            activityMainBinding.playerView.shuffleBtn.setVisibility(PlayerHelperUtil.isDynamicQueue(queueTitle) ? View.GONE: View.VISIBLE);
         }
 
         @Override
@@ -658,6 +655,7 @@ public class MainActivity extends BaseActivity implements ActivityActionProvider
 
             //previousPlayingPosition = -1;
             adapter.notifyQueueChange(previousPlayingPosition);
+            activityMainBinding.playerView.queueTitleContext.setText(String.format("Playing Queue (%s/%s)", previousPlayingPosition + 1, songs.size()));
             LogHelper.d(TAG, "onQueueChanged: Adapter Notified");
 
         }
@@ -714,6 +712,7 @@ public class MainActivity extends BaseActivity implements ActivityActionProvider
             if (state == null) return;
             long activeQueueItemId = state.getActiveQueueItemId();
             notifyCurrentPlayingSong((int) activeQueueItemId);
+            activityMainBinding.playerView.queueTitleContext.setText(String.format("Playing Queue (%s/%s)", activeQueueItemId + 1, songs.size()));
 
             switch (state.getState()) {
                 case PlaybackStateCompat.STATE_PLAYING:
@@ -975,6 +974,9 @@ public class MainActivity extends BaseActivity implements ActivityActionProvider
         public void onClick(View v) {
             if (bottomSheetBehavior.getState() != BottomSheetBehavior.STATE_EXPANDED) {
                 bottomSheetBehavior.setState(BottomSheetBehavior.STATE_EXPANDED);
+                if (previousPlayingPosition != -1) {
+                    activityMainBinding.playerView.playlistContainer.scrollToPosition(previousPlayingPosition);
+                }
             }
         }
     };

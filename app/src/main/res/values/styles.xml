@@ -54,36 +54,42 @@
         <item name="colorPrimary">#8F0000</item>
         <item name="colorPrimaryDark">#680000</item>
         <item name="colorAccent">#FA928D</item>
+        <item name="navSelectedTextColor">@color/colorPrimary</item>
     </style>
 
     <style name="YTheme.Light.Blue.NoActionBar" parent="YTheme.Light">
         <item name="colorPrimary">#000080</item>
         <item name="colorPrimaryDark">#000049</item>
         <item name="colorAccent">@color/colorAccent</item>
+        <item name="navSelectedTextColor">?attr/colorPrimary</item>
     </style>
 
     <style name="YTheme.Light.Green.NoActionBar" parent="YTheme.Light">
         <item name="colorPrimary">#017732</item>
         <item name="colorPrimaryDark">#1E4C00</item>
         <item name="colorAccent">#00BFA5</item>
+        <item name="navSelectedTextColor">?attr/colorPrimary</item>
     </style>
 
     <style name="YTheme.Light.Violet.NoActionBar" parent="YTheme.Light">
         <item name="colorPrimary">#7b1fa2</item>
         <item name="colorPrimaryDark">#4a0072</item>
         <item name="colorAccent">#d4e157</item>
+        <item name="navSelectedTextColor">?attr/colorPrimary</item>
     </style>
 
     <style name="YTheme.Light.Sky.NoActionBar" parent="YTheme.Light">
         <item name="colorPrimary">#1e88e5</item>
         <item name="colorPrimaryDark">#005cb2</item>
         <item name="colorAccent">#18ffff</item>
+        <item name="navSelectedTextColor">?attr/colorPrimary</item>
     </style>
 
     <style name="YTheme.Light.Ocean.NoActionBar" parent="YTheme.Light">
         <item name="colorPrimary">#00695c</item>
         <item name="colorPrimaryDark">#003d33</item>
         <item name="colorAccent">#4db6ac</item>
+        <item name="navSelectedTextColor">?attr/colorPrimary</item>
     </style>
 
     <!--   Dark Themes -->
@@ -106,36 +112,42 @@
         <item name="colorPrimary">#8F0000</item>
         <item name="colorPrimaryDark">#680000</item>
         <item name="colorAccent">#FA928D</item>
+        <item name="navSelectedTextColor">?attr/colorAccent</item>
     </style>
 
     <style name="YTheme.Dark.Blue.NoActionBar" parent="YTheme.Dark">
         <item name="colorPrimary">#000080</item>
         <item name="colorPrimaryDark">#000049</item>
         <item name="colorAccent">@color/colorAccent</item>
+        <item name="navSelectedTextColor">?attr/colorAccent</item>
     </style>
 
     <style name="YTheme.Dark.Green.NoActionBar" parent="YTheme.Dark">
         <item name="colorPrimary">#017732</item>
         <item name="colorPrimaryDark">#1E4C00</item>
         <item name="colorAccent">#00BFA5</item>
+        <item name="navSelectedTextColor">?attr/colorAccent</item>
     </style>
 
     <style name="YTheme.Dark.Violet.NoActionBar" parent="YTheme.Dark">
         <item name="colorPrimary">#7b1fa2</item>
         <item name="colorPrimaryDark">#4a0072</item>
         <item name="colorAccent">#d4e157</item>
+        <item name="navSelectedTextColor">?attr/colorAccent</item>
     </style>
 
     <style name="YTheme.Dark.Sky.NoActionBar" parent="YTheme.Dark">
         <item name="colorPrimary">#1e88e5</item>
         <item name="colorPrimaryDark">#005cb2</item>
         <item name="colorAccent">#18ffff</item>
+        <item name="navSelectedTextColor">?attr/colorAccent</item>
     </style>
 
     <style name="YTheme.Dark.Ocean.NoActionBar" parent="YTheme.Dark">
         <item name="colorPrimary">#00695c</item>
         <item name="colorPrimaryDark">#003d33</item>
         <item name="colorAccent">#4db6ac</item>
+        <item name="navSelectedTextColor">?attr/colorAccent</item>
     </style>
 
     <!--    AMOLED Base Theme-->
@@ -156,36 +168,42 @@
         <item name="colorPrimary">#8F0000</item>
         <item name="colorPrimaryDark">#680000</item>
         <item name="colorAccent">#FA928D</item>
+        <item name="navSelectedTextColor">?attr/colorAccent</item>
     </style>
 
     <style name="YTheme.AMOLED.Blue.NoActionBar" parent="YTheme.AMOLED">
         <item name="colorPrimary">#000080</item>
         <item name="colorPrimaryDark">#000049</item>
         <item name="colorAccent">@color/colorAccent</item>
+        <item name="navSelectedTextColor">?attr/colorAccent</item>
     </style>
 
     <style name="YTheme.AMOLED.Green.NoActionBar" parent="YTheme.AMOLED">
         <item name="colorPrimary">#017732</item>
         <item name="colorPrimaryDark">#1E4C00</item>
         <item name="colorAccent">#00BFA5</item>
+        <item name="navSelectedTextColor">?attr/colorAccent</item>
     </style>
 
     <style name="YTheme.AMOLED.Violet.NoActionBar" parent="YTheme.AMOLED">
         <item name="colorPrimary">#7b1fa2</item>
         <item name="colorPrimaryDark">#4a0072</item>
         <item name="colorAccent">#d4e157</item>
+        <item name="navSelectedTextColor">?attr/colorAccent</item>
     </style>
 
     <style name="YTheme.AMOLED.Sky.NoActionBar" parent="YTheme.AMOLED">
         <item name="colorPrimary">#1e88e5</item>
         <item name="colorPrimaryDark">#005cb2</item>
         <item name="colorAccent">#18ffff</item>
+        <item name="navSelectedTextColor">?attr/colorAccent</item>
     </style>
 
     <style name="YTheme.AMOLED.Ocean.NoActionBar" parent="YTheme.AMOLED">
         <item name="colorPrimary">#00695c</item>
         <item name="colorPrimaryDark">#003d33</item>
         <item name="colorAccent">#4db6ac</item>
+        <item name="navSelectedTextColor">?attr/colorAccent</item>
     </style>
 
 

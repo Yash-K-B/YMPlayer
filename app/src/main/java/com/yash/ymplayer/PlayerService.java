@@ -34,7 +34,6 @@ import android.support.v4.media.MediaDescriptionCompat;
 import android.support.v4.media.MediaMetadataCompat;
 import android.support.v4.media.session.MediaSessionCompat;
 import android.support.v4.media.session.PlaybackStateCompat;
-import android.util.Log;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
@@ -84,7 +83,6 @@ import com.yash.ymplayer.interfaces.Keys;
 import com.yash.ymplayer.util.MediaItemHelperUtility;
 import com.yash.ymplayer.util.PlayerHelperUtil;
 import com.yash.ymplayer.util.Song;
-import com.yash.ymplayer.util.StringUtil;
 import com.yash.ymplayer.util.YoutubeSong;
 import com.yash.youtube_extractor.Extractor;
 import com.yash.youtube_extractor.exceptions.ExtractionException;
@@ -146,6 +144,8 @@ public class PlayerService extends MediaBrowserServiceCompat implements PlayerHe
 
     //Youtube Extractor
     Extractor extractor;
+
+    private String queueTitleContext;
 
     /* Declares that ContentStyle is supported */
     public static final String CONTENT_STYLE_SUPPORTED = "android.media.browse.CONTENT_STYLE_SUPPORTED";
@@ -764,10 +764,10 @@ public class PlayerService extends MediaBrowserServiceCompat implements PlayerHe
                         mediaIdLists.remove(pos);
                         mediaSources.removeMediaSource(pos);
 
-                        if (playingQueue.size() != 0) {
+                        if (!playingQueue.isEmpty()) {
                             mSession.setQueueTitle(Keys.QUEUE_TITLE.CUSTOM);
                             if (queuePos == pos) {
-                                if (isShuffledEnabled()) {
+                                if (isShuffleEnabled()) {
                                     if (player == null) return;
                                     player.setPlayWhenReady(false);
                                     pos = player.getCurrentTimeline().getNextWindowIndex(queuePos, Player.REPEAT_MODE_ALL, true);
@@ -914,7 +914,6 @@ public class PlayerService extends MediaBrowserServiceCompat implements PlayerHe
                 break;
             default:
         }
-        player.setShuffleModeEnabled(isShuffledEnabled());
     }
 
 
@@ -944,15 +943,12 @@ public class PlayerService extends MediaBrowserServiceCompat implements PlayerHe
         });
     }
 
-
-    private String watchNextQueueTitle;
     private String watchNextQueueUri;
     private String watchNextContinuationToken;
 
     private void appendWatchNextQueue(String uri, String continuationToken) {
-        watchNextQueueTitle = mSession.getController().getQueueTitle().toString();
-        OnlineYoutubeRepository.getInstance(PlayerService.this).extractSharedWatchNextQueue(uri, continuationToken, watchNextQueueTitle, (queueItems, nextToken, tag) -> {
-            if (!Objects.equals(tag, watchNextQueueTitle)) {
+        OnlineYoutubeRepository.getInstance(PlayerService.this).extractSharedWatchNextQueue(uri, continuationToken, queueTitleContext, (queueItems, nextToken, tag) -> {
+            if (!Objects.equals(tag, queueTitleContext)) {
                 LogHelper.d(TAG, "appendWatchNextQueue: Skipping as queue title not matched");
                 return;
             }
@@ -960,8 +956,6 @@ public class PlayerService extends MediaBrowserServiceCompat implements PlayerHe
             watchNextContinuationToken = nextToken;
             watchNextQueueUri = nextToken == null ? null : uri;
 
-//            if (nextToken != null && playingQueue.size() < 50)
-//                appendWatchNextQueue(uri, nextToken);
         });
     }
 
@@ -1016,8 +1010,10 @@ public class PlayerService extends MediaBrowserServiceCompat implements PlayerHe
         }
         mSession.setQueue(playingQueue);
         isQueueChanged = true;
-        if (player != null)
+        if (player != null) {
+            player.setShuffleModeEnabled(isShuffleEnabled());
             player.prepare(mediaSources);
+        }
     }
 
     private void setQueueTitle(String uri, boolean playSingle) {
@@ -1031,6 +1027,7 @@ public class PlayerService extends MediaBrowserServiceCompat implements PlayerHe
             return;
         }
         mSession.setQueueTitle(queueTitle);
+        queueTitleContext = queueTitle;
     }
 
     @Override
@@ -1289,7 +1286,7 @@ public class PlayerService extends MediaBrowserServiceCompat implements PlayerHe
                     if (queuePos != player.getCurrentWindowIndex()) {
                         queuePos = player.getCurrentWindowIndex();
                         setMediaMetadata(playingQueue.get(queuePos));
-                        loadWatchNextIfApplicable();
+                        loadNextQueueItems();
                     }
                     setPlaybackState(player.getPlayWhenReady() ? PlaybackStateCompat.STATE_PLAYING : PlaybackStateCompat.STATE_PAUSED);
                     pushNotification(player.getPlayWhenReady() ? PlaybackStateCompat.STATE_PLAYING : PlaybackStateCompat.STATE_PAUSED);
@@ -1306,7 +1303,7 @@ public class PlayerService extends MediaBrowserServiceCompat implements PlayerHe
                     queuePos = player.getCurrentWindowIndex();
                     setMediaMetadata(playingQueue.get(queuePos));
                     pushNotification(player.getPlayWhenReady() ? PlaybackStateCompat.STATE_PLAYING : PlaybackStateCompat.STATE_PAUSED);
-                    loadWatchNextIfApplicable();
+                    loadNextQueueItems();
                     break;
                 case ExoPlayer.DISCONTINUITY_REASON_INTERNAL:
                     LogHelper.d(TAG, "onPositionDiscontinuity: DISCONTINUITY_REASON_INTERNAL");
@@ -1680,15 +1677,7 @@ public class PlayerService extends MediaBrowserServiceCompat implements PlayerHe
             player.stop();
         mediaSources.clear();
         playingQueue = Repository.getInstance(this).getCurrentPlayingQueue("URI|" + uri);
-        for (int i = 0; i < playingQueue.size(); i++) {
-            String id = playingQueue.get(i).getDescription().getMediaId();
-            mediaIdLists.add(id);
-            addURISourceToMediaSources(Uri.parse(id), i);
-        }
-        mSession.setQueue(playingQueue);
-        isQueueChanged = true;
-        if (player != null)
-            player.prepare(mediaSources);
+        prepareMediaSource();
 
     }
 
@@ -1703,7 +1692,7 @@ public class PlayerService extends MediaBrowserServiceCompat implements PlayerHe
             player.setRepeatMode(repeatMode);
             player.prepare(mediaSources);
             player.setPlayWhenReady(false);
-            player.setShuffleModeEnabled(isShuffledEnabled());
+            player.setShuffleModeEnabled(isShuffleEnabled());
             player.setHandleAudioBecomingNoisy(true);
             player.setAudioAttributes(new com.google.android.exoplayer2.audio.AudioAttributes.Builder().setUsage(C.USAGE_MEDIA)
                     .setContentType(C.CONTENT_TYPE_MUSIC).build(), true);
@@ -1787,21 +1776,21 @@ public class PlayerService extends MediaBrowserServiceCompat implements PlayerHe
     }
 
     private void removeAsForegroundService(boolean removeNotification) {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
-            stopForeground(removeNotification ? STOP_FOREGROUND_REMOVE : STOP_FOREGROUND_DETACH);
-        } else {
-            stopForeground(removeNotification);
-        }
+        stopForeground(removeNotification ? STOP_FOREGROUND_REMOVE : STOP_FOREGROUND_DETACH);
         isForegroundService = false;
     }
 
 
-    private boolean isShuffledEnabled() {
-        return !PlayerHelperUtil.needWatchNextItems(watchNextQueueUri) && isShuffleModeEnabled;
+    private boolean isShuffleEnabled() {
+        return !PlayerHelperUtil.isDynamicQueue(queueTitleContext) && isShuffleModeEnabled;
     }
 
-    private void loadWatchNextIfApplicable() {
-        if(PlayerHelperUtil.needWatchNextItems(watchNextQueueUri) && queuePos > playingQueue.size() - 5) {
+    private void loadNextQueueItems() {
+        if(PlayerHelperUtil.isDynamicQueue(queueTitleContext) && queuePos >= playingQueue.size() - 5) {
+            if(watchNextContinuationToken == null) {
+                LogHelper.d(TAG, "loadWatchNextIfApplicable: No need to load as next token not available");
+                return;
+            }
             LogHelper.d(TAG, "loadWatchNextIfApplicable: loading watch next queue");
             appendWatchNextQueue(watchNextQueueUri, watchNextContinuationToken);
         }

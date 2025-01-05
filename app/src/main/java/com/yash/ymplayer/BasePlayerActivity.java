@@ -272,7 +272,7 @@ public abstract class BasePlayerActivity extends BaseActivity implements Activit
         @Override
         public void onQueueTitleChanged(CharSequence title) {
             queueTitle = title.toString();
-            basePlayerActivityBinding.playerView.shuffleBtn.setVisibility(PlayerHelperUtil.needWatchNextItems(queueTitle) ? View.GONE: View.VISIBLE);
+            basePlayerActivityBinding.playerView.shuffleBtn.setVisibility(PlayerHelperUtil.isDynamicQueue(queueTitle) ? View.GONE: View.VISIBLE);
         }
 
         @Override
@@ -324,6 +324,7 @@ public abstract class BasePlayerActivity extends BaseActivity implements Activit
 
             //previousPlayingPosition = -1;
             adapter.notifyQueueChange(previousPlayingPosition);
+            basePlayerActivityBinding.playerView.queueTitleContext.setText(String.format("Playing Queue (%s/%s)", previousPlayingPosition + 1, songs.size()));
             LogHelper.d(TAG, "onQueueChanged: Adapter Notified");
 
         }
@@ -380,6 +381,7 @@ public abstract class BasePlayerActivity extends BaseActivity implements Activit
             if (state == null) return;
             long activeQueueItemId = state.getActiveQueueItemId();
             notifyCurrentPlayingSong((int) activeQueueItemId);
+            basePlayerActivityBinding.playerView.queueTitleContext.setText(String.format("Playing Queue (%s/%s)", activeQueueItemId + 1, songs.size()));
 
             switch (state.getState()) {
                 case PlaybackStateCompat.STATE_PLAYING:
@@ -595,6 +597,9 @@ public abstract class BasePlayerActivity extends BaseActivity implements Activit
         public void onClick(View v) {
             if (bottomSheetBehavior.getState() != BottomSheetBehavior.STATE_EXPANDED) {
                 bottomSheetBehavior.setState(BottomSheetBehavior.STATE_EXPANDED);
+                if (previousPlayingPosition != -1) {
+                    basePlayerActivityBinding.playerView.playlistContainer.scrollToPosition(previousPlayingPosition);
+                }
             }
         }
     };

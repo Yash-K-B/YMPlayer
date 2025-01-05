@@ -1,10 +1,10 @@
 package com.yash.ymplayer.ui.main;
 
-import android.app.Activity;
 import android.app.AlertDialog;
 import android.content.ContentValues;
 import android.content.Context;
 import android.content.Intent;
+import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
@@ -17,16 +17,19 @@ import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.ViewTreeObserver;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.coordinatorlayout.widget.CoordinatorLayout;
 import androidx.fragment.app.Fragment;
 import androidx.fragment.app.FragmentActivity;
 import androidx.viewpager2.widget.ViewPager2;
 
-import com.google.android.material.tabs.TabLayout;
+import com.google.android.material.floatingactionbutton.FloatingActionButton;
 import com.google.android.material.tabs.TabLayoutMediator;
+import com.yash.logging.LogHelper;
 import com.yash.ymplayer.interfaces.ActivityActionProvider;
 import com.yash.ymplayer.R;
 import com.yash.ymplayer.SearchActivity;
@@ -35,15 +38,14 @@ import com.yash.ymplayer.databinding.FragmentLocalSongsBinding;
 import com.yash.ymplayer.interfaces.EmbeddedListener;
 import com.yash.ymplayer.repository.Repository;
 import com.yash.ymplayer.ui.custom.ConnectionAwareFragment;
-
-import java.util.Objects;
+import com.yash.ymplayer.util.ConverterUtil;
 
 /**
  * A simple {@link Fragment} subclass.
  */
 public class LocalSongs extends ConnectionAwareFragment {
     private static final String[] TAB_TITLES = new String[]{"All Songs", "Albums", "Artists", "Playlist"};
-    private static final String TAG = "debug";
+    private static final String TAG = "LocalSongs";
     FragmentLocalSongsBinding binding;
     Context context;
     FragmentActivity activity;
@@ -71,6 +73,35 @@ public class LocalSongs extends ConnectionAwareFragment {
         binding.floatingActionButton.hide();
     }
 
+    private void initFabAnchor() {
+        View anchorPlayerView = activity.findViewById(R.id.playerGuide);
+        adjustFabPosition(anchorPlayerView, binding.floatingActionButton);
+    }
+
+    private void adjustFabPosition(View playerView, FloatingActionButton fab) {
+        if (playerView != null && fab != null) {
+            playerView.getViewTreeObserver().addOnGlobalLayoutListener(new ViewTreeObserver.OnGlobalLayoutListener() {
+                @Override
+                public void onGlobalLayout() {
+
+                    playerView.getViewTreeObserver().removeOnGlobalLayoutListener(this);
+
+                    // Get playerView's position on the screen
+                    int[] playerViewLocation = new int[2];
+                    playerView.getLocationOnScreen(playerViewLocation);
+
+                    // Adjust FAB position relative to playerView
+                    int xPosition = (int) (/*playerViewLocation[0] */ playerView.getWidth() - fab.getWidth() - ConverterUtil.getPx(playerView.getContext(), 16));
+                    int yPosition = (int) (playerViewLocation[1] - fab.getHeight() - ConverterUtil.getPx(playerView.getContext(), 40));
+
+                    fab.setX(xPosition);
+                    fab.setY(yPosition);
+                }
+            });
+        }
+    }
+
+
     @Override
     public void onConnected(MediaControllerCompat mediaController) {
         SectionsPagerAdapter sectionsPagerAdapter = new SectionsPagerAdapter(getChildFragmentManager(), activity.getLifecycle());
@@ -91,12 +122,17 @@ public class LocalSongs extends ConnectionAwareFragment {
         binding.viewPager.unregisterOnPageChangeCallback(viewPagerPageChangeCallback);
     }
 
+    private void adjustFabAndShow() {
+        initFabAnchor();
+        binding.floatingActionButton.show();
+    }
+
     private final ViewPager2.OnPageChangeCallback viewPagerPageChangeCallback = new ViewPager2.OnPageChangeCallback() {
         @Override
         public void onPageSelected(int position) {
             ((EmbeddedListener)activity).onPageChange();
             if (position == 3) {
-                binding.floatingActionButton.show();
+                adjustFabAndShow();
             } else {
                 binding.floatingActionButton.hide();
             }

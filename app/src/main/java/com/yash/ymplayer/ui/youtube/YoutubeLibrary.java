@@ -123,7 +123,9 @@ public class YoutubeLibrary extends Fragment {
     @Override
     public void onDestroy() {
         super.onDestroy();
-        youtubeLibraryBinding.youtubeViewPager.unregisterOnPageChangeCallback(viewPagerPageChangeCallback);
+        if (youtubeLibraryBinding != null) {
+            youtubeLibraryBinding.youtubeViewPager.unregisterOnPageChangeCallback(viewPagerPageChangeCallback);
+        }
     }
 
     private final ViewPager2.OnPageChangeCallback viewPagerPageChangeCallback = new ViewPager2.OnPageChangeCallback() {

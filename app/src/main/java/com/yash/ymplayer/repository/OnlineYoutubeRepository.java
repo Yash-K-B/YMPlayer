@@ -111,7 +111,9 @@ public class OnlineYoutubeRepository {
     public interface WatchNextQueueLoadedCallback {
         void onLoaded(List<MediaSessionCompat.QueueItem> queueItems, String continuationToken, String tag);
 
-        default <E extends Exception> void onError(E e) {};
+        default <E extends Exception> void onError(E e) {
+            LogHelper.d(TAG, "onError: Error while fetching watch next queue");
+        };
     }
 
     public interface TracksLoadedCallback {
