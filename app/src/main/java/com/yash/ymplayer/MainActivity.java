@@ -100,11 +100,13 @@ import java.io.OutputStream;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.ExecutorService;
@@ -114,6 +116,8 @@ import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+
+import javax.net.ssl.HttpsURLConnection;
 
 
 public class MainActivity extends BaseActivity implements ActivityActionProvider, EmbeddedListener {
@@ -196,17 +200,20 @@ public class MainActivity extends BaseActivity implements ActivityActionProvider
                     .setPositiveButton("SEND", (dialog, which) -> {
                         executor.execute(() -> {
                             try {
-                                URL url = new URL("https://y-dashboard.herokuapp.com/v1/createException");
-                                HttpURLConnection connection = (HttpURLConnection) url.openConnection();
+                                URL url = new URL("https://ydashboard.pythonanywhere.com/events");
+                                HttpsURLConnection connection = (HttpsURLConnection) url.openConnection();
                                 connection.setRequestMethod("POST");
                                 connection.setRequestProperty("Accept", "application/json");
                                 connection.setRequestProperty("Content-Type", "application/json");
                                 connection.setDoInput(true);
                                 connection.setDoInput(true);
                                 Map<String, String> payloadMap = new HashMap<>();
-                                payloadMap.put("deviceId", Build.MANUFACTURER + " " + Build.MODEL + "(API:" + Build.VERSION.SDK_INT + ")");
-                                payloadMap.put("exceptionMessage", exception.replace("'", "\\'"));
-                                payloadMap.put("timestamp", new Date().toString());
+                                payloadMap.put("device_id", Build.MANUFACTURER + " " + Build.MODEL + "(API:" + Build.VERSION.SDK_INT + ")");
+                                payloadMap.put("content", exception);
+                                SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd hh:mm:ss", Locale.US);
+                                String formattedDate = sdf.format(new Date());
+                                payloadMap.put("timestamp",formattedDate);
+                                payloadMap.put("type", "EXCEPTION");
                                 JSONObject payload = new JSONObject(payloadMap);
                                 LogHelper.d(TAG, "payload of exception: " + payload);
                                 OutputStream outputStream = connection.getOutputStream();
@@ -221,8 +228,10 @@ public class MainActivity extends BaseActivity implements ActivityActionProvider
                                     res.append(r);
                                 }
                                 LogHelper.d(TAG, res.toString());
+                                handler.post(() ->  Toast.makeText(this, "Thanks for your feedback", Toast.LENGTH_SHORT).show());
                             } catch (IOException e) {
                                 LogHelper.d(TAG, ConverterUtil.toStringException(e));
+                                handler.post(() -> Toast.makeText(this, "Failed to send exception to server", Toast.LENGTH_SHORT).show());
                             }
                         });
                         dialog.dismiss();

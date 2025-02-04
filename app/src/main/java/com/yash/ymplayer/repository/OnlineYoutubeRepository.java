@@ -30,6 +30,7 @@ import com.yash.youtube_extractor.models.VideoDetails;
 import com.yash.youtube_extractor.models.YoutubeChannelInfo;
 import com.yash.youtube_extractor.models.YoutubePlaylist;
 import com.yash.youtube_extractor.models.YoutubeResponse;
+import com.yash.youtube_extractor.service.ChannelExtractor;
 import com.yash.youtube_extractor.utility.CollectionUtility;
 import com.yash.youtube_extractor.utility.CommonUtility;
 import com.yash.youtube_extractor.utility.RequestUtility;
@@ -428,7 +429,7 @@ public class OnlineYoutubeRepository {
         executor.execute(() -> {
             try {
                 Map<String, List<YoutubePlaylist>> playlists = new LinkedHashMap<>();
-                YoutubeChannelInfo youtubeChannelInfo = ExtractorHelper.channelInfo(channelId);
+                YoutubeChannelInfo youtubeChannelInfo = ChannelExtractor.INSTANCE.channelInfoV2(channelId);
                 updateUserYoutubeInfo(youtubeChannelInfo);
                 for (Map.Entry<String, List<YoutubePlaylist>> entry : youtubeChannelInfo.getPlaylistsByCategory().entrySet()) {
                     if (CollectionUtility.isEmpty(entry.getValue()))
