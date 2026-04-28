@@ -102,7 +102,7 @@ public class ListExpandActivity extends BasePlayerActivity {
                 viewModel.loadArtists(mMediaBrowser, song.getMediaId());
             else if (song.isPlayable())
                 mMediaController.getTransportControls().playFromMediaId(song.getMediaId(), null);
-        }, new SongsContextMenuClickListener(context, mMediaController), SongsAdapter.MODE.ARTIST);
+        }, new SongsContextMenuClickListener(this, mMediaController), SongsAdapter.MODE.ARTIST);
         binding.listRv.setLayoutManager(new LinearLayoutManager(ListExpandActivity.this));
         binding.listRv.setAdapter(adapter);
         viewModel.loadArtists(mMediaBrowser, parentId);
@@ -128,7 +128,7 @@ public class ListExpandActivity extends BasePlayerActivity {
                 viewModel.loadAlbums(mMediaBrowser, song.getMediaId());
             else if (song.isPlayable())
                 mMediaController.getTransportControls().playFromMediaId(song.getMediaId(), null);
-        }, new SongsContextMenuClickListener(context, mMediaController), SongsAdapter.MODE.ALBUM);
+        }, new SongsContextMenuClickListener(this, mMediaController), SongsAdapter.MODE.ALBUM);
         binding.listRv.setLayoutManager(new LinearLayoutManager(ListExpandActivity.this));
         binding.listRv.setAdapter(adapter);
         binding.listRv.addItemDecoration(new DividerItemDecoration(ListExpandActivity.this, DividerItemDecoration.VERTICAL));
@@ -146,7 +146,7 @@ public class ListExpandActivity extends BasePlayerActivity {
                 viewModel.loadPlaylists(mMediaBrowser, song.getMediaId());
             else if (song.isPlayable())
                 mMediaController.getTransportControls().playFromMediaId(song.getMediaId(), null);
-        }, new SongsContextMenuClickListener(context, mMediaController), SongsAdapter.MODE.PLAYLIST);
+        }, new SongsContextMenuClickListener(this, mMediaController), SongsAdapter.MODE.PLAYLIST);
         binding.listRv.setLayoutManager(new LinearLayoutManager(ListExpandActivity.this));
         binding.listRv.setAdapter(adapter);
         viewModel.loadPlaylists(mMediaBrowser, parentId);

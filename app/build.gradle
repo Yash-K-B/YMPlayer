@@ -103,7 +103,7 @@ dependencies {
 
     implementation 'com.afollestad.material-dialogs:core:3.3.0'
 
-    implementation 'com.github.Yash-K-B:YoutubeExtractor:1.4.1'
+    implementation 'com.github.Yash-K-B:YoutubeExtractor:1.5.1'
 
     implementation 'com.github.Yash-K-B:Logging:1.0.5'
 
@@ -114,7 +114,7 @@ dependencies {
     compileOnly 'org.projectlombok:lombok:1.18.34'
     annotationProcessor 'org.projectlombok:lombok:1.18.34'
 
-    implementation 'com.arthenica:ffmpeg-kit-full:5.1.LTS'
+    implementation 'com.github.arthenica:ffmpeg-kit:v5.1.LTS'
 
     implementation 'org.apache.commons:commons-text:1.10.0'
 

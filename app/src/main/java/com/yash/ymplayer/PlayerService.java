@@ -914,6 +914,7 @@ public class PlayerService extends MediaBrowserServiceCompat implements PlayerHe
                 break;
             default:
         }
+        pushNotification(mState.getState());
     }
 
 

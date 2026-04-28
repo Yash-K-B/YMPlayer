@@ -72,7 +72,7 @@ public class AllSongs extends Fragment {
         songsAdapter = new SongsAdapter(context,launcher, (v, song) -> {
             mediaController.getTransportControls().playFromMediaId(song.getDescription().getMediaId(), null);
             Log.d(TAG, "onClick: Extra: null");
-        }, new SongsContextMenuClickListener(context, mediaController), SongsAdapter.MODE.ALL);
+        }, new SongsContextMenuClickListener(activity, mediaController), SongsAdapter.MODE.ALL);
         allSongsBinding.listRv.setAdapter(songsAdapter);
         allSongsBinding.allSongsRefresh.setColorSchemeColors(BaseActivity.getAttributeColor(context, R.attr.colorPrimary));
         allSongsBinding.allSongsRefresh.setOnRefreshListener(() -> {

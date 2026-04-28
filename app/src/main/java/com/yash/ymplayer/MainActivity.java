@@ -479,7 +479,6 @@ public class MainActivity extends BaseActivity implements ActivityActionProvider
                 return fragment.getView();
             }
         } catch (Exception e) {
-            e.printStackTrace();
             return null;
         }
     }

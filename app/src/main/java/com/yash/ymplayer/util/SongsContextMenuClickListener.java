@@ -13,23 +13,37 @@ import android.support.v4.media.MediaBrowserCompat;
 import android.support.v4.media.session.MediaControllerCompat;
 import android.widget.Toast;
 
+import androidx.activity.ComponentActivity;
 import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.IntentSenderRequest;
+import androidx.lifecycle.LifecycleOwner;
+import androidx.lifecycle.ViewModelProvider;
 
 import com.yash.logging.LogHelper;
 import com.yash.ymplayer.ListExpandActivity;
 import com.yash.ymplayer.interfaces.Keys;
 import com.yash.ymplayer.interfaces.AudioProvider;
 import com.yash.ymplayer.interfaces.SongContextMenuListener;
+import com.yash.ymplayer.ui.custom.ConnectionAwareFragment;
+import com.yash.ymplayer.ui.main.LocalViewModel;
 
 public class SongsContextMenuClickListener implements SongContextMenuListener {
     private static final String TAG = "SongsContextMenuClickLi";
     MediaControllerCompat mMediaController;
+    MediaBrowserCompat mediaBrowser;
     Context context;
+    private final ComponentActivity activity;
 
-    public SongsContextMenuClickListener(Context context, MediaControllerCompat mMediaController) {
+    public SongsContextMenuClickListener(ComponentActivity activity, MediaControllerCompat mMediaController) {
         this.mMediaController = mMediaController;
-        this.context = context;
+        this.context = activity;
+        this.activity = activity;
+    }
+
+    public SongsContextMenuClickListener(ComponentActivity activity, ConnectionAwareFragment connectionAwareFragment) {
+        this.activity = activity;
+        mMediaController = connectionAwareFragment.getMediaController();
+        mediaBrowser = connectionAwareFragment.getMediaBrowser();
     }
 
     @Override
@@ -132,6 +146,11 @@ public class SongsContextMenuClickListener implements SongContextMenuListener {
     public boolean deleteFromStorage(MediaBrowserCompat.MediaItem item, ActivityResultLauncher<IntentSenderRequest> launcher) {
         String[] parts = item.getMediaId().split("[/|]");
         long mediaId = Long.parseLong(parts[parts.length - 1]);
-        return StorageXI.getInstance().with(context).delete(launcher, mediaId);
+        boolean delete = StorageXI.getInstance().with(context).delete(launcher, mediaId);
+        if (delete && mediaBrowser != null) {
+            LocalViewModel localViewModel = new ViewModelProvider(activity).get(LocalViewModel.class);
+            localViewModel.refresh(context, mediaBrowser);
+        }
+        return delete;
     }
 }
